@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { roundUsd } from 'src/domains/ingestion/candidate-sourcing/sources/adapter';
 
 import { randomUUID } from 'crypto';
 
@@ -15,8 +16,8 @@ import {
   isChunkedRunStalled,
   isChunkedRunTerminal,
   waitForChunkedRun,
-} from 'src/engine/core-modules/outreach-command/utils/chunked-run.util';
-import { type FindPeopleTerminalState } from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
+} from 'src/domains/engagement/outreach-command/utils/chunked-run.util';
+import { type FindPeopleTerminalState } from 'src/domains/engagement/outreach-command/utils/outreach-people-found.util';
 import {
   type FindPeopleByCompanyTarget,
   type ResolvedInput,
@@ -214,7 +215,7 @@ export class FindPeopleRunService {
       total: state.total,
       done: state.done,
       byState: state.byState,
-      spentUsd: Number(state.spentUsd.toFixed(4)),
+      spentUsd: roundUsd(state.spentUsd),
       written: state.written,
       ...(state.deferredByBudget !== undefined &&
         state.deferredByBudget > 0 && {

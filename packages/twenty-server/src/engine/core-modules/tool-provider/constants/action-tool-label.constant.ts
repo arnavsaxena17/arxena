@@ -22,6 +22,8 @@ export const ACTION_TOOL_IDS = [
   'fetch_profiles',
   'get_project_costs',
   'get_sourcing_ledger',
+  'sourcing_start',
+  'sourcing_next',
   'get_source_capabilities',
   'get_scoring_plan',
   'preview_sample_message_column',
@@ -90,6 +92,12 @@ export const ACTION_TOOL_LABELS: Record<ActionToolId, ActionToolLabel> = {
   },
   get_sourcing_ledger: {
     label: i18nLabel(msg`Get Sourcing Ledger`),
+  },
+  sourcing_start: {
+    label: i18nLabel(msg`Start Sourcing Run`),
+  },
+  sourcing_next: {
+    label: i18nLabel(msg`Continue Sourcing Run`),
   },
   get_source_capabilities: {
     label: i18nLabel(msg`Get Source Capabilities`),

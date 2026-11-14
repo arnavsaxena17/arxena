@@ -10,11 +10,11 @@ import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/typ
 import {
   buildProjectExperimentConfigUpdate,
   readProjectExperimentConfig,
-} from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
+} from 'src/domains/engagement/outreach-command/utils/outreach-experiment.util';
 import {
   resolveOutreachSequencerStageFromName,
   type OutreachSequencerStage,
-} from 'src/engine/core-modules/outreach-command/utils/resolve-outreach-pause-resume-workflow-ids.util';
+} from 'src/domains/engagement/outreach-command/utils/resolve-outreach-pause-resume-workflow-ids.util';
 import { WorkflowVersionCoreSyncService } from 'src/engine/core-modules/workflow/services/workflow-version-core-sync.service';
 import { CommandMenuItemService } from 'src/engine/metadata-modules/command-menu-item/command-menu-item.service';
 import { CommandMenuItemAvailabilityType } from 'src/engine/metadata-modules/command-menu-item/enums/command-menu-item-availability-type.enum';

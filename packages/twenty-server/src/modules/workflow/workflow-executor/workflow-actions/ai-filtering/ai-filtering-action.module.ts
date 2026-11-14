@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AiFilterContextService } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/ai-filter-context.service';
 
-import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
+import { CandidateSourcingModule } from 'src/domains/ingestion/candidate-sourcing/candidate-sourcing.module';
 import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
 import { AiFilteringWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/ai-filtering.workflow-action';
 import { AiFilteringWorkflowResumeService } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/ai-filtering-workflow-resume.service';

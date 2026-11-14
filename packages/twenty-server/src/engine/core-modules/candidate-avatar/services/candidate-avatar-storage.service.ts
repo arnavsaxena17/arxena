@@ -9,14 +9,14 @@ import {
     FileStorageException,
     FileStorageExceptionCode,
 } from 'src/engine/core-modules/file-storage/interfaces/file-storage-exception';
-import { normalizeOrgChartLinkedinUrlKey } from 'src/engine/core-modules/org-chart/utils/merge-orgchart-profile-source-slugs.util';
+import { normalizeOrgChartLinkedinUrlKey } from 'src/domains/org-graph/org-chart/utils/merge-orgchart-profile-source-slugs.util';
 import {
     extractLinkedinProfileUrlFromOrgChartCandidateRow,
     extractProfilePictureUrlFromOrgChartCandidateRow,
-} from 'src/engine/core-modules/org-chart/utils/orgchart-candidate-linkedin-url.util';
+} from 'src/domains/org-graph/org-chart/utils/orgchart-candidate-linkedin-url.util';
 import {
     resolveAvatarUrlFromDisplayPictureUrl,
-} from 'src/engine/core-modules/candidate-sourcing/utils/avatar-url.util';
+} from 'src/domains/ingestion/candidate-sourcing/utils/avatar-url.util';
 import { PersonCandidateDraft } from 'twenty-shared';
 
 import {

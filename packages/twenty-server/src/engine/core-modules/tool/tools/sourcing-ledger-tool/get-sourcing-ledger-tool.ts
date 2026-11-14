@@ -5,9 +5,9 @@ import { randomUUID } from 'crypto';
 import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
 
-import { SourcingBudgetService } from 'src/engine/core-modules/outreach-command/services/sourcing-budget.service';
-import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
-import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
+import { SourcingBudgetService } from 'src/domains/engagement/outreach-command/services/sourcing-budget.service';
+import { SourcingLedgerService } from 'src/domains/engagement/outreach-command/services/sourcing-ledger.service';
+import { OutreachTabService } from 'src/domains/engagement/outreach-command/services/outreach-tab.service';
 import {
   computePairFunnel,
   computeSourcingFrontier,
@@ -16,7 +16,7 @@ import {
   normalizeSourcingBriefDraft,
   type SourcingBrief,
   type SourcingLedgerEvent,
-} from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
+} from 'src/domains/engagement/outreach-command/utils/sourcing-ledger.util';
 import { SOURCING_SOURCES } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/sourcing-sources.constant';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';

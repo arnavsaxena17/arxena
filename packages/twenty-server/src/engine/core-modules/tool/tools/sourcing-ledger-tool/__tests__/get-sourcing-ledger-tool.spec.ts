@@ -1,5 +1,5 @@
-import { type OutreachTabRow } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
-import { type SourcingLedgerEvent } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
+import { type OutreachTabRow } from 'src/domains/engagement/outreach-command/services/outreach-tab.service';
+import { type SourcingLedgerEvent } from 'src/domains/engagement/outreach-command/utils/sourcing-ledger.util';
 import { GetSourcingLedgerTool } from 'src/engine/core-modules/tool/tools/sourcing-ledger-tool/get-sourcing-ledger-tool';
 
 const profile = {

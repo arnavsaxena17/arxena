@@ -1,0 +1,440 @@
+import { Injectable, Logger } from '@nestjs/common';
+
+import { isNonEmptyString } from '@sniptt/guards';
+import {
+  graphQltoUpdateOneCandidate,
+  graphqlQueryToRemoveMessages,
+} from 'twenty-shared';
+import { isDefined, isValidUuid } from 'twenty-shared/utils';
+
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { OutreachInboundReplyWindowService } from 'src/domains/engagement/outreach-command/jobs/outreach-inbound-reply-window.job';
+import { OutreachCandidateJourneyService } from 'src/domains/engagement/outreach-command/services/outreach-candidate-journey.service';
+import { OutreachCommandMaterializeService } from 'src/domains/engagement/outreach-command/services/outreach-command-materialize.service';
+import {
+  OutreachMessagePersistService,
+  type OutreachTranscriptChannel,
+} from 'src/domains/engagement/outreach-command/services/outreach-message-persist.service';
+import { UploadProfilesService } from 'src/domains/engagement/outreach-command/services/upload-profiles.service';
+import {
+  buildOutreachMockUploadPeople,
+  resolveOutreachMockUploadCount,
+} from 'src/domains/engagement/outreach-command/utils/build-outreach-mock-upload-people.util';
+
+export type OutreachMockResetTarget = 'CONNECTION_SENT' | 'QUEUED';
+
+// Same shape as the seeded connection-note sample. Reply steps read this turn.
+const OUTREACH_MOCK_DEFAULT_CONNECTION_NOTE =
+  'Hi, thanks for connecting here. Good to e-meet you.';
+
+// Same ceiling as truncateLinkedinConnectionRequestMessage on the send tool.
+const OUTREACH_MOCK_CONNECTION_NOTE_MAX_LENGTH = 300;
+
+export type OutreachMockHitlDecision = 'approve' | 'reject' | 'edit';
+
+@Injectable()
+export class OutreachMockLifecycleService {
+  private readonly logger = new Logger(OutreachMockLifecycleService.name);
+
+  constructor(
+    private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly materializeService: OutreachCommandMaterializeService,
+    private readonly inboundReplyWindowService: OutreachInboundReplyWindowService,
+    private readonly outreachCandidateJourneyService: OutreachCandidateJourneyService,
+    private readonly uploadProfilesService: UploadProfilesService,
+    private readonly gtmOutreachMessagePersistService: OutreachMessagePersistService,
+  ) {}
+
+  async acceptConnection({
+    candidateId,
+    apiToken,
+  }: {
+    candidateId: string;
+    apiToken: string;
+  }): Promise<{ ok: true; candidateId: string; event: 'connection_accepted' }> {
+    await this.materializeService.applyCandidateEvent({
+      candidateId,
+      event: 'connection_accepted',
+      apiToken,
+      messagingChannel: 'LINKEDIN_CONNECT',
+    });
+
+    this.logger.log(
+      `OUTREACH_MOCK: connection_accepted for candidate ${candidateId}`,
+    );
+
+    return { ok: true, candidateId, event: 'connection_accepted' };
+  }
+
+  async injectReply({
+    workspaceId,
+    candidateId,
+    apiToken,
+    text,
+    delayMinutes = 0,
+  }: {
+    workspaceId: string;
+    candidateId: string;
+    apiToken: string;
+    text: string;
+    delayMinutes?: number;
+  }): Promise<{
+    ok: true;
+    candidateId: string;
+    delayMinutes: number;
+  }> {
+    const content = text.trim();
+    const resolvedDelayMinutes =
+      typeof delayMinutes === 'number' && Number.isFinite(delayMinutes)
+        ? delayMinutes
+        : 0;
+
+    await this.inboundReplyWindowService.schedule({
+      workspaceId,
+      candidateId,
+      apiToken,
+      kind: 'outreach',
+      channel: 'LINKEDIN',
+      delayMinutes: resolvedDelayMinutes,
+      turn: {
+        role: 'user',
+        content,
+        externalMessageId: `mock-inbound-${candidateId}-${Date.now()}`,
+        receivedAt: new Date().toISOString(),
+      },
+    });
+
+    this.logger.log(
+      `OUTREACH_MOCK: scheduled inbound reply for candidate ${candidateId} delay=${resolvedDelayMinutes}m`,
+    );
+
+    return {
+      ok: true,
+      candidateId,
+      delayMinutes: resolvedDelayMinutes,
+    };
+  }
+
+  // Persist an LLM-generated outbound turn into chatMessage for multi-turn
+  // AI agent tests (does not materialize candidate stage / analytics).
+  async injectGeneratedReply({
+    workspaceId,
+    candidateId,
+    text,
+    channel = 'LINKEDIN',
+  }: {
+    workspaceId: string;
+    candidateId: string;
+    text: string;
+    channel?: OutreachTranscriptChannel;
+  }): Promise<{
+    ok: true;
+    candidateId: string;
+    channel: OutreachTranscriptChannel;
+  }> {
+    const content = text.trim();
+
+    await this.gtmOutreachMessagePersistService.appendOutbound({
+      workspaceId,
+      channel,
+      body: content,
+      candidateId,
+      externalMessageId: `mock-outbound-${candidateId}-${Date.now()}`,
+      materializeOutbound: false,
+    });
+
+    this.logger.log(
+      `OUTREACH_MOCK: persisted generated reply for candidate ${candidateId} channel=${channel}`,
+    );
+
+    return {
+      ok: true,
+      candidateId,
+      channel,
+    };
+  }
+
+  resolveTranscriptChannel(
+    channel: string | undefined,
+  ): OutreachTranscriptChannel {
+    const normalized = (channel ?? 'LINKEDIN').trim().toUpperCase();
+
+    if (
+      normalized === 'LINKEDIN' ||
+      normalized === 'WHATSAPP' ||
+      normalized === 'EMAIL'
+    ) {
+      return normalized;
+    }
+
+    throw new Error(
+      `Invalid transcript channel "${channel}". Use LINKEDIN, WHATSAPP, or EMAIL.`,
+    );
+  }
+
+  async decideHitlForm({
+    workspaceId,
+    candidateId,
+    apiToken,
+    decision,
+    editedBody,
+    startsAt,
+    endsAt,
+    projectId: projectIdOverride,
+  }: {
+    workspaceId: string;
+    candidateId: string;
+    apiToken: string;
+    decision: OutreachMockHitlDecision;
+    editedBody?: string;
+    startsAt?: string;
+    endsAt?: string;
+    projectId?: string;
+  }) {
+    const projectId =
+      projectIdOverride ??
+      (await this.resolveCandidateProjectId({ candidateId, apiToken }));
+
+    const result =
+      await this.outreachCandidateJourneyService.decidePendingHitlForm({
+        workspaceId,
+        projectId,
+        candidateId,
+        decision,
+        editedBody,
+        startsAt,
+        endsAt,
+      });
+
+    this.logger.log(
+      `OUTREACH_MOCK: HITL ${result.decision} for candidate ${candidateId} run=${result.workflowRunId} step=${result.stepId}`,
+    );
+
+    return {
+      ok: true as const,
+      candidateId,
+      projectId,
+      ...result,
+    };
+  }
+
+  async resetFromConnectionRequest({
+    workspaceId,
+    candidateId,
+    apiToken,
+    to = 'CONNECTION_SENT',
+    connectionNote,
+  }: {
+    workspaceId: string;
+    candidateId: string;
+    apiToken: string;
+    to?: OutreachMockResetTarget;
+    // Omit for the canned note. "" persists a blank connect row (no turn).
+    connectionNote?: string;
+  }): Promise<{
+    ok: true;
+    candidateId: string;
+    outreachSequenceStage: OutreachMockResetTarget;
+    connectionNote: string;
+  }> {
+    await this.inboundReplyWindowService.clearInboundWindow(
+      workspaceId,
+      candidateId,
+    );
+
+    await this.staticGraphQLService.executeGraphQL(
+      graphqlQueryToRemoveMessages,
+      {
+        filter: {
+          candidateId: { eq: candidateId },
+        },
+      },
+      apiToken,
+    );
+
+    await this.staticGraphQLService.executeGraphQL(
+      graphQltoUpdateOneCandidate,
+      {
+        idToUpdate: candidateId,
+        input: {
+          outreachSequenceStage: to,
+          outreachConversationStage: 'NONE',
+        },
+      },
+      apiToken,
+    );
+
+    const persistedConnectionNote =
+      to === 'CONNECTION_SENT'
+        ? this.resolveConnectionNote(connectionNote)
+        : '';
+
+    if (to === 'CONNECTION_SENT') {
+      // Stage-only reset leaves the reply agent with Transcript: (none).
+      await this.gtmOutreachMessagePersistService.appendOutbound({
+        workspaceId,
+        channel: 'LINKEDIN',
+        body: persistedConnectionNote,
+        candidateId,
+        externalMessageId: `mock-connect-${candidateId}-${Date.now()}`,
+        materializeOutbound: false,
+        allowEmptyBody: true,
+      });
+
+      await this.materializeService.applyCandidateEvent({
+        candidateId,
+        event: 'connection_sent',
+        apiToken,
+        messagingChannel: 'LINKEDIN_CONNECT',
+        outboundMessageKind: 'CONNECT_NOTE',
+      });
+    }
+
+    this.logger.log(
+      `OUTREACH_MOCK: reset ${candidateId} to ${to} noteChars=${persistedConnectionNote.length}`,
+    );
+
+    return {
+      ok: true,
+      candidateId,
+      outreachSequenceStage: to,
+      connectionNote: persistedConnectionNote,
+    };
+  }
+
+  // Undefined uses the canned note. A blank string stays blank.
+  resolveConnectionNote(connectionNote: string | undefined): string {
+    if (!isDefined(connectionNote)) {
+      return OUTREACH_MOCK_DEFAULT_CONNECTION_NOTE;
+    }
+
+    return connectionNote
+      .trim()
+      .slice(0, OUTREACH_MOCK_CONNECTION_NOTE_MAX_LENGTH);
+  }
+
+  resolveResetTarget(to: string | undefined): OutreachMockResetTarget {
+    if (to === 'queued' || to === 'QUEUED') {
+      return 'QUEUED';
+    }
+
+    if (
+      !isDefined(to) ||
+      to === 'connection_sent' ||
+      to === 'CONNECTION_SENT'
+    ) {
+      return 'CONNECTION_SENT';
+    }
+
+    throw new Error(
+      `Invalid reset target "${to}". Use CONNECTION_SENT or QUEUED.`,
+    );
+  }
+
+  resolveHitlDecision(decision: string | undefined): OutreachMockHitlDecision {
+    const normalized = (decision ?? 'approve').trim().toLowerCase();
+
+    if (normalized === 'yes' || normalized === 'approve') {
+      return 'approve';
+    }
+
+    if (normalized === 'no' || normalized === 'reject') {
+      return 'reject';
+    }
+
+    if (normalized === 'edit' || normalized === 'change') {
+      return 'edit';
+    }
+
+    throw new Error(
+      `Invalid HITL decision "${decision}". Use approve|reject|edit (or yes|no|change).`,
+    );
+  }
+
+  // Queue N synthetic LinkedIn profiles onto a project for Stage B/C path testing.
+  async uploadMockProfiles({
+    workspaceId,
+    projectId,
+    count,
+  }: {
+    workspaceId: string;
+    projectId: string;
+    count?: number;
+  }): Promise<{
+    ok: true;
+    projectId: string;
+    count: number;
+    queued: number;
+    uploadSessionId?: string;
+  }> {
+    if (!isValidUuid(projectId)) {
+      throw new Error('projectId must be a valid UUID');
+    }
+
+    const resolvedCount = resolveOutreachMockUploadCount(count);
+    const people = buildOutreachMockUploadPeople({
+      count: resolvedCount,
+      projectId,
+    });
+
+    const result = await this.uploadProfilesService.execute({
+      workspaceId,
+      input: {
+        projectId,
+        people,
+      },
+    });
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to upload mock profiles');
+    }
+
+    this.logger.log(
+      `OUTREACH_MOCK: uploaded ${result.queued} mock profiles to project ${projectId}`,
+    );
+
+    return {
+      ok: true,
+      projectId,
+      count: resolvedCount,
+      queued: result.queued,
+      uploadSessionId: result.uploadSessionId,
+    };
+  }
+
+  private async resolveCandidateProjectId({
+    candidateId,
+    apiToken,
+  }: {
+    candidateId: string;
+    apiToken: string;
+  }): Promise<string> {
+    const result = await this.staticGraphQLService.executeGraphQL<{
+      candidates?: {
+        edges?: Array<{ node?: { projectId?: string | null } }>;
+      };
+    }>(
+      `query FindCandidateProject($filter: CandidateFilterInput!) {
+        candidates(filter: $filter, first: 1) {
+          edges {
+            node {
+              projectId
+            }
+          }
+        }
+      }`,
+      { filter: { id: { eq: candidateId } } },
+      apiToken,
+    );
+
+    const projectId = result?.candidates?.edges?.[0]?.node?.projectId;
+
+    if (!isNonEmptyString(projectId)) {
+      throw new Error(
+        `Candidate ${candidateId} has no projectId — pass projectId explicitly`,
+      );
+    }
+
+    return projectId;
+  }
+}

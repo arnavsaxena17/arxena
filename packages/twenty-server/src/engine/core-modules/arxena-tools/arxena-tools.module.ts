@@ -1,7 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 
 import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
-import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
+import { OutreachCommandModule } from 'src/domains/engagement/outreach-command/outreach-command.module';
 import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
 import { ArxenaSearchToolsConfigController } from 'src/engine/core-modules/arxena-tools/controllers/arxena-search-tools-config.controller';
 import { ArxenaToolProvider } from 'src/engine/core-modules/arxena-tools/providers/arxena-tool.provider';

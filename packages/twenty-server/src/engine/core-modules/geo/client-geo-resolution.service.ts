@@ -11,7 +11,7 @@ import {
 import { normalizeLinkedinConnectionCountry } from 'src/engine/core-modules/arx-chat/utils/build-unipile-linkedin-cookie-connect-body.util';
 import { resolveLinkedinSyncClientIp } from 'src/engine/core-modules/arx-chat/utils/resolve-linkedin-sync-client-ip.util';
 import { IpInfoGeoService } from 'src/engine/core-modules/geo/ip-info-geo.service';
-import { OrgChartClientIpService } from 'src/engine/core-modules/org-chart/services/org-chart-client-ip.service';
+import { OrgChartClientIpService } from 'src/domains/org-graph/org-chart/services/org-chart-client-ip.service';
 
 type CountryHeaderMatch = {
   source: string;

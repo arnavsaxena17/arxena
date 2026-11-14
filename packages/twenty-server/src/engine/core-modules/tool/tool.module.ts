@@ -6,12 +6,12 @@ import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool
 import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-flag.module';
 import { FileEntity } from 'src/engine/core-modules/file/entities/file.entity';
 import { FileModule } from 'src/engine/core-modules/file/file.module';
-import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
+import { OutreachCommandModule } from 'src/domains/engagement/outreach-command/outreach-command.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
-import { BrightDataModule } from 'src/engine/core-modules/bright-data/bright-data.module';
-import { LocalBusinessDataModule } from 'src/engine/core-modules/local-business-data/local-business-data.module';
-import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
-import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
+import { BrightDataModule } from 'src/domains/discovery/providers/bright-data/bright-data.module';
+import { LocalBusinessDataModule } from 'src/domains/discovery/providers/local-business-data/local-business-data.module';
+import { LinkedInSearchModule } from 'src/domains/discovery/transport/linkedin-search/linkedin-search.module';
+import { OrgChartModule } from 'src/domains/org-graph/org-chart/org-chart.module';
 import { SecureHttpClientModule } from 'src/engine/core-modules/secure-http-client/secure-http-client.module';
 import { CreateCalendarEventTool } from 'src/engine/core-modules/tool/tools/calendar-tool/create-calendar-event-tool';
 import { CodeInterpreterTool } from 'src/engine/core-modules/tool/tools/code-interpreter-tool/code-interpreter-tool';
@@ -24,6 +24,11 @@ import { ResolveLinkedinUrlTool } from 'src/engine/core-modules/tool/tools/resol
 import { WriteLinkedinUrlTool } from 'src/engine/core-modules/tool/tools/write-linkedin-url-tool/write-linkedin-url-tool';
 import { GetProjectCostsTool } from 'src/engine/core-modules/tool/tools/project-costs-tool/get-project-costs-tool';
 import { GetSourcingLedgerTool } from 'src/engine/core-modules/tool/tools/sourcing-ledger-tool/get-sourcing-ledger-tool';
+import {
+  SourcingNextTool,
+  SourcingRunFactory,
+  SourcingStartTool,
+} from 'src/engine/core-modules/tool/tools/sourcing-run-tool/sourcing-run-tools';
 import { GetSourceCapabilitiesTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-source-capabilities-tool';
 import { GetScoringPlanTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-scoring-plan-tool';
 import {
@@ -38,9 +43,9 @@ import {
 } from 'src/engine/core-modules/tool/tools/outreach-ai-column-tool/outreach-ai-column-tools';
 import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
 import { SaveOutreachTargetsToCrmTool } from 'src/engine/core-modules/tool/tools/outreach-save-to-crm-tool/save-outreach-targets-to-crm-tool';
-import { TitleTaxonomyModule } from 'src/engine/core-modules/title-taxonomy/title-taxonomy.module';
-import { TheOfficialBoardModule } from 'src/engine/core-modules/theofficialboard/theofficialboard.module';
-import { TheOrgModule } from 'src/engine/core-modules/theorg/theorg.module';
+import { TitleTaxonomyModule } from 'src/domains/discovery/query/title-taxonomy/title-taxonomy.module';
+import { TheOfficialBoardModule } from 'src/domains/discovery/providers/theofficialboard/theofficialboard.module';
+import { TheOrgModule } from 'src/domains/discovery/providers/theorg/theorg.module';
 import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
 import { CandidateJudgeService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/candidate-judge.service';
 import { FindPeopleCascadeService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-cascade.service';
@@ -56,7 +61,7 @@ import { AiModelsModule } from 'src/engine/metadata-modules/ai/ai-models/ai-mode
 import { StartOutreachTool } from 'src/engine/core-modules/tool/tools/outreach-start-tool/start-outreach-tool';
 import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 import { PreviewSampleMessageColumnTool } from 'src/engine/core-modules/tool/tools/outreach-sample-message-tool/preview-sample-message-column-tool';
-import { OUTREACH_SAMPLE_MESSAGE_DRAFTER } from 'src/engine/core-modules/outreach-command/types/outreach-sample-message.types';
+import { OUTREACH_SAMPLE_MESSAGE_DRAFTER } from 'src/domains/engagement/outreach-command/types/outreach-sample-message.types';
 import { OutreachSampleMessageService } from 'src/engine/core-modules/tool/tools/outreach-sample-message-tool/outreach-sample-message.service';
 import { AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';
 import { HttpTool } from 'src/engine/core-modules/tool/tools/http-tool/http-tool';
@@ -170,6 +175,9 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     WriteLinkedinUrlTool,
     GetProjectCostsTool,
     GetSourcingLedgerTool,
+    SourcingRunFactory,
+    SourcingStartTool,
+    SourcingNextTool,
     GetSourceCapabilitiesTool,
     GetScoringPlanTool,
     FindPeopleCascadeService,
@@ -241,6 +249,8 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     WriteLinkedinUrlTool,
     GetProjectCostsTool,
     GetSourcingLedgerTool,
+    SourcingStartTool,
+    SourcingNextTool,
     GetSourceCapabilitiesTool,
     GetScoringPlanTool,
     GetOutreachTabTool,

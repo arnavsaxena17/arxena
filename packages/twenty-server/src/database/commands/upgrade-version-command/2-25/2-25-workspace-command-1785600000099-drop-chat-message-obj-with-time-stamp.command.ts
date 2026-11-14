@@ -6,7 +6,7 @@ import { type ObjectLiteral, type Repository } from 'typeorm';
 import { ProvisionedWorkspaceCommandRunner } from 'src/database/commands/command-runners/provisioned-workspace.command-runner';
 import { WorkspaceIteratorService } from 'src/database/commands/command-runners/workspace-iterator.service';
 import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/workspace.command-runner';
-import { foldTimestampedIntoMessageObj } from 'src/engine/core-modules/outreach-command/utils/chat-message-turns.util';
+import { foldTimestampedIntoMessageObj } from 'src/domains/engagement/outreach-command/utils/chat-message-turns.util';
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';

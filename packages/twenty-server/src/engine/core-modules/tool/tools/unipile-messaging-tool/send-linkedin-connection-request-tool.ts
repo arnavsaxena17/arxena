@@ -6,13 +6,13 @@ import { FeatureFlagKey } from 'twenty-shared/types';
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
-import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
+import { LinkedinProviderIdStoreService } from 'src/domains/engagement/outreach-command/services/linkedin-provider-id.store';
 import {
   SendLinkedinConnectionRequestToolInputZodSchema,
   type SendLinkedinConnectionRequestToolInput,
 } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/types/send-linkedin-connection-request-tool-input.type';
-import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
-import { candidateStageImpliesConnectionRequestSent } from 'src/engine/core-modules/outreach-command/utils/outreach-command-materialize.util';
+import { extractLinkedinProfileId } from 'src/domains/engagement/outreach-command/utils/extract-linkedin-profile-id.util';
+import { candidateStageImpliesConnectionRequestSent } from 'src/domains/engagement/outreach-command/utils/outreach-command-materialize.util';
 import { buildOutreachMockUnipileConnectionResponseId } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/is-outreach-mock-unipile-enabled.util';
 import {
   createLinkedinUnipileMessagingServiceForTools,

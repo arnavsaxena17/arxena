@@ -3,7 +3,7 @@ import { Controller, Get, Logger, Post, Req, Res } from '@nestjs/common';
 import { WorkflowFormWhatsappDecisionService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-whatsapp-decision.service';
 import { VoiceCallService } from 'src/engine/core-modules/arx-chat/services/voice-call/voice-call.service';
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
-import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
+import { OutreachInboundReplyWindowService } from 'src/domains/engagement/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';

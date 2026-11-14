@@ -15,7 +15,7 @@ import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-
 import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { materializeCandidateEventWithGraphQL } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
+import { materializeCandidateEventWithGraphQL } from 'src/domains/engagement/outreach-command/services/outreach-command-materialize.service';
 import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { type UnipileChatAttachment } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/types/unipile-chat-attachment.type';
@@ -23,7 +23,7 @@ import {
   appendUnipileChatAttachments,
   appendUnipileVoiceMessage,
 } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/utils/append-unipile-chat-attachments.util';
-import { isValidLinkedInProviderId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-attendee-id.util';
+import { isValidLinkedInProviderId } from 'src/domains/engagement/outreach-command/utils/extract-linkedin-attendee-id.util';
 
 /**
  * Truncates LinkedIn invitation message to under 300 characters

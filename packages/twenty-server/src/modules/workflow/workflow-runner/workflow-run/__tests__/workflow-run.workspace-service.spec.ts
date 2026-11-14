@@ -2,7 +2,7 @@ import { Test } from '@nestjs/testing';
 import { StepStatus } from 'twenty-shared/workflow';
 
 import { MetricsService } from 'src/engine/core-modules/metrics/metrics.service';
-import { OutreachCacheRealtimeService } from 'src/engine/core-modules/outreach-command/services/outreach-cache-realtime.service';
+import { OutreachCacheRealtimeService } from 'src/domains/engagement/outreach-command/services/outreach-cache-realtime.service';
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import {

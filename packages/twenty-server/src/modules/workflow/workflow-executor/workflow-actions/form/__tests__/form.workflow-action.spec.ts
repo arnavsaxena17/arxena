@@ -6,7 +6,7 @@ import { WorkflowActionType } from 'twenty-shared/workflow';
 
 import { ApprovalNotifierService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/approval-notifier.service';
 import { WorkflowFormDecisionPointerService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-decision-pointer.service';
-import { OutreachDecisionService } from 'src/engine/core-modules/outreach-command/services/outreach-decision.service';
+import { OutreachDecisionService } from 'src/domains/engagement/outreach-command/services/outreach-decision.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { FormWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/form/form.workflow-action';
 import { type WorkflowFormAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';

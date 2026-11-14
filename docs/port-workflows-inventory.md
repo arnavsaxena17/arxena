@@ -57,7 +57,7 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 - [x] `outreach-command` (materialize + outreach throttle; seed Workflow B/C via `setup-gtm-outreach-workflow.ts`)
 - [x] `workspace-modifications`
 - [x] `people-api`
-- [x] `search-models`
+- [x] `search-models` — deleted 2026-11-14 (ported, then removed: no callers on any branch; see `domains/README.md`)
 
 ### Hub / chat (wave 3)
 
@@ -179,6 +179,7 @@ Caveats before first prod run: branch must exist on `origin`; AMI / SG / subnet 
 - `npx nx build twenty-shared` — pass
 - `npx nx build twenty-orgchart` — pass (GoJS `commitNodes` via `LevelColoredTreeLayout` subclass; Vite 8 `resolve.tsconfigPaths`)
 - `npx nest build` (twenty-server / SWC) — pass (7630 files)
+- SWC build passes even when `nest-cli.json` **asset** globs are stale (assets are copied, not compiled). `domains/*` move broke `mock-unipile-profiles/*.json` → boot failed with `Cannot find module './mock-unipile-profiles/arvind-pathak.json'`. Glob repointed; verify with `ls dist/domains/engagement/outreach-command/utils/mock-unipile-profiles/`. Any future `src/` move must re-point matching `compilerOptions.assets` entries.
 - `npx nx build twenty-front` — not green yet; ported modules still need API adaptation against current Twenty front (Recoil/Jotai, UI, imports). Nest/core wiring is in place for Phase-1 routes.
 - Recoil→Jotai **setter call-site** sweep (Aug 2026): fixed declared-vs-called mismatches (`setJobs`→`setProjects`, `setTableState`→`setTableStateAtom`, HotTable `setMain*`→`setContextStore*`, etc.) across candidate-table / arx-ai-filtering / arx-jd-upload / gtm-home / orgchart / unipile — see `docs/port-front-migration-track.md` §0 / §2.1. Follow-up: `UnipileContext` passed `setLinkedinUnipileOwnerProfileCache` shorthand into `applyInferredOrgChartLinkedinSearchType` (expects `setOwnerProfileCache`) → prod `r is not a function` on tab-visible refresh. Follow-up (Sep 2026): `RelatedRecordFieldDisplay` kept Recoil-era `record?.` after Jotai rename to `recordStore` → Workflow Runs `record is not defined`.
 

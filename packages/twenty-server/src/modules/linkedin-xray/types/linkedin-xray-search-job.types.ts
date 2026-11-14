@@ -1,4 +1,4 @@
-import type { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
+import type { LinkedInPeopleSearchResult } from 'src/domains/discovery/transport/linkedin-search/types/linkedin-search-response.type';
 
 export type LinkedinXraySearchEngine = 'google' | 'bing' | 'both';
 

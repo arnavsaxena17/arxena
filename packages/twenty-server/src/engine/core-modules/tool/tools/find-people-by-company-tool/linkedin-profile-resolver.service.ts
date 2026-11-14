@@ -2,14 +2,14 @@ import { Injectable } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 
-import { BRIGHT_DATA_COST_PER_RECORD_USD } from 'src/engine/core-modules/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
-import { type BrightDataLudicrousQuery } from 'src/engine/core-modules/bright-data/ludicrous/types/bright-data-ludicrous.types';
-import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
-import { mapBrightDataPersonToSearchItem } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
+import { BRIGHT_DATA_COST_PER_RECORD_USD } from 'src/domains/discovery/providers/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
+import { type BrightDataLudicrousQuery } from 'src/domains/discovery/providers/bright-data/ludicrous/types/bright-data-ludicrous.types';
+import { BrightDataBusinessSearchService } from 'src/domains/discovery/providers/bright-data/services/bright-data-business-search.service';
+import { mapBrightDataPersonToSearchItem } from 'src/domains/discovery/providers/bright-data/utils/bright-data-business-search.util';
 import {
   type GoogleSerpOrganicItem,
   mapGoogleSerpOrganicResults,
-} from 'src/engine/core-modules/org-chart/utils/map-google-serp-organic.util';
+} from 'src/domains/org-graph/org-chart/utils/map-google-serp-organic.util';
 import { companyBrandKey } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/company-name-variants.util';
 import { FindPeopleGoogleSearchService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-google-search.service';
 import {

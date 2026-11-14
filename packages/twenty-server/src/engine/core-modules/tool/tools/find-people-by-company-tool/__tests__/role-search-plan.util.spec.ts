@@ -1,4 +1,4 @@
-import { type TitleClass } from 'src/engine/core-modules/title-taxonomy/title-class.type';
+import { type TitleClass } from 'src/domains/discovery/query/title-taxonomy/title-class.type';
 import {
   buildRoleSearches,
   cellStage,
@@ -6,7 +6,7 @@ import {
   splitTitlesByTier,
   tieredSearchesOf,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/role-search-plan.util';
-import { type ResolvedRoles } from 'src/engine/core-modules/title-taxonomy/title-expansion.service';
+import { type ResolvedRoles } from 'src/domains/discovery/query/title-taxonomy/title-expansion.service';
 
 const SUPPLY_CHAIN: TitleClass = {
   functionId: 'supply chain',

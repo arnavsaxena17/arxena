@@ -7,24 +7,24 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 
 import { withProviderCallContext } from 'src/engine/core-modules/provider-call-log/storage/provider-call-context.storage';
-import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-search.service';
+import { BrightDataLudicrousSearchService } from 'src/domains/discovery/providers/bright-data/services/ludicrous/bright-data-ludicrous-search.service';
 
-import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
-import { HarvestLinkedinService } from 'src/engine/core-modules/org-chart/services/harvest-linkedin.service';
+import { BrightDataBusinessSearchService } from 'src/domains/discovery/providers/bright-data/services/bright-data-business-search.service';
+import { HarvestLinkedinService } from 'src/domains/org-graph/org-chart/services/harvest-linkedin.service';
 import { UnipileCompanyUrlResolverService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/unipile-company-url-resolver.service';
 import {
   buildHarvestSearchQuery,
   HARVEST_COST_PER_RECORD_USD,
-} from 'src/engine/core-modules/org-chart/utils/harvest-search-params.util';
+} from 'src/domains/org-graph/org-chart/utils/harvest-search-params.util';
 
-import { BRIGHT_DATA_COST_PER_RECORD_USD } from 'src/engine/core-modules/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
+import { BRIGHT_DATA_COST_PER_RECORD_USD } from 'src/domains/discovery/providers/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
 
-import { mapBrightDataPersonToSearchItem } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
+import { mapBrightDataPersonToSearchItem } from 'src/domains/discovery/providers/bright-data/utils/bright-data-business-search.util';
 
 import {
   isOpaqueLinkedinId,
   linkedinUrlsAreComparable,
-} from 'src/engine/core-modules/outreach-command/utils/person-identity.util';
+} from 'src/domains/engagement/outreach-command/utils/person-identity.util';
 
 import {
   matchesAnyCompanyVariant,
@@ -41,7 +41,7 @@ import {
   type SerpSourcePeople,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-serp-sources.service';
 
-import { type GoogleSerpOrganicItem } from 'src/engine/core-modules/org-chart/utils/map-google-serp-organic.util';
+import { type GoogleSerpOrganicItem } from 'src/domains/org-graph/org-chart/utils/map-google-serp-organic.util';
 
 import {
   personNamesMatch,
@@ -70,13 +70,13 @@ import {
   titleContainsWord,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/role-title-matching.util';
 
-import { type TitleClass } from 'src/engine/core-modules/title-taxonomy/title-class.type';
+import { type TitleClass } from 'src/domains/discovery/query/title-taxonomy/title-class.type';
 
 import {
   TitleExpansionService,
   type ResolvedRoles,
-} from 'src/engine/core-modules/title-taxonomy/title-expansion.service';
-import { expandRoleWithFamilyFallback } from 'src/engine/core-modules/title-taxonomy/title-family-fallback.util';
+} from 'src/domains/discovery/query/title-taxonomy/title-expansion.service';
+import { expandRoleWithFamilyFallback } from 'src/domains/discovery/query/title-taxonomy/title-family-fallback.util';
 import {
   buildRoleSearches,
   cellStage,
@@ -95,23 +95,23 @@ import {
   harvestParametersHaveCompany,
   type QueryCell,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/search-params.util';
-import { resolveSalesNavFilters } from 'src/engine/core-modules/candidate-search/constants/taxonomy-platform-maps';
+import { resolveSalesNavFilters } from 'src/domains/discovery/query/constants/taxonomy-platform-maps';
 import {
   resolveHarvestFunctionIdForRoot,
   resolveHarvestIndustryIds,
   resolveHarvestSeniorityLevelIds,
-} from 'src/engine/core-modules/candidate-search/constants/harvest-filter-ids';
-import { CompanyNameResolverService } from 'src/engine/core-modules/org-chart/services/company-name-resolver.service';
+} from 'src/domains/discovery/query/constants/harvest-filter-ids';
+import { CompanyNameResolverService } from 'src/domains/org-graph/org-chart/services/company-name-resolver.service';
 
 import {
   BrightDataPersonFitFilterService,
   type PersonJudgement,
-} from 'src/engine/core-modules/bright-data/services/bright-data-person-fit-filter.service';
+} from 'src/domains/discovery/providers/bright-data/services/bright-data-person-fit-filter.service';
 
-import { brightDataRecordToPersonOtherFields } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/bright-data-person-row-fields.util';
+import { brightDataRecordToPersonOtherFields } from 'src/domains/ingestion/candidate-sourcing/services/profile-fetch/bright-data-person-row-fields.util';
 
-import { type RowProfile } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
-import { type DeprioritisationReason } from 'src/engine/core-modules/outreach-command/utils/outreach-people-deprioritisation.util';
+import { type RowProfile } from 'src/domains/ingestion/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
+import { type DeprioritisationReason } from 'src/domains/engagement/outreach-command/utils/outreach-people-deprioritisation.util';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
@@ -120,7 +120,7 @@ import {
   type FindPeopleRung,
   type FindPeopleTerminalState,
   pairKeyOf,
-} from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
+} from 'src/domains/engagement/outreach-command/utils/outreach-people-found.util';
 import {
   confidenceOf,
   freshnessOf,
@@ -128,7 +128,7 @@ import {
   rungOf,
   terminalStateOf,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-confidence.util';
-import { type SourcingConfidence } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
+import { type SourcingConfidence } from 'src/domains/engagement/outreach-command/utils/sourcing-ledger.util';
 import {
   type Candidate,
   type FindPeopleEvidence,

@@ -1,5 +1,5 @@
-import { type OutreachTabRow } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
-import { type OutreachTableView } from 'src/engine/core-modules/outreach-command/utils/outreach-cache-realtime.constants';
+import { type OutreachTabRow } from 'src/domains/engagement/outreach-command/services/outreach-tab.service';
+import { type OutreachTableView } from 'src/domains/engagement/outreach-command/utils/outreach-cache-realtime.constants';
 import { GetOutreachTabTool } from 'src/engine/core-modules/tool/tools/outreach-ai-column-tool/outreach-ai-column-tools';
 import {
   filterOutreachTabRows,

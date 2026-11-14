@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { OUTREACH_TAB_MAX_ROWS } from 'src/engine/core-modules/outreach-command/constants/outreach-tab.constants';
+import { OUTREACH_TAB_MAX_ROWS } from 'src/domains/engagement/outreach-command/constants/outreach-tab.constants';
 
 export const OutreachEphemeralPersonInputZodSchema = z.object({
   id: z

@@ -11,7 +11,7 @@ import { resolveInput } from 'twenty-shared/utils';
 import {
   type FilterSpec,
   type RecordVerdict,
-} from 'src/engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-contract';
+} from 'src/domains/ingestion/candidate-sourcing/services/ai-filter-engine/ai-filter-contract';
 import { AiFilteringWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/ai-filtering.workflow-action';
 import { WorkflowAiFilteringService } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/workflow-ai-filtering.service';
 

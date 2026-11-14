@@ -4,8 +4,8 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { StepStatus } from 'twenty-shared/workflow';
 import { type ObjectLiteral } from 'typeorm';
 
-import { OUTREACH_PROJECT_PAUSED_PENDING_REASON } from 'src/engine/core-modules/outreach-command/services/outreach-throttle.service';
-import { buildWorkflowRunStepDeferralClearPatch } from 'src/engine/core-modules/outreach-command/utils/read-workflow-run-step-pending-fields.util';
+import { OUTREACH_PROJECT_PAUSED_PENDING_REASON } from 'src/domains/engagement/outreach-command/services/outreach-throttle.service';
+import { buildWorkflowRunStepDeferralClearPatch } from 'src/domains/engagement/outreach-command/utils/read-workflow-run-step-pending-fields.util';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';

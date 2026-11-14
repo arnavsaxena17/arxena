@@ -1,0 +1,684 @@
+import { Injectable, Logger } from '@nestjs/common';
+import type { SearchQuery } from 'src/domains/discovery/query/linkedin-query-generation/types/linkedin-query-generation.types';
+import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/domains/org-graph/org-chart/utils/orgchart-filter.util';
+import {
+  andMergeBooleanSearchClauses,
+  wrapJobTitleAsOrClause,
+} from 'src/domains/org-graph/org-chart/utils/super-impose-keyword-merge.util';
+import { normalizeLlmNullishString } from 'src/domains/org-graph/org-chart/schemas/org-chart.schema';
+import type {
+  GeneratedSearchParameters,
+  ParsedJobDescription,
+} from 'src/domains/discovery/query/types/candidate-search-request.type';
+import {
+  attachPeopleStrategiesToGeneratedSearchParameters,
+  extractStrategiesFromGeneratedParams,
+  type PeopleSearchStrategyResult,
+} from 'src/domains/org-graph/org-chart/build/utils/extract-strategies.util';
+import { mapLinkedinSearchQueriesToGeneratedParameters } from 'src/domains/discovery/query/linkedin-query-generation-mapper.util';
+import { createMinimalParsedJobDescription } from 'src/domains/discovery/query/utils/parsed-job-description.util';
+import { pickBlankGradeManualBooleanQueryItem } from 'src/domains/discovery/query/utils/pick-blank-grade-manual-boolean-query-item.util';
+import type { PythonQueryInput } from 'src/domains/discovery/query/python-query-generation.service';
+import { PythonQueryGenerationService } from 'src/domains/discovery/query/python-query-generation.service';
+import { TitleTaxonomyRemoteService } from 'src/domains/discovery/query/title-taxonomy-remote.service';
+
+@Injectable()
+export class OrgchartLinkedInQueryRouterService {
+  private readonly logger = new Logger(OrgchartLinkedInQueryRouterService.name);
+
+  constructor(
+    private readonly pythonQueryGenerationService: PythonQueryGenerationService,
+    private readonly titleTaxonomyRemoteService: TitleTaxonomyRemoteService,
+  ) {}
+
+  /**
+   * ANDs the title-taxonomy keyword clause onto business-division base keywords.
+   */
+  async enrichBusinessDivisionLinkedinKeywords(args: {
+    businessDivisionRaw: string;
+    primaryCompanyName: string;
+    baseBusinessDivisionKeywords: string;
+    /** From unified BD LLM — forwarded to arxena-site title-taxonomy `resolved_intent`. */
+    titleTaxonomyResolvedIntent?: Record<string, unknown>;
+    sendEvent?: (event: string, data: Record<string, unknown>) => boolean | void;
+  }): Promise<string> {
+    const {
+      businessDivisionRaw,
+      primaryCompanyName,
+      baseBusinessDivisionKeywords,
+      titleTaxonomyResolvedIntent,
+    } = args;
+    const base = baseBusinessDivisionKeywords.trim();
+    if (!base) {
+      return baseBusinessDivisionKeywords;
+    }
+    this.logger.log(
+      'Orgchart router: enriching BD keywords via title taxonomy.',
+    );
+    const tax = await this.titleTaxonomyRemoteService.searchKeywordsFromQuery({
+      query: businessDivisionRaw,
+      companyName: primaryCompanyName,
+      resolvedIntent: titleTaxonomyResolvedIntent,
+    });
+    const extra = tax?.boolean_query?.trim();
+    if (extra) {
+      return `(${baseBusinessDivisionKeywords}) AND (${extra})`;
+    }
+    return baseBusinessDivisionKeywords;
+  }
+
+  buildPythonQueryInputForOrgchartMode(args: {
+    mode?: string;
+    primaryCompanyName: string;
+    companyNames?: string[];
+    functionRoot: string;
+    country?: string;
+    jobTitles?: string[];
+    stdFunction?: string;
+    stdGrade?: string;
+    selectedNodeStdScopes?: Array<{ stdFunction?: string; stdGrade?: string }>;
+  }): PythonQueryInput {
+    const effectiveCompanyNames =
+      args.companyNames?.map((name) => name.trim()).filter(Boolean) ??
+      (args.primaryCompanyName ? [args.primaryCompanyName] : []);
+    const pythonInput: PythonQueryInput = {
+      company_names: effectiveCompanyNames,
+    };
+    const countryForLocation = normalizeLlmNullishString(args.country) ?? '';
+    if (
+      countryForLocation.length > 0 &&
+      countryForLocation.toLowerCase() !== 'global'
+    ) {
+      pythonInput.locations = [countryForLocation];
+    }
+    const mode = args.mode;
+    const stdFn = args.stdFunction?.trim();
+    const stdGr = args.stdGrade?.trim();
+    const nodeScope = mode === 'current_node' || mode === 'selected_nodes';
+
+    const scopesFromBody = (args.selectedNodeStdScopes ?? [])
+      .map((s) => ({
+        stdFunction: s.stdFunction?.trim(),
+        stdGrade: s.stdGrade?.trim(),
+      }))
+      .filter((s) => (s.stdFunction?.length ?? 0) > 0 || (s.stdGrade?.length ?? 0) > 0);
+
+    const legacySingleScope =
+      nodeScope && (stdFn || stdGr) && scopesFromBody.length === 0
+        ? [{ stdFunction: stdFn, stdGrade: stdGr }]
+        : [];
+
+    const effectiveScopes =
+      scopesFromBody.length > 0 ? scopesFromBody : legacySingleScope;
+
+    const skipFunctionRootForNodeStdLabels =
+      nodeScope && (scopesFromBody.length > 0 || !!(stdFn || stdGr));
+
+    if (args.functionRoot?.trim() && !skipFunctionRootForNodeStdLabels) {
+      pythonInput.function_root = [
+        { name: args.functionRoot.trim(), exclude: false },
+      ];
+      // Org-chart function-root mode covers the whole department, including
+      // every child function. Role search is a different caller and passes role.
+      pythonInput.scope = 'family';
+    }
+
+    if (mode === 'leadership') {
+      pythonInput.grades = [{ name: 'leadership', exclude: false }];
+    } else if (mode === 'selected_nodes' && effectiveScopes.length > 1) {
+      if (args.jobTitles?.length) {
+        pythonInput.raw_job_titles = args.jobTitles;
+      }
+    } else if (effectiveScopes.length === 1) {
+      const s = effectiveScopes[0]!;
+      if (s.stdFunction) {
+        pythonInput.functions = [{ name: s.stdFunction, exclude: false }];
+      }
+      if (s.stdGrade) {
+        pythonInput.grades = [{ name: s.stdGrade, exclude: false }];
+      }
+    }
+
+    if (args.mode === 'function_grade' && args.jobTitles?.length) {
+      pythonInput.raw_job_titles = args.jobTitles;
+    }
+    return pythonInput;
+  }
+
+  /**
+   * Maps a single LinkedIn query row to people strategies in classic / Sales Nav / Recruiter shape.
+   * Used for org-chart shortcuts (full company, business division) so `searchType` is respected.
+   */
+  private buildStrategiesFromSingleSearchQuery(args: {
+    query: SearchQuery;
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    requirement: string;
+  }): PeopleSearchStrategyResult[] {
+    const generated = mapLinkedinSearchQueriesToGeneratedParameters(
+      { search_query_set: [args.query] },
+      args.searchType,
+      args.requirement,
+    );
+    return extractStrategiesFromGeneratedParams(
+      generated,
+      args.searchType,
+      'people',
+    );
+  }
+
+  private isPureFunctionRootPythonInput(input: PythonQueryInput): boolean {
+    return (
+      (input.function_root?.length ?? 0) > 0 &&
+      (input.functions?.length ?? 0) === 0 &&
+      (input.grades?.length ?? 0) === 0 &&
+      (input.raw_job_titles?.length ?? 0) === 0
+    );
+  }
+
+  // Blank-grade std_function_root row: entire function, any seniority.
+  // CSV: boolean_query → Sales Nav role.include (current title); keywords → keywords field.
+  private async lookupManualFunctionRootSearchTerms(
+    functionRoot: string,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter' = 'classic',
+  ): Promise<{ keywords?: string; jobTitle?: string } | null> {
+    if (!hasMeaningfulOrgChartFunctionRootFilter(functionRoot)) {
+      return null;
+    }
+
+    try {
+      const manualResult =
+        await this.titleTaxonomyRemoteService.getManualBooleanQueries({
+          kind: 'std_function_root',
+          label: functionRoot.trim(),
+          stdGrade: '',
+        });
+      const manualRow = pickBlankGradeManualBooleanQueryItem(
+        manualResult?.items,
+      );
+      const booleanQuery = manualRow?.boolean_query?.trim() || undefined;
+      const keywordsColumn = manualRow?.keywords?.trim() || undefined;
+      if (!booleanQuery && !keywordsColumn) {
+        return null;
+      }
+
+      // Sales Nav: title boolean goes on role.include. Keep keywords only when
+      // curated separately from boolean_query (same string would duplicate).
+      if (searchType === 'sales_navigator') {
+        const jobTitle = booleanQuery ?? keywordsColumn;
+        const keywords =
+          booleanQuery &&
+          keywordsColumn &&
+          keywordsColumn !== booleanQuery
+            ? keywordsColumn
+            : undefined;
+        this.logger.log(
+          `Orgchart router: using manual boolean query for functionRoot="${functionRoot}" searchType=sales_navigator keywords="${keywords ?? ''}" jobTitle="${jobTitle ?? ''}"`,
+        );
+        return {
+          ...(keywords ? { keywords } : {}),
+          ...(jobTitle ? { jobTitle } : {}),
+        };
+      }
+
+      this.logger.log(
+        `Orgchart router: using manual boolean query for functionRoot="${functionRoot}" searchType=${searchType} keywords="${keywordsColumn ?? ''}" jobTitle="${booleanQuery ?? ''}"`,
+      );
+      return {
+        ...(keywordsColumn ? { keywords: keywordsColumn } : {}),
+        ...(booleanQuery ? { jobTitle: booleanQuery } : {}),
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Orgchart router: manual boolean query lookup for functionRoot="${functionRoot}" failed, falling back to auto-OR: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Builds people strategies from pre-resolved LinkedIn facet IDs (super impose autocomplete).
+   */
+  private buildStrategiesFromPreResolvedFacets(args: {
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    requirement: string;
+    primaryCompanyName: string;
+    linkedinCompanyIds?: string[];
+    linkedinLocationIds?: string[];
+    linkedinCompanyDisplay?: Array<{ id: string; title: string }>;
+    linkedinLocationDisplay?: Array<{ id: string; title: string }>;
+    keywords?: string | null;
+    jobTitle?: string | null;
+  }): PeopleSearchStrategyResult[] {
+    const companyIds = (args.linkedinCompanyIds ?? [])
+      .map((id) => id.trim())
+      .filter(Boolean);
+    const locationIds = (args.linkedinLocationIds ?? [])
+      .map((id) => id.trim())
+      .filter(Boolean);
+
+    if (companyIds.length === 0 && locationIds.length === 0) {
+      return [];
+    }
+
+    const query: SearchQuery = {
+      keywords: args.keywords?.trim() || null,
+      job_title: args.jobTitle?.trim() || null,
+      company: companyIds.length > 0 ? companyIds : null,
+      location: locationIds.length > 0 ? locationIds : null,
+      years_of_experience: null,
+    };
+
+    const strategies = this.buildStrategiesFromSingleSearchQuery({
+      query,
+      searchType: args.searchType,
+      requirement: args.requirement,
+    });
+
+    if (args.linkedinCompanyDisplay?.length) {
+      for (const strategy of strategies) {
+        (strategy.parameters as Record<string, unknown>).company_display =
+          args.linkedinCompanyDisplay;
+      }
+    }
+    if (args.linkedinLocationDisplay?.length) {
+      for (const strategy of strategies) {
+        (strategy.parameters as Record<string, unknown>).location_display =
+          args.linkedinLocationDisplay;
+      }
+    }
+
+    return strategies;
+  }
+
+  private async resolvePreResolvedFacetSearchTerms(args: {
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    requirement: string;
+    primaryCompanyName: string;
+    functionRoot: string;
+    businessDivisionLinkedinKeywords?: string;
+    linkedinKeywords?: string;
+    linkedinJobTitle?: string;
+  }): Promise<{ keywords: string | null; jobTitle: string | null }> {
+    const precomputedKeywords = args.linkedinKeywords?.trim() || undefined;
+    const precomputedJobTitle = args.linkedinJobTitle?.trim() || undefined;
+    let functionRootKeywords: string | undefined;
+    let functionRootJobTitle: string | undefined = precomputedJobTitle;
+    let dropPrecomputedKeywords = false;
+
+    if (
+      hasMeaningfulOrgChartFunctionRootFilter(args.functionRoot) &&
+      !precomputedJobTitle
+    ) {
+      if (!precomputedKeywords) {
+        const manualTerms = await this.lookupManualFunctionRootSearchTerms(
+          args.functionRoot,
+          args.searchType,
+        );
+        if (manualTerms) {
+          functionRootKeywords = manualTerms.keywords;
+          functionRootJobTitle = manualTerms.jobTitle;
+        } else {
+          try {
+            const generated =
+              await this.pythonQueryGenerationService.generateSearchParameters(
+                {
+                  function_root: [
+                    { name: args.functionRoot.trim(), exclude: false },
+                  ],
+                  company_names: args.primaryCompanyName
+                    ? [args.primaryCompanyName]
+                    : [],
+                  scope: 'family',
+                },
+                args.searchType,
+                args.requirement,
+              );
+            const classicKeywords =
+              generated.classicPeopleSearch?.keywords?.trim() || undefined;
+            const strategyKeywords =
+              generated.salesNavigatorPeopleSearchStrategies?.[0]?.parameters
+                ?.keywords;
+            const salesNavKeywords =
+              typeof strategyKeywords === 'string'
+                ? strategyKeywords.trim()
+                : undefined;
+            const classicPeopleSearch = generated.classicPeopleSearch as
+              | { job_title?: string }
+              | undefined;
+            const salesNavRoleTitle =
+              generated.salesNavigatorPeopleSearchStrategies?.[0]?.parameters
+                ?.role?.include?.[0] ?? null;
+            const jobTitleClause = wrapJobTitleAsOrClause(
+              salesNavRoleTitle ?? classicPeopleSearch?.job_title ?? null,
+            );
+
+            if (args.searchType === 'sales_navigator') {
+              if (jobTitleClause) {
+                functionRootJobTitle = jobTitleClause;
+              } else {
+                functionRootKeywords = classicKeywords || salesNavKeywords;
+              }
+            } else {
+              functionRootKeywords = classicKeywords || salesNavKeywords;
+              if (!functionRootKeywords) {
+                functionRootJobTitle = jobTitleClause;
+              }
+            }
+          } catch (error) {
+            this.logger.warn(
+              `Orgchart router: function-root keyword generation for pre-resolved facets failed: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            );
+          }
+        }
+      } else if (args.searchType === 'sales_navigator') {
+        // Legacy: function-root clause arrived as linkedinKeywords → role.include
+        const manualTerms = await this.lookupManualFunctionRootSearchTerms(
+          args.functionRoot,
+          args.searchType,
+        );
+        if (manualTerms?.jobTitle) {
+          functionRootJobTitle = manualTerms.jobTitle;
+          functionRootKeywords = manualTerms.keywords;
+        } else {
+          functionRootJobTitle = precomputedKeywords;
+        }
+        dropPrecomputedKeywords = true;
+      }
+    }
+
+    const keywords = andMergeBooleanSearchClauses([
+      dropPrecomputedKeywords ? undefined : precomputedKeywords,
+      functionRootKeywords,
+      args.businessDivisionLinkedinKeywords,
+    ]);
+
+    return {
+      keywords: keywords ?? null,
+      jobTitle: functionRootJobTitle ?? null,
+    };
+  }
+
+  /**
+   * Builds LinkedIn people strategies + minimal JD for org-chart flows (Unipile execution).
+   */
+  async buildOrgchartLinkedInStrategies(args: {
+    rawQuery: string;
+    cleanedQuery: string;
+    requirement: string;
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    mode?: string;
+    primaryCompanyName: string;
+    companyNames?: string[];
+    jobTitles?: string[];
+    country: string;
+    functionRoot: string;
+    stdFunction?: string;
+    stdGrade?: string;
+    selectedNodeStdScopes?: Array<{ stdFunction?: string; stdGrade?: string }>;
+    businessDivisionLinkedinKeywords?: string;
+    isAllPeopleInCompanyMode: boolean;
+    apiToken: string;
+    sendEvent?: (event: string, data: unknown) => void;
+    linkedinCompanyIds?: string[];
+    linkedinLocationIds?: string[];
+    linkedinCompanyDisplay?: Array<{ id: string; title: string }>;
+    linkedinLocationDisplay?: Array<{ id: string; title: string }>;
+    /** Pre-computed boolean keyword clause (e.g. super-impose mergedKeywords). */
+    linkedinKeywords?: string;
+    /** Pre-computed current-title boolean (e.g. super-impose mergedJobTitle). */
+    linkedinJobTitle?: string;
+  }): Promise<{
+    strategies: PeopleSearchStrategyResult[];
+    parsedJobDescription: ParsedJobDescription;
+  }> {
+    const searchCategory: 'people' = 'people';
+    const {
+      requirement,
+      searchType,
+      mode,
+      primaryCompanyName,
+      jobTitles,
+      country,
+      functionRoot,
+      stdFunction,
+      stdGrade,
+      selectedNodeStdScopes,
+      businessDivisionLinkedinKeywords,
+      isAllPeopleInCompanyMode,
+      sendEvent,
+      linkedinKeywords,
+      linkedinJobTitle,
+    } = args;
+
+    const effectiveCompanyNames =
+      args.companyNames?.map((name) => name.trim()).filter(Boolean) ??
+      (primaryCompanyName ? [primaryCompanyName] : []);
+
+    const preResolvedCompanyIds = (args.linkedinCompanyIds ?? [])
+      .map((id) => id.trim())
+      .filter(Boolean);
+    const preResolvedLocationIds = (args.linkedinLocationIds ?? [])
+      .map((id) => id.trim())
+      .filter(Boolean);
+
+    if (
+      preResolvedCompanyIds.length > 0 ||
+      preResolvedLocationIds.length > 0
+    ) {
+      const facetSearchTerms = await this.resolvePreResolvedFacetSearchTerms({
+        searchType,
+        requirement,
+        primaryCompanyName,
+        functionRoot,
+        businessDivisionLinkedinKeywords,
+        linkedinKeywords,
+        linkedinJobTitle,
+      });
+      this.logger.log(
+        `Orgchart router: pre-resolved facet strategy (companyIds=${preResolvedCompanyIds.length}, locationIds=${preResolvedLocationIds.length}, searchType=${searchType}, keywords=${facetSearchTerms.keywords ? 'yes' : 'no'}, jobTitle=${facetSearchTerms.jobTitle ? 'yes' : 'no'}).`,
+      );
+      const strategies = this.buildStrategiesFromPreResolvedFacets({
+        searchType,
+        requirement,
+        primaryCompanyName,
+        linkedinCompanyIds: preResolvedCompanyIds,
+        linkedinLocationIds: preResolvedLocationIds,
+        linkedinCompanyDisplay: args.linkedinCompanyDisplay,
+        linkedinLocationDisplay: args.linkedinLocationDisplay,
+        keywords: facetSearchTerms.keywords,
+        jobTitle: facetSearchTerms.jobTitle,
+      });
+
+      return {
+        strategies,
+        parsedJobDescription: createMinimalParsedJobDescription({
+          jobTitle: primaryCompanyName
+            ? `Employee at ${primaryCompanyName}`
+            : 'Employee',
+          company: primaryCompanyName,
+          location: args.linkedinLocationDisplay?.[0]?.title ?? country,
+        }),
+      };
+    }
+
+    const hasScopeFilters =
+      country.trim().length > 0 ||
+      hasMeaningfulOrgChartFunctionRootFilter(functionRoot);
+    const useDirectCompanyFilter =
+      effectiveCompanyNames.length > 0 &&
+      mode === 'entire_company' &&
+      !hasScopeFilters &&
+      !businessDivisionLinkedinKeywords &&
+      (isAllPeopleInCompanyMode || effectiveCompanyNames.length > 1);
+
+    if (businessDivisionLinkedinKeywords && primaryCompanyName) {
+      this.logger.log(
+        `Orgchart router: business division keyword strategy for "${primaryCompanyName}" (searchType=${searchType}).`,
+      );
+      const countryForLocation = normalizeLlmNullishString(country) ?? '';
+      const locationForQuery =
+        countryForLocation.length > 0 ? [countryForLocation] : null;
+      const divisionQuery: SearchQuery = {
+        keywords: businessDivisionLinkedinKeywords,
+        job_title: null,
+        company: effectiveCompanyNames,
+        location: locationForQuery,
+        years_of_experience: null,
+      };
+      const strategies = this.buildStrategiesFromSingleSearchQuery({
+        query: divisionQuery,
+        searchType,
+        requirement,
+      });
+      return {
+        strategies,
+        parsedJobDescription: createMinimalParsedJobDescription({
+          jobTitle: `Business division at ${primaryCompanyName}`,
+          company: primaryCompanyName,
+        }),
+      };
+    }
+
+    if (useDirectCompanyFilter) {
+      this.logger.log(
+        `Orgchart router: direct company filter for [${effectiveCompanyNames.join(', ')}] (mode=${mode}, searchType=${searchType}).`,
+      );
+      const companyOnlyQuery: SearchQuery = {
+        keywords: null,
+        job_title: null,
+        company: effectiveCompanyNames,
+        location:
+          country.trim().length > 0 && country.toLowerCase() !== 'global'
+            ? [country]
+            : null,
+        years_of_experience: null,
+      };
+      const strategies = this.buildStrategiesFromSingleSearchQuery({
+        query: companyOnlyQuery,
+        searchType,
+        requirement,
+      });
+      return {
+        strategies,
+        parsedJobDescription: createMinimalParsedJobDescription({
+          jobTitle: primaryCompanyName
+            ? `Employee at ${primaryCompanyName}`
+            : 'Employee',
+          company: primaryCompanyName,
+        }),
+      };
+    }
+
+    sendEvent?.('status', {
+      message: 'Generating LinkedIn search via Python query generator...',
+    });
+    const pythonInput = this.buildPythonQueryInputForOrgchartMode({
+      mode,
+      primaryCompanyName,
+      companyNames: effectiveCompanyNames,
+      functionRoot,
+      country,
+      jobTitles,
+      stdFunction,
+      stdGrade,
+      selectedNodeStdScopes,
+    });
+
+    // Estimate and search both hit this path when LinkedIn company IDs are
+    // not pre-resolved. Prefer the blank-grade manual query over auto-OR.
+    if (this.isPureFunctionRootPythonInput(pythonInput)) {
+      const manualTerms = await this.lookupManualFunctionRootSearchTerms(
+        functionRoot,
+        searchType,
+      );
+      if (manualTerms) {
+        const countryForLocation =
+          normalizeLlmNullishString(country) ?? '';
+        const strategies = this.buildStrategiesFromSingleSearchQuery({
+          query: {
+            keywords: manualTerms.keywords ?? null,
+            job_title: manualTerms.jobTitle ?? null,
+            company: effectiveCompanyNames,
+            location:
+              countryForLocation.length > 0 &&
+              countryForLocation.toLowerCase() !== 'global'
+                ? [countryForLocation]
+                : null,
+            years_of_experience: null,
+          },
+          searchType,
+          requirement,
+        });
+        return {
+          strategies,
+          parsedJobDescription: createMinimalParsedJobDescription({
+            jobTitle: primaryCompanyName
+              ? `Role at ${primaryCompanyName}`
+              : 'Employee',
+            company: primaryCompanyName,
+            location: country,
+          }),
+        };
+      }
+    }
+
+    const unresolved =
+      await this.pythonQueryGenerationService.generateSearchParameters(
+        pythonInput,
+        searchType,
+        requirement,
+      );
+    const strategies = extractStrategiesFromGeneratedParams(
+      unresolved,
+      searchType,
+      searchCategory,
+    );
+    return {
+      strategies,
+      parsedJobDescription: createMinimalParsedJobDescription({
+        jobTitle: primaryCompanyName
+          ? `Role at ${primaryCompanyName}`
+          : 'Employee',
+        company: primaryCompanyName,
+        location: '',
+        industry: '',
+      }),
+    };
+  }
+
+  /**
+   * Same routing as org-chart search, but returns `GeneratedSearchParameters` for REST/MCP.
+   */
+  async buildGeneratedSearchParametersForOrgchart(args: {
+    rawQuery: string;
+    cleanedQuery: string;
+    requirement: string;
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    mode?: string;
+    primaryCompanyName: string;
+    companyNames?: string[];
+    jobTitles?: string[];
+    country: string;
+    functionRoot: string;
+    stdFunction?: string;
+    stdGrade?: string;
+    selectedNodeStdScopes?: Array<{ stdFunction?: string; stdGrade?: string }>;
+    businessDivisionLinkedinKeywords?: string;
+    isAllPeopleInCompanyMode: boolean;
+    apiToken: string;
+    sendEvent?: (event: string, data: unknown) => void;
+  }): Promise<GeneratedSearchParameters> {
+    const { strategies } = await this.buildOrgchartLinkedInStrategies(args);
+    this.logger.log(
+      `Orgchart router: generated unresolved params from ${strategies.length} strateg(ies)`,
+    );
+    return attachPeopleStrategiesToGeneratedSearchParameters(
+      strategies,
+      args.searchType,
+    );
+  }
+}

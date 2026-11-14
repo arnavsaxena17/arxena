@@ -1,4 +1,4 @@
-import { type RecordVerdict } from 'src/engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-contract';
+import { type RecordVerdict } from 'src/domains/ingestion/candidate-sourcing/services/ai-filter-engine/ai-filter-contract';
 import { buildFilterContextText } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/ai-filter-context.service';
 import { WorkflowAiFilteringService } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/workflow-ai-filtering.service';
 

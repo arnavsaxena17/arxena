@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { ClickHouseService } from 'src/database/clickHouse/clickHouse.service';
-import { OrgChartClientIpModule } from 'src/engine/core-modules/org-chart/org-chart-client-ip.module';
+import { OrgChartClientIpModule } from 'src/domains/org-graph/org-chart/org-chart-client-ip.module';
 import { ClientGeoResolutionService } from 'src/engine/core-modules/geo/client-geo-resolution.service';
 import { IpCompanyResolutionService } from 'src/engine/core-modules/geo/ip-company-resolution.service';
 import { IpInfoGeoService } from 'src/engine/core-modules/geo/ip-info-geo.service';

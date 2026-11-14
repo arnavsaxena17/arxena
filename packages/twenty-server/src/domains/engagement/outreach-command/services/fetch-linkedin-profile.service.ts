@@ -1,0 +1,597 @@
+import { Injectable, Logger } from '@nestjs/common';
+
+import { isNonEmptyString } from '@sniptt/guards';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
+import { FeatureFlagKey } from 'twenty-shared/types';
+import { isDefined } from 'twenty-shared/utils';
+import { type ObjectLiteral } from 'typeorm';
+
+import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
+import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
+import { LinkedinProviderIdStoreService } from 'src/domains/engagement/outreach-command/services/linkedin-provider-id.store';
+import {
+  buildOutreachProspectEnrichmentFromLinkedinProfile,
+  isQualifyOwnedProspectEnrichment,
+} from 'src/domains/engagement/outreach-command/utils/build-outreach-prospect-enrichment.util';
+import { extractLinkedinProfileId } from 'src/domains/engagement/outreach-command/utils/extract-linkedin-profile-id.util';
+import { isValidLinkedInProviderId } from 'src/domains/engagement/outreach-command/utils/extract-linkedin-attendee-id.util';
+import { mapUnipileLinkedinProfile } from 'src/domains/engagement/outreach-command/utils/map-unipile-linkedin-profile.util';
+import { toUploadProfilesPerson } from 'src/domains/engagement/outreach-command/utils/normalize-upload-people.util';
+import {
+  findOutreachMockUnipileRawProfile,
+  mapOutreachMockUnipileProfile,
+} from 'src/domains/engagement/outreach-command/utils/outreach-mock-unipile-profiles.util';
+import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
+import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
+
+type WorkspaceMemberArxRecord = ObjectLiteral & {
+  id: string;
+  linkedinUnipileAccountId: string | null;
+};
+
+type CandidateRecord = ObjectLiteral & {
+  id: string;
+  peopleId?: string | null;
+  outreachSequenceStage?: string | null;
+  outreachProspectEnrichment?: Record<string, unknown> | null;
+};
+
+type LinkedinProfileEnrichmentSource = {
+  firstName: string;
+  headline: string;
+  experience: Array<{
+    company: string;
+    position: string;
+    end: string;
+  }>;
+};
+
+type PersonIdentityRecord = ObjectLiteral & {
+  id: string;
+  linkedinLink?: { primaryLinkUrl?: string } | null;
+  linkedinProfileId?: string | null;
+};
+
+type PersonContactRecord = ObjectLiteral & {
+  id: string;
+  emails?: {
+    primaryEmail?: string | null;
+    additionalEmails?: string[] | null;
+  } | null;
+  phones?: { primaryPhoneNumber?: string | null } | null;
+};
+
+export type FetchLinkedinProfileInput = {
+  workspaceMemberId?: string;
+  linkedinUrl?: string;
+  linkedinProfileId?: string;
+  candidateId?: string;
+};
+
+// Stages only reached once the prospect accepted the connection request, i.e.
+// when LinkedIn should now share their contact info with the sender.
+const CONNECTED_OUTREACH_STAGES = new Set([
+  'CONNECTION_ACCEPTED',
+  'REPLIED',
+  'WAITING_REPLY',
+  'NEGOTIATING',
+  'MEETING_BOOKED',
+]);
+
+// Demo members registered with this prefix use fixtures instead of Unipile.
+export const MOCK_UNIPILE_SEAT_PREFIX = 'mock-unipile-';
+
+@Injectable()
+export class FetchLinkedinProfileService {
+  private readonly logger = new Logger(FetchLinkedinProfileService.name);
+
+  constructor(
+    private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
+    private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
+    private readonly linkedinProviderIdStore: LinkedinProviderIdStoreService,
+    private readonly featureFlagService: FeatureFlagService,
+  ) {}
+
+  async execute({
+    workspaceId,
+    input,
+  }: {
+    workspaceId: string;
+    input: FetchLinkedinProfileInput;
+  }): Promise<{
+    success: boolean;
+    linkedinProfileId: string;
+    firstName: string;
+    lastName: string;
+    headline: string;
+    about: string;
+    location: string;
+    linkedinUrl: string;
+    profilePictureUrl: string;
+    experience: Array<{
+      company: string;
+      position: string;
+      location: string;
+      description: string;
+      start: string;
+      end: string;
+    }>;
+    skills: string[];
+    emails: string[];
+    phones: string[];
+    connectionsCount?: number;
+    followersCount?: number;
+    sharedConnectionsCount?: number;
+    networkDistance?: string;
+    recruitingActivity?: unknown[];
+    snapshot: string;
+    people: Array<Record<string, unknown>>;
+    outreachProspectEnrichment: Record<string, unknown> | null;
+    error: string;
+  }> {
+    // temporary: `&& false` forces real Unipile; send/connect stay mock-gated
+    const isOutreachMockEnabled =
+      (await this.featureFlagService.isFeatureEnabled(
+        FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
+        workspaceId,
+      )) && false;
+
+    if (isOutreachMockEnabled) {
+      return this.buildMockProfile({ workspaceId, input });
+    }
+
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    const resolved =
+      await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+        async () => {
+          const profileRepository =
+            await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberArxRecord>(
+              workspaceId,
+              'workspaceMember',
+              { shouldBypassPermissionChecks: true },
+            );
+
+          let accountId = '';
+          let workspaceMemberId = input.workspaceMemberId?.trim() ?? '';
+
+          if (isNonEmptyString(workspaceMemberId)) {
+            const profile = await profileRepository.findOne({
+              where: { id: workspaceMemberId },
+            });
+
+            accountId = profile?.linkedinUnipileAccountId?.trim() ?? '';
+          }
+
+          if (!isNonEmptyString(accountId)) {
+            const anyProfile = await profileRepository.find({
+              where: {},
+              take: 20,
+            });
+            const withAccount = anyProfile.find((row) =>
+              isNonEmptyString(row.linkedinUnipileAccountId),
+            );
+
+            accountId = withAccount?.linkedinUnipileAccountId?.trim() ?? '';
+            workspaceMemberId = withAccount?.id ?? workspaceMemberId;
+          }
+
+          let identifier =
+            extractLinkedinProfileId(input.linkedinProfileId) ||
+            extractLinkedinProfileId(input.linkedinUrl);
+
+          const candidate = isNonEmptyString(input.candidateId)
+            ? await (
+                await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
+                  workspaceId,
+                  'candidate',
+                  { shouldBypassPermissionChecks: true },
+                )
+              ).findOne({ where: { id: input.candidateId } })
+            : null;
+          const isConnected = CONNECTED_OUTREACH_STAGES.has(
+            candidate?.outreachSequenceStage ?? '',
+          );
+
+          if (!isNonEmptyString(identifier) && isDefined(candidate)) {
+            const peopleId = candidate?.peopleId?.trim() ?? '';
+
+            if (isNonEmptyString(peopleId)) {
+              const personRepository =
+                await this.globalWorkspaceOrmManager.getRepository<PersonIdentityRecord>(
+                  workspaceId,
+                  'person',
+                  { shouldBypassPermissionChecks: true },
+                );
+              const person = await personRepository.findOne({
+                where: { id: peopleId },
+              });
+
+              identifier =
+                extractLinkedinProfileId(person?.linkedinProfileId) ||
+                extractLinkedinProfileId(person?.linkedinLink?.primaryLinkUrl);
+            }
+          }
+
+          return { accountId, identifier, workspaceMemberId, isConnected };
+        },
+        authContext,
+      );
+
+    // A seat registered as a mock account (demo members) never reaches Unipile.
+    if (
+      resolved.accountId.startsWith(MOCK_UNIPILE_SEAT_PREFIX) &&
+      (await this.featureFlagService.isFeatureEnabled(
+        FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
+        workspaceId,
+      ))
+    ) {
+      return this.buildMockProfile({
+        workspaceId,
+        input: {
+          ...input,
+          linkedinProfileId: input.linkedinProfileId || resolved.identifier,
+        },
+      });
+    }
+
+    if (!isNonEmptyString(resolved.accountId)) {
+      return {
+        ...emptyProfile(resolved.identifier),
+        error: 'No LinkedIn Unipile account on workspace member profile',
+      };
+    }
+
+    if (!isNonEmptyString(resolved.identifier)) {
+      return {
+        ...emptyProfile(''),
+        error: 'linkedinUrl or linkedinProfileId is required',
+      };
+    }
+
+    const profile =
+      await this.linkedinUnipileRequestService.fetchLinkedinUserProfile(
+        resolved.accountId,
+        resolved.identifier,
+        resolved.isConnected === true
+          ? { requireFirstDegree: true }
+          : undefined,
+      );
+
+    if (!isDefined(profile)) {
+      return {
+        ...emptyProfile(resolved.identifier),
+        error: 'Unipile returned no profile',
+      };
+    }
+
+    const mapped = mapUnipileLinkedinProfile(profile, resolved.identifier);
+
+    if (isValidLinkedInProviderId(mapped.linkedinProfileId)) {
+      await this.linkedinProviderIdStore.saveProviderId({
+        workspaceId,
+        candidateId: input.candidateId,
+        identifier: resolved.identifier,
+        providerId: mapped.linkedinProfileId,
+      });
+    }
+
+    this.logger.log(`Fetched LinkedIn profile ${mapped.linkedinProfileId}`);
+
+    await this.saveContactDetailsOnPerson({
+      workspaceId,
+      candidateId: input.candidateId,
+      emails: mapped.emails,
+      phones: mapped.phones,
+    });
+
+    const person = toUploadProfilesPerson(mapped);
+
+    return this.withStampedEnrichment({
+      workspaceId,
+      candidateId: input.candidateId,
+      profile: mapped,
+      result: {
+        ...mapped,
+        people: person ? [person] : [],
+      },
+    });
+  }
+
+  private async buildMockProfile({
+    workspaceId,
+    input,
+  }: {
+    workspaceId: string;
+    input: FetchLinkedinProfileInput;
+  }) {
+    const identifier =
+      extractLinkedinProfileId(input.linkedinProfileId) ||
+      extractLinkedinProfileId(input.linkedinUrl) ||
+      'mock-linkedin-profile';
+
+    this.logger.log(
+      `IS_OUTREACH_MOCK_UNIPILE_ENABLED: mock LinkedIn profile for ${identifier}`,
+    );
+
+    const fixture = findOutreachMockUnipileRawProfile(identifier);
+
+    if (isDefined(fixture)) {
+      const mapped = mapOutreachMockUnipileProfile(fixture);
+      const person = toUploadProfilesPerson({
+        ...mapped,
+        current_positions: mapped.experience,
+      });
+
+      return this.withStampedEnrichment({
+        workspaceId,
+        candidateId: input.candidateId,
+        profile: mapped,
+        result: {
+          ...mapped,
+          people: person ? [person] : [],
+          error: '',
+        },
+      });
+    }
+
+    const linkedinUrl = isNonEmptyString(input.linkedinUrl)
+      ? input.linkedinUrl
+      : `https://www.linkedin.com/in/${identifier}`;
+    const mapped = {
+      success: true as const,
+      linkedinProfileId: identifier,
+      firstName: 'Mock',
+      lastName: identifier.split('-').slice(-2).join(' ') || 'Profile',
+      headline: 'Mock headline for outreach path testing',
+      about: 'Mock about section',
+      location: 'Bengaluru, India',
+      linkedinUrl,
+      profilePictureUrl: '',
+      experience: [
+        {
+          company: 'Mock Co',
+          position: 'VP Talent',
+          location: 'Bengaluru',
+          description: '',
+          start: '2020-01',
+          end: '',
+        },
+      ],
+      skills: ['Recruiting'],
+      emails: [] as string[],
+      phones: [] as string[],
+      snapshot: `Mock profile for ${identifier}`,
+    };
+    const person = toUploadProfilesPerson(mapped);
+
+    return this.withStampedEnrichment({
+      workspaceId,
+      candidateId: input.candidateId,
+      profile: mapped,
+      result: {
+        ...mapped,
+        people: person ? [person] : [],
+        error: '',
+      },
+    });
+  }
+
+  // Fills the person's email/phone from LinkedIn contact_info, so the email
+  // step can skip paid enrichment. Never overwrites what is already stored.
+  private async saveContactDetailsOnPerson({
+    workspaceId,
+    candidateId,
+    emails,
+    phones,
+  }: {
+    workspaceId: string;
+    candidateId?: string;
+    emails: string[];
+    phones: string[];
+  }): Promise<void> {
+    const trimmedCandidateId = candidateId?.trim() ?? '';
+
+    if (
+      !isNonEmptyString(trimmedCandidateId) ||
+      (emails.length === 0 && phones.length === 0)
+    ) {
+      return;
+    }
+
+    try {
+      await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+        async () => {
+          const candidateRepository =
+            await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
+              workspaceId,
+              'candidate',
+              { shouldBypassPermissionChecks: true },
+            );
+          const candidate = await candidateRepository.findOne({
+            where: { id: trimmedCandidateId },
+          });
+          const peopleId = candidate?.peopleId?.trim() ?? '';
+
+          if (!isNonEmptyString(peopleId)) {
+            return;
+          }
+
+          const personRepository =
+            await this.globalWorkspaceOrmManager.getRepository<PersonContactRecord>(
+              workspaceId,
+              'person',
+              { shouldBypassPermissionChecks: true },
+            );
+          const person = await personRepository.findOne({
+            where: { id: peopleId },
+          });
+
+          if (!isDefined(person)) {
+            return;
+          }
+
+          const updates: Record<string, unknown> = {};
+
+          if (
+            emails.length > 0 &&
+            !isNonEmptyString(person.emails?.primaryEmail?.trim())
+          ) {
+            updates.emails = {
+              primaryEmail: emails[0],
+              additionalEmails: emails.slice(1),
+            };
+          }
+
+          if (
+            phones.length > 0 &&
+            !isNonEmptyString(person.phones?.primaryPhoneNumber?.trim())
+          ) {
+            updates.phones = buildPhonesValue(phones[0]);
+          }
+
+          if (Object.keys(updates).length === 0) {
+            return;
+          }
+
+          await personRepository.update(peopleId, updates);
+          this.logger.log(
+            `Saved LinkedIn contact info (${Object.keys(updates).join(', ')}) on person ${peopleId}`,
+          );
+        },
+        buildSystemAuthContext(workspaceId),
+      );
+    } catch (error) {
+      // Saving contact info must not fail the profile fetch step.
+      this.logger.warn(
+        `Could not save LinkedIn contact info for candidate ${trimmedCandidateId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  // Writes profile facts onto the candidate unless Qualify already stamped go/score.
+  private async withStampedEnrichment<TResult extends object>({
+    workspaceId,
+    candidateId,
+    profile,
+    result,
+  }: {
+    workspaceId: string;
+    candidateId?: string;
+    profile: LinkedinProfileEnrichmentSource;
+    result: TResult;
+  }): Promise<
+    TResult & { outreachProspectEnrichment: Record<string, unknown> | null }
+  > {
+    const outreachProspectEnrichment = await this.stampProspectEnrichment({
+      workspaceId,
+      candidateId,
+      profile,
+    });
+
+    return {
+      ...result,
+      outreachProspectEnrichment,
+    };
+  }
+
+  private async stampProspectEnrichment({
+    workspaceId,
+    candidateId,
+    profile,
+  }: {
+    workspaceId: string;
+    candidateId?: string;
+    profile: LinkedinProfileEnrichmentSource;
+  }): Promise<Record<string, unknown> | null> {
+    const trimmedCandidateId = candidateId?.trim() ?? '';
+
+    if (!isNonEmptyString(trimmedCandidateId)) {
+      return null;
+    }
+
+    const profileEnrichment =
+      buildOutreachProspectEnrichmentFromLinkedinProfile(profile);
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const candidateRepository =
+          await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
+            workspaceId,
+            'candidate',
+            { shouldBypassPermissionChecks: true },
+          );
+        const candidate = await candidateRepository.findOne({
+          where: { id: trimmedCandidateId },
+        });
+        const existing = candidate?.outreachProspectEnrichment;
+
+        if (isQualifyOwnedProspectEnrichment(existing)) {
+          return existing ?? null;
+        }
+
+        await candidateRepository.update(trimmedCandidateId, {
+          outreachProspectEnrichment: profileEnrichment,
+        });
+
+        return profileEnrichment;
+      },
+      authContext,
+    );
+  }
+}
+
+type PersonPhonesValue = {
+  primaryPhoneNumber: string;
+  primaryPhoneCountryCode: string;
+  primaryPhoneCallingCode: string;
+  additionalPhones: null;
+};
+
+const buildPhonesValue = (phone: string): PersonPhonesValue => {
+  const parsed = parsePhoneNumberFromString(phone);
+
+  if (parsed?.isValid()) {
+    return {
+      primaryPhoneNumber: parsed.nationalNumber,
+      primaryPhoneCountryCode: parsed.country ?? '',
+      primaryPhoneCallingCode: `+${parsed.countryCallingCode}`,
+      additionalPhones: null,
+    };
+  }
+
+  return {
+    primaryPhoneNumber: phone,
+    primaryPhoneCountryCode: '',
+    primaryPhoneCallingCode: '',
+    additionalPhones: null,
+  };
+};
+
+const emptyProfile = (linkedinProfileId: string) => ({
+  success: false as const,
+  linkedinProfileId,
+  firstName: '',
+  lastName: '',
+  headline: '',
+  about: '',
+  location: '',
+  linkedinUrl: '',
+  profilePictureUrl: '',
+  experience: [] as Array<{
+    company: string;
+    position: string;
+    location: string;
+    description: string;
+    start: string;
+    end: string;
+  }>,
+  skills: [] as string[],
+  emails: [] as string[],
+  phones: [] as string[],
+  snapshot: '',
+  people: [] as Array<Record<string, unknown>>,
+  outreachProspectEnrichment: null,
+  error: '',
+});

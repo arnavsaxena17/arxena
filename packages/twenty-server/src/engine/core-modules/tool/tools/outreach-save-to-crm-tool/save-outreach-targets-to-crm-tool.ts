@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { SaveOutreachTargetsToCrmService } from 'src/engine/core-modules/outreach-command/services/save-outreach-targets-to-crm.service';
+import { SaveOutreachTargetsToCrmService } from 'src/domains/engagement/outreach-command/services/save-outreach-targets-to-crm.service';
 import {
   type SaveOutreachTargetsToCrmToolInput,
   SaveOutreachTargetsToCrmInputZodSchema,

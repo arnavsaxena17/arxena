@@ -9,18 +9,18 @@ import {
 } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-reservation.context';
 import { getRegisteredAccountRateLimiter } from 'src/engine/core-modules/account-rate-limit/account-rate-limiter.registry';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
-import { OutreachUnipilePacingService } from 'src/engine/core-modules/outreach-command/services/outreach-unipile-pacing.service';
+import { OutreachUnipilePacingService } from 'src/domains/engagement/outreach-command/services/outreach-unipile-pacing.service';
 import {
   OutreachMessagePersistService,
   type OutreachTranscriptChannel,
-} from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
-import { type OutreachCandidateEventKind } from 'src/engine/core-modules/outreach-command/utils/outreach-command-materialize.util';
+} from 'src/domains/engagement/outreach-command/services/outreach-message-persist.service';
+import { type OutreachCandidateEventKind } from 'src/domains/engagement/outreach-command/utils/outreach-command-materialize.util';
 import {
   resolveOutreachOutboundMessageKind,
   OUTREACH_SEND_WINDOW_PENDING_REASON,
-} from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
-import { outreachThrottleChannelToLinkedinRateLimitMethod } from 'src/engine/core-modules/outreach-command/utils/outreach-throttle-channel-rate-limit-method.util';
-import { type OutreachThrottleChannel } from 'src/engine/core-modules/outreach-command/utils/outreach-throttle.util';
+} from 'src/domains/engagement/outreach-command/utils/outreach-experiment.util';
+import { outreachThrottleChannelToLinkedinRateLimitMethod } from 'src/domains/engagement/outreach-command/utils/outreach-throttle-channel-rate-limit-method.util';
+import { type OutreachThrottleChannel } from 'src/domains/engagement/outreach-command/utils/outreach-throttle.util';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
@@ -35,7 +35,7 @@ import { deferWorkflowForAccountRateLimit } from 'src/modules/workflow/workflow-
 import {
   type OutreachThrottleCheckResult,
   OUTREACH_PROJECT_PAUSED_PENDING_REASON,
-} from 'src/engine/core-modules/outreach-command/services/outreach-throttle.service';
+} from 'src/domains/engagement/outreach-command/services/outreach-throttle.service';
 import { ToolBackedWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/tool-backed/tool-backed.workflow-action';
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
 import { type UnipileMessagingAccountType } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/unipile-messaging-account-type.type';

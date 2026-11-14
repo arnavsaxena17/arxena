@@ -6,8 +6,8 @@ import { FeatureFlagKey } from 'twenty-shared/types';
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { FileService } from 'src/engine/core-modules/file/services/file.service';
-import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
-import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
+import { LinkedinProviderIdStoreService } from 'src/domains/engagement/outreach-command/services/linkedin-provider-id.store';
+import { extractLinkedinProfileId } from 'src/domains/engagement/outreach-command/utils/extract-linkedin-profile-id.util';
 import {
   SendLinkedinVoiceNoteToolInputZodSchema,
   type SendLinkedinVoiceNoteToolInput,

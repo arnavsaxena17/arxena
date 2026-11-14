@@ -1,0 +1,191 @@
+import { LinkedinProviderIdStoreService } from 'src/domains/engagement/outreach-command/services/linkedin-provider-id.store';
+
+const VALID_PROVIDER_ID = 'ACoAAabcdefghij1234567890';
+const VALID_SN_ID = 'ACwAAabcdefghij1234567890';
+
+describe('LinkedinProviderIdStoreService', () => {
+  const candidateRepository = {
+    metadata: {
+      columns: [{ propertyName: 'id' }, { propertyName: 'peopleId' }],
+    },
+    findOne: jest.fn(),
+    update: jest.fn(),
+  };
+  const personRepository = {
+    metadata: {
+      columns: [
+        { propertyName: 'id' },
+        { propertyName: 'linkedinProfileId' },
+        { propertyName: 'salesNavigatorProviderId' },
+        { propertyName: 'linkedinLinkPrimaryLinkUrl' },
+      ],
+    },
+    findOne: jest.fn(),
+    update: jest.fn(),
+  };
+  const globalWorkspaceOrmManager = {
+    executeInWorkspaceContext: jest.fn(
+      async (callback: () => Promise<unknown>) => callback(),
+    ),
+    getRepository: jest.fn(async (_workspaceId: string, objectName: string) =>
+      objectName === 'person' ? personRepository : candidateRepository,
+    ),
+  };
+
+  const service = new LinkedinProviderIdStoreService(
+    globalWorkspaceOrmManager as never,
+  );
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    candidateRepository.findOne.mockResolvedValue(null);
+    personRepository.findOne.mockResolvedValue(null);
+    candidateRepository.update.mockResolvedValue(undefined);
+    personRepository.update.mockResolvedValue(undefined);
+    globalWorkspaceOrmManager.executeInWorkspaceContext.mockImplementation(
+      async (callback: () => Promise<unknown>) => callback(),
+    );
+    globalWorkspaceOrmManager.getRepository.mockImplementation(
+      async (_workspaceId: string, objectName: string) =>
+        objectName === 'person' ? personRepository : candidateRepository,
+    );
+  });
+
+  it('saves ACoAA onto person linkedinProfileId without touching URL fields', async () => {
+    candidateRepository.findOne.mockResolvedValue({
+      id: 'cand-1',
+      peopleId: 'person-1',
+    });
+    personRepository.findOne.mockResolvedValue({
+      id: 'person-1',
+      linkedinProfileId: 'jane-doe',
+      linkedinLink: {
+        primaryLinkUrl: 'https://www.linkedin.com/in/jane-doe',
+      },
+    });
+
+    await service.saveProviderId({
+      workspaceId: 'ws-1',
+      candidateId: 'cand-1',
+      identifier: 'jane-doe',
+      providerId: VALID_PROVIDER_ID,
+    });
+
+    expect(personRepository.update).toHaveBeenCalledWith('person-1', {
+      linkedinProfileId: VALID_PROVIDER_ID,
+    });
+    expect(personRepository.update.mock.calls[0][1]).not.toHaveProperty(
+      'linkedinLink',
+    );
+  });
+
+  it('does not persist a public slug or ACw as linkedinProfileId', async () => {
+    await service.saveProviderId({
+      workspaceId: 'ws-1',
+      candidateId: 'cand-1',
+      identifier: 'jane-doe',
+      providerId: 'jane-doe',
+    });
+
+    expect(personRepository.update).not.toHaveBeenCalled();
+
+    await service.saveProviderId({
+      workspaceId: 'ws-1',
+      candidateId: 'cand-1',
+      identifier: 'jane-doe',
+      providerId: VALID_SN_ID,
+    });
+
+    expect(personRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('persists ACw onto salesNavigatorProviderId', async () => {
+    candidateRepository.findOne.mockResolvedValue({
+      id: 'cand-1',
+      peopleId: 'person-1',
+    });
+    personRepository.findOne.mockResolvedValue({
+      id: 'person-1',
+      linkedinProfileId: VALID_PROVIDER_ID,
+    });
+
+    await service.saveSalesNavigatorProviderId({
+      workspaceId: 'ws-1',
+      candidateId: 'cand-1',
+      identifier: 'jane-doe',
+      salesNavigatorProviderId: VALID_SN_ID,
+    });
+
+    expect(personRepository.update).toHaveBeenCalledWith('person-1', {
+      salesNavigatorProviderId: VALID_SN_ID,
+    });
+  });
+
+  it('skips Unipile when person already stores ACoAA', async () => {
+    candidateRepository.findOne.mockResolvedValue({
+      id: 'cand-1',
+      peopleId: 'person-1',
+    });
+    personRepository.findOne.mockResolvedValue({
+      id: 'person-1',
+      linkedinProfileId: VALID_PROVIDER_ID,
+    });
+    const fetchProviderId = jest.fn();
+
+    await expect(
+      service.resolveForSend({
+        workspaceId: 'ws-1',
+        candidateId: 'cand-1',
+        identifier: 'jane-doe',
+        fetchProviderId,
+      }),
+    ).resolves.toBe(VALID_PROVIDER_ID);
+    expect(fetchProviderId).not.toHaveBeenCalled();
+  });
+
+  it('fetches then persists ACoAA when CRM still has a slug', async () => {
+    candidateRepository.findOne.mockResolvedValue({
+      id: 'cand-1',
+      peopleId: 'person-1',
+    });
+    personRepository.findOne.mockResolvedValue({
+      id: 'person-1',
+      linkedinProfileId: 'jane-doe',
+    });
+    const fetchProviderId = jest.fn().mockResolvedValue(VALID_PROVIDER_ID);
+
+    await expect(
+      service.resolveForSend({
+        workspaceId: 'ws-1',
+        candidateId: 'cand-1',
+        identifier: 'jane-doe',
+        fetchProviderId,
+      }),
+    ).resolves.toBe(VALID_PROVIDER_ID);
+    expect(fetchProviderId).toHaveBeenCalledTimes(1);
+    expect(personRepository.update).toHaveBeenCalledWith('person-1', {
+      linkedinProfileId: VALID_PROVIDER_ID,
+    });
+  });
+
+  it('finds candidate by salesNavigatorProviderId', async () => {
+    personRepository.findOne.mockResolvedValue({
+      id: 'person-1',
+      salesNavigatorProviderId: VALID_SN_ID,
+    });
+    candidateRepository.findOne.mockResolvedValue({
+      id: 'cand-1',
+      peopleId: 'person-1',
+    });
+
+    await expect(
+      service.findCandidateBySalesNavigatorProviderId({
+        workspaceId: 'ws-1',
+        salesNavigatorProviderId: VALID_SN_ID,
+      }),
+    ).resolves.toEqual({
+      id: 'cand-1',
+      peopleId: 'person-1',
+    });
+  });
+});

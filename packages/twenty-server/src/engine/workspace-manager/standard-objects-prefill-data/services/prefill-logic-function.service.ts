@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { isDefined } from 'twenty-shared/utils';
 import { type WorkflowActionTriggerSettings } from 'twenty-shared/application';
 
-import { OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
+import { OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES } from 'src/domains/engagement/outreach-command/constants/outreach-logic-function-names.const';
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
 import { LogicFunctionFromSourceService } from 'src/engine/metadata-modules/logic-function/services/logic-function-from-source.service';

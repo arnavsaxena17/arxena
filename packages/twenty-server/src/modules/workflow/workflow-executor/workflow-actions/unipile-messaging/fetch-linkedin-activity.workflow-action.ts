@@ -5,12 +5,12 @@ import { isDefined, resolveInput } from 'twenty-shared/utils';
 import { type WorkflowRunStepLog } from 'twenty-shared/workflow';
 import { type ObjectLiteral } from 'typeorm';
 
-import { formatOutreachProspectPostsForLlm } from 'src/engine/core-modules/outreach-command/utils/format-outreach-llm-context.util';
+import { formatOutreachProspectPostsForLlm } from 'src/domains/engagement/outreach-command/utils/format-outreach-llm-context.util';
 import { FetchLinkedinActivityTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/fetch-linkedin-activity-tool';
 import { mergePersonLinkedinPostsField } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/merge-person-linkedin-posts.util';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
-import { OutreachUnipilePacingService } from 'src/engine/core-modules/outreach-command/services/outreach-unipile-pacing.service';
+import { OutreachUnipilePacingService } from 'src/domains/engagement/outreach-command/services/outreach-unipile-pacing.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';

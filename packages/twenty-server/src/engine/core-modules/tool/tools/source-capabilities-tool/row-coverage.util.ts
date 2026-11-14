@@ -5,7 +5,7 @@ import {
   PROFILE_FIELD_KEY,
   readRowProfile,
   type RowProfile,
-} from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
+} from 'src/domains/ingestion/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
 
 // What a row can answer right now, from the fields it actually holds. The
 // registry says what a source *can* return; this says what this row *did*.

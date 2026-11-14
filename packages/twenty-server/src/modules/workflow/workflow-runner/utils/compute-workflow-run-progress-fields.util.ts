@@ -4,7 +4,7 @@ import { LINKEDIN_RATE_LIMIT_PENDING_REASON } from 'src/engine/core-modules/acco
 import {
   readWorkflowRunStepPendingReason,
   readWorkflowRunStepScheduledAt,
-} from 'src/engine/core-modules/outreach-command/utils/read-workflow-run-step-pending-fields.util';
+} from 'src/domains/engagement/outreach-command/utils/read-workflow-run-step-pending-fields.util';
 import {
   WorkflowRunCurrentStepKind,
   WorkflowRunStatus,

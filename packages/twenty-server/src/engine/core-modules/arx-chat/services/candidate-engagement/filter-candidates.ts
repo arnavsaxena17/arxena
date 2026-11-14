@@ -34,7 +34,7 @@ import {
   messagingChannelEquals,
   toMessagingChannelTransportKey,
 } from 'src/engine/core-modules/arx-chat/utils/messaging-channel.util';
-import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
+import { normalizeLinkedInUrl } from 'src/domains/ingestion/candidate-sourcing/utils/linkedin-url.utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { WorkspaceMemberArxService } from '../workspace-member-arx.service';

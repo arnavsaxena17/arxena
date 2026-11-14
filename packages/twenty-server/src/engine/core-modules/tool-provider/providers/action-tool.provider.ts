@@ -45,6 +45,10 @@ import { SaveOutreachTargetsToCrmTool } from 'src/engine/core-modules/tool/tools
 import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
 import { GetProjectCostsTool } from 'src/engine/core-modules/tool/tools/project-costs-tool/get-project-costs-tool';
 import { GetSourcingLedgerTool } from 'src/engine/core-modules/tool/tools/sourcing-ledger-tool/get-sourcing-ledger-tool';
+import {
+  SourcingNextTool,
+  SourcingStartTool,
+} from 'src/engine/core-modules/tool/tools/sourcing-run-tool/sourcing-run-tools';
 import { GetSourceCapabilitiesTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-source-capabilities-tool';
 import { GetScoringPlanTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-scoring-plan-tool';
 import { FetchProfilesTool } from 'src/engine/core-modules/tool/tools/fetch-profiles-tool/fetch-profiles-tool';
@@ -87,6 +91,8 @@ export class ActionToolProvider implements ToolProvider {
     private readonly writeLinkedinUrlTool: WriteLinkedinUrlTool,
     private readonly getProjectCostsTool: GetProjectCostsTool,
     private readonly getSourcingLedgerTool: GetSourcingLedgerTool,
+    private readonly sourcingStartTool: SourcingStartTool,
+    private readonly sourcingNextTool: SourcingNextTool,
     private readonly getSourceCapabilitiesTool: GetSourceCapabilitiesTool,
     private readonly getScoringPlanTool: GetScoringPlanTool,
     private readonly getOutreachTabTool: GetOutreachTabTool,
@@ -124,6 +130,8 @@ export class ActionToolProvider implements ToolProvider {
       ['write_linkedin_url', this.writeLinkedinUrlTool],
       ['get_project_costs', this.getProjectCostsTool],
       ['get_sourcing_ledger', this.getSourcingLedgerTool],
+      ['sourcing_start', this.sourcingStartTool],
+      ['sourcing_next', this.sourcingNextTool],
       ['get_source_capabilities', this.getSourceCapabilitiesTool],
       ['get_scoring_plan', this.getScoringPlanTool],
       ['get_outreach_tab', this.getOutreachTabTool],
@@ -314,6 +322,24 @@ export class ActionToolProvider implements ToolProvider {
       this.buildDescriptor(
         'get_sourcing_ledger',
         this.getSourcingLedgerTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'sourcing_start',
+        this.sourcingStartTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'sourcing_next',
+        this.sourcingNextTool,
         includeSchemas,
         context.locale,
       ),

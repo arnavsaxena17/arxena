@@ -1111,14 +1111,14 @@ export const SEARCH_PEOPLE_BY_JOB_TITLE_INPUT_DESCRIPTOR: readonly McpInputField
       key: 'dataSource',
       type: 'string',
       description:
-        'Data source alias: omit or auto (resolve workspace member Unipile / API-key Sales Navigator seat), index, apollo, pdl, contactout, harvest, pool, unipile (unipile requires accountId unless resolved)',
+        'Data source alias: omit or auto (resolve workspace member Unipile / API-key Sales Navigator seat), index, apollo, pdl, contactout, harvest, linkedin_pool, linkedin (linkedin requires accountId unless resolved)',
       required: false,
     },
     {
       key: 'accountId',
       type: 'string',
       description:
-        'Unipile LinkedIn account id. Required when dataSource is unipile.',
+        'Unipile LinkedIn account id. Required when dataSource is linkedin.',
       required: false,
     },
     {
@@ -1144,14 +1144,14 @@ export const SEARCH_PEOPLE_API_INPUT_DESCRIPTOR: readonly McpInputFieldDescripto
       key: 'dataSource',
       type: 'string',
       description:
-        'Data source alias: omit or auto (resolve workspace member Unipile / API-key Sales Navigator seat), index, apollo, pdl, contactout, harvest, pool, unipile (unipile requires accountId unless resolved)',
+        'Data source alias: omit or auto (resolve workspace member Unipile / API-key Sales Navigator seat), index, apollo, pdl, contactout, harvest, linkedin_pool, linkedin (linkedin requires accountId unless resolved)',
       required: false,
     },
     {
       key: 'accountId',
       type: 'string',
       description:
-        'Unipile LinkedIn account id. Required when dataSource is unipile.',
+        'Unipile LinkedIn account id. Required when dataSource is linkedin.',
       required: false,
     },
     {
@@ -1889,87 +1889,6 @@ export const GENERATE_LINKEDIN_QUERY_AGENT1_INPUT_DESCRIPTOR: readonly McpInputF
       type: 'string',
       description: 'Optional IP location for context',
       required: false,
-    },
-    {
-      key: 'model',
-      type: 'string',
-      description: 'Optional LLM model to use',
-      required: false,
-    },
-    {
-      key: 'temperature',
-      type: 'number',
-      description: 'Optional temperature for LLM',
-      required: false,
-    },
-  ] as const;
-
-/** Descriptor for generate_linkedin_query_agent2 tool input. */
-export const GENERATE_LINKEDIN_QUERY_AGENT2_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
-  [
-    {
-      key: 'parsedRequirement',
-      type: 'object',
-      description: 'Parsed requirement from Agent 1',
-      required: true,
-    },
-    {
-      key: 'model',
-      type: 'string',
-      description: 'Optional LLM model to use',
-      required: false,
-    },
-    {
-      key: 'temperature',
-      type: 'number',
-      description: 'Optional temperature for LLM',
-      required: false,
-    },
-  ] as const;
-
-/** Descriptor for generate_linkedin_query_agent3 tool input. */
-export const GENERATE_LINKEDIN_QUERY_AGENT3_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
-  [
-    {
-      key: 'parsedRequirement',
-      type: 'object',
-      description: 'Parsed requirement from Agent 1',
-      required: true,
-    },
-    {
-      key: 'masterLists',
-      type: 'object',
-      description: 'Master lists from Agent 2',
-      required: true,
-    },
-    {
-      key: 'model',
-      type: 'string',
-      description: 'Optional LLM model to use',
-      required: false,
-    },
-    {
-      key: 'temperature',
-      type: 'number',
-      description: 'Optional temperature for LLM',
-      required: false,
-    },
-  ] as const;
-
-/** Descriptor for generate_linkedin_query_agent4 tool input. */
-export const GENERATE_LINKEDIN_QUERY_AGENT4_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
-  [
-    {
-      key: 'parsedRequirement',
-      type: 'object',
-      description: 'Parsed requirement from Agent 1',
-      required: true,
-    },
-    {
-      key: 'primaryQuery',
-      type: 'object',
-      description: 'Primary query from Agent 3',
-      required: true,
     },
     {
       key: 'model',

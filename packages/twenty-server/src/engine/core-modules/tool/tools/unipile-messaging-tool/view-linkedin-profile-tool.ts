@@ -5,7 +5,7 @@ import { FeatureFlagKey } from 'twenty-shared/types';
 
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
-import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
+import { extractLinkedinProfileId } from 'src/domains/engagement/outreach-command/utils/extract-linkedin-profile-id.util';
 import {
   ViewLinkedinProfileToolInputZodSchema,
   type ViewLinkedinProfileToolInput,

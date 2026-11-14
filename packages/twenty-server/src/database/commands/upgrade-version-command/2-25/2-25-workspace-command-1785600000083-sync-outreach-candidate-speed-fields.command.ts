@@ -14,7 +14,7 @@ import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/deco
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import { ArxenaStandardApplicationService } from 'src/engine/workspace-manager/arxena-standard-metadata/services/arxena-standard-application.service';
-import { candidateStageImpliesOutbound } from 'src/engine/core-modules/outreach-command/utils/outreach-command-materialize.util';
+import { candidateStageImpliesOutbound } from 'src/domains/engagement/outreach-command/utils/outreach-command-materialize.util';
 
 type CandidateRow = ObjectLiteral & {
   id: string;

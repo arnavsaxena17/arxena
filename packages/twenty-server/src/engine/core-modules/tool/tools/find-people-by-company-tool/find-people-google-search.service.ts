@@ -2,20 +2,20 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 
-import { extractAiOverviewText } from 'src/engine/core-modules/arx-web-search/utils/extract-serp-evidence.util';
-import { type BrightDataSerpGoogleJson } from 'src/engine/core-modules/bright-data/types/bright-data-serp.types';
-import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
-import { toSearchTerms } from 'src/engine/core-modules/title-taxonomy/role-mention-split.util';
+import { extractAiOverviewText } from 'src/domains/discovery/providers/web-evidence/utils/extract-serp-evidence.util';
+import { type BrightDataSerpGoogleJson } from 'src/domains/discovery/providers/bright-data/types/bright-data-serp.types';
+import { BrightDataSerpService } from 'src/domains/discovery/providers/bright-data/services/bright-data-serp.service';
+import { toSearchTerms } from 'src/domains/discovery/query/title-taxonomy/role-mention-split.util';
 import { companyBrandKey } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/company-name-variants.util';
 import {
   buildGoogleSerpSearchUrl,
   mapGoogleSerpOrganicResults,
   type GoogleSerpOrganicItem,
-} from 'src/engine/core-modules/org-chart/utils/map-google-serp-organic.util';
+} from 'src/domains/org-graph/org-chart/utils/map-google-serp-organic.util';
 import {
   isGoogleTitleClauseUsable,
   toGoogleTitleClause,
-} from 'src/engine/core-modules/title-taxonomy/title-boolean.util';
+} from 'src/domains/discovery/query/title-taxonomy/title-boolean.util';
 import {
   isLinkedinProfileUrl,
   normalizeLinkedinProfileUrl,

@@ -26,6 +26,8 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Boot DI repair after the `domains/*` module split | `tserv` died in `InstanceLoader` on a chain of `UnknownDependenciesException`s that compile/typecheck never catch. Apollo: `ApolloPeopleSearchTransformerService` lost its `CandidateSourcingModule` edge (added lazy-`require` `forwardRef`). Evaluation: `ResultValidationService`'s `SearchParametersPrompts` + `StreamProcessingService` were never re-registered after leaving `candidate-search.module`. Discovery query: `LinkedinParameterCatalogService` was registered nowhere at all, now provided+exported by `LinkedInSearchModule`. Messaging: `RedisService` + `JwtModule` missing for the WhatsApp rate limiter and `StaticGraphQLService`. Org chart: `OrgchartLinkedInQueryRouterService` not exported (needed by `CandidateSearchHandlerService`), `OrgChartProfileDataSourceMapperService` was registered on `CandidateSearchModule` instead of its `org-chart/` home, `AiBillingModule` missing. Outreach: `GoogleContactsModule` + `forwardRef(OrgChartModule)` missing for the ICP outreach services. Boot now reaches `Nest application successfully started`. See §2.14. | `apollo.module.ts`, `evaluation.module.ts`, `linkedin-search.module.ts`, `messaging.module.ts`, `org-chart.module.ts`, `candidate-search.module.ts`, `outreach-command.module.ts` |
+| `domains/*` move fallout in server boot + guards | `nest-cli.json` asset glob for `mock-unipile-profiles/*.json` still pointed at `engine/core-modules/outreach-command`, so `dist` shipped the compiled `require('./mock-unipile-profiles/arvind-pathak.json')` with no JSON next to it → `MODULE_NOT_FOUND` on boot. Repointed to `domains/engagement/outreach-command`. Same sweep: `UNMETERED_LLM_CALL_SITES` still listed 11 moved files; updated to `domains/...` and the guard spec passes both directions. | `nest-cli.json`, `unmetered-llm-call-sites.const.ts` |
 | Candidate drawer multi-channel composer | The drawer composer was hardwired to `POST /arx-chat/send-chat` by `phoneNumberTo` and blocked on an empty phone, so LinkedIn-only outreach rows could not be messaged. It now posts `{ candidateId, messageToSend, channel }` to `send-chat-candidate-id`; `MessagingControls.sendMessageToCandidateById` takes an optional channel override and resolves the destination per channel (LinkedIn URL / phone / email). `typeOfMessage: 'email'` rows are now expanded by the transcript expander alongside LinkedIn, so email turns show as separate bubbles. `expandLinkedinTranscriptRows` renamed to `expandChatTranscriptRows` (util + spec + 2 callers). Email sends reuse `SendEmailFunctionality` (Gmail) and persist the transcript row locally because email has no Unipile thread. | `CandidateChatDrawer.tsx`, `messaging-controls.ts`, `arx-chat-agent.controller.ts`, `expand-chat-transcript-turns.util.ts` |
 | Re-fix `projectIdAtom` TDZ on ProjectPage | Bad rename `const [projectIdAtom, setProjectIdAtom] = useAtomState(projectIdAtom)` (commit `856a3e3b`) shadowed the atom import; new project route crashed with TDZ. Restored value locals `projectId` / `setProjectId`. Detector clean. | `ProjectPage.tsx` |
 | Outreach Today inbox | `decision` object (one row per pending sequencer FORM step). Form park upserts it; `submitFormStep` and the reject-and-stop path close it. `/outreach-today` groups reply/meeting drafts vs batched approvals. Candidate drawer shows the same open row. Sync with `workspace:sync-arxena-standard`. | `outreach-decision.service.ts`, `form.workflow-action.ts`, `OutreachTodayPage.tsx`, `OutreachNeedsYouCard.tsx` |
@@ -535,6 +537,50 @@ rg -n 'CandidateActions' packages/twenty-front/src/modules/ui/layout/right-drawe
 | `ARX_FETCH_LINKEDIN_POSTS` | Unipile user posts → `candidate.linkedinPosts` + `otherFields.linkedin_posts`. |
 | `ARX_FETCH_LINKEDIN_PROFILE` | Unipile profile → `candidate.linkedinProfile` + `otherFields.linkedin_profile` (prospect; not workspaceMember sender cache). |
 
+### 2.13 Server `src/` moves (`engine/core-modules/*` → `domains/*`)
+
+ARX server modules moved under `src/domains/<area>/<module>`. Import strings alone are not enough — **path-as-data** also has to move:
+
+| Kind | Where it hides | Fix |
+| --- | --- | --- |
+| `nest-cli.json` `compilerOptions.assets[].include` | Asset copied to `dist`, never type-checked | Repoint glob; verify with `ls dist/<path>/` after `nest build` |
+| Allowlists of file paths (e.g. `UNMETERED_LLM_CALL_SITES`) | Const `.ts` compared against `relative()` paths in a guard spec | Rewrite entries to the new `domains/...` spelling |
+| Ratchet module lists (`typecheck-sourcing-ratchet.mjs`, `typecheck-sourcing.baseline.json`) | `MODULES` array of `src/...` dirs | Update dirs or the ratchet silently stops covering them |
+
+```bash
+# Any src/ path strings that may reference a moved module
+rg -n "engine/core-modules/(candidate-search|candidate-sourcing|people-api|search-models|org-chart-outreach|org-chart|linkedin-query-generation|outreach-command)/" \
+  packages/twenty-server --glob '!**/dist/**' --glob '!**/node_modules/**'
+```
+
+### 2.14 Module split fallout: DI tokens lost in the move
+
+Splitting one `engine/core-modules/<x>` module into several `domains/*` modules leaves
+`Nest can't resolve dependencies of X (?). ... is available in the Y module` at
+**runtime boot only** — `tsc` and swc compile happily, so typecheck never catches it.
+
+Two recurring shapes:
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Provider moved to module A, injected by a provider in module B | The old single module had both; the split didn't move an `imports:` edge or an `exports:` entry | Add `forwardRef(() => AModule)` to B **and** the token to A's `exports`; use the lazy-`require` form when B → A also exists statically (see `apollo.module.ts`, `bright-data.module.ts`) |
+| `[no module exports it]` in an audit | Token is registered **nowhere** — the split dropped its module registration entirely | Register it in the module that owns its consumers, or move it back to its home module |
+
+Also: a provider registered on the wrong module compiles fine and boots fine as long as
+nothing injects it from there. Prefer the module matching the file's directory
+(`domains/org-graph/org-chart/**` → `OrgChartModule`).
+
+```bash
+# Boot-only DI check (no DB needed — fails during InstanceLoader, before listen)
+cd packages/twenty-server && npx nx run twenty-server:start
+# A clean graph ends at "Nest application successfully started" or EADDRINUSE only.
+```
+
+Static audit helper (unofficial, in `tmp/agent-runs/nest-di-audit.cjs`) resolves
+`@Module` provider/import/export graphs via ts-morph and lists every ctor param that no
+reachable module exports. Treat hits in **untouched upstream** modules as pre-existing;
+only port-edited modules matter.
+
 ## 3. Job → Project rename map
 
 CRM “Job” object became **Project**. Script: `node packages/twenty-utils/rename-crm-job-to-project.mjs`.
@@ -705,7 +751,8 @@ Tracked from current tree greps — fix then tick §7.
 | Candidate-sourcing body still `jobId`-only (no `projectId ?? jobId`) | **done** for HTTP handlers + queue processors + delivery shortlist/interview-videos + search cache + resume-upload + voice (2026-08-03). Remaining naming-only: CRX/site snake_case `job_id`/`job_name` on upload-profiles / create-project-in-arxena (intentional dual contract); shared job payloads still use field `jobName` (display name). |
 | Apollo wrong client (workspace ops → `/metadata`) | **done** as of 2026-08-03 sweep — only remaining were intentional metadata (`WORKSPACE_CREDITS`, billing) + commented video-model query |
 | ARX worker: orphan `CronProcessesModule` | Never imported → `CandidateEngagementCronService` never enqueues; `CandidateEngagementProcessor` exists in CandidateSourcing but cron producer is dead |
-| Dead `@nestjs/bull` `GoogleContactsProcessor` | `google-contacts.processor.ts` uses empty `@Process()` from `@nestjs/bull`; not in any module. Live path is `GoogleContactsQueueProcessor` |
+| Sourcing typecheck ratchet points at moved dirs | **open** — `scripts/typecheck-sourcing-ratchet.mjs` `MODULES` lists `src/engine/core-modules/{candidate-sourcing,candidate-search,org-chart,linkedin-search}`; only `arxena-tools` still exists there, so 4/5 modules count zero errors and the ratchet silently covers nothing. Repoint to `src/domains/...` + `--update` baseline (§2.13). |
+| `@nestjs/bull` `GoogleContactsProcessor` | `google-contacts.processor.ts` uses empty `@Process()` from `@nestjs/bull`; not in any module. Live path is `GoogleContactsQueueProcessor` |
 | `@Process({ concurrency })` ignored | Accepted by decorator but discarded; real concurrency is `MESSAGE_QUEUE_WORKER_CONFIG` (e.g. Apollo decorator says 2, orgchart queue is 1) |
 | Twenty `ObjectFilterDropdownButton` / old Filter+Sort ViewBar buttons | workflows `JobPage`/`Projects` passed Filter+Sort dropdowns as `rightComponent`; component removed upstream. Project page uses Handsontable filter chips + multi-column sort button instead (`ProjectTopBar`). `Projects.tsx` still has commented-out ViewBar Filter/Sort. Revisit if CRM view filters needed on Handsontable. |
 | `process.env.REACT_APP_SERVER_BASE_URL` (→ `/undefined/…`) | **done** — re-swept 2026-07-26 after CMI port; `rg` in `src/modules` clean (§2.8). Codegen/scripts may still use `process.env` (Node). |
@@ -832,6 +879,7 @@ These files **already existed** on upstream and were edited on `port/arxena-modu
 
 | File | Status | Why |
 | --- | --- | --- |
+| `packages/twenty-server/nest-cli.json` | working · intent | Asset `include` globs must follow ARX moves (e.g. `mock-unipile-profiles/*.json` moved `engine/core-modules/outreach-command` → `domains/engagement/outreach-command`); a stale glob boots with `MODULE_NOT_FOUND` |
 | `packages/twenty-server/src/engine/core-modules/core-engine.module.ts` | committed · intent | Register Arxena Nest modules |
 | `packages/twenty-server/src/engine/core-modules/environment/environment.module.ts` | committed · intent | EnvironmentService shim |
 | `packages/twenty-server/src/engine/core-modules/twenty-config/config-variables.ts` | committed · intent | Arxena / billing config vars |

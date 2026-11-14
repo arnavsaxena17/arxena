@@ -1,7 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
 
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
-import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
+import { CandidateSearchModule } from 'src/domains/planning/candidate-search/candidate-search.module';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';

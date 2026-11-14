@@ -40,7 +40,7 @@ import { MessageQueueService } from 'src/engine/core-modules/message-queue/servi
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { materializeCandidateTouchWithGraphQL } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
+import { materializeCandidateTouchWithGraphQL } from 'src/domains/engagement/outreach-command/services/outreach-command-materialize.service';
 import { WorkspaceMemberArxService } from '../../services/workspace-member-arx.service';
 import { CandidateEngagementArx } from './candidate-engagement';
 import { FilterCandidates } from './filter-candidates';

@@ -17,14 +17,14 @@ import {
 import { ArxenaInProcessRestTransportService } from 'src/engine/core-modules/arxena-tools/services/arxena-in-process-rest-transport.service';
 import { ArxenaMcpBridgeService } from 'src/engine/core-modules/arxena-tools/services/arxena-mcp-bridge.service';
 
-import { SourcingBudgetService } from 'src/engine/core-modules/outreach-command/services/sourcing-budget.service';
-import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
+import { SourcingBudgetService } from 'src/domains/engagement/outreach-command/services/sourcing-budget.service';
+import { SourcingLedgerService } from 'src/domains/engagement/outreach-command/services/sourcing-ledger.service';
 import { sourceKeyOfTool } from 'src/engine/core-modules/tool-provider/utils/sourcing-source-guard.util';
 import {
   buildEmptyTabShape,
   isOutreachTabSourceTool,
   normalizeToolOutputToTabRows,
-} from 'src/engine/core-modules/outreach-command/rows/utils/outreach-rows-normalizers.util';
+} from 'src/domains/engagement/outreach-command/rows/utils/outreach-rows-normalizers.util';
 import { ApiKeyService } from 'src/engine/core-modules/api-key/services/api-key.service';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { type ApiKeyWorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';

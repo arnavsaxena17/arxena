@@ -45,7 +45,7 @@ const withLlmFormattedText = <T extends object>(
 export const OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT = {
   success: true,
   total: 1,
-  dataSource: 'unipile',
+  dataSource: 'linkedin',
   projectId: 'project-id',
   companyId: 'company-id',
   error: '',
@@ -156,7 +156,7 @@ export const OUTREACH_VISIT_LINKEDIN_PROFILE_SAMPLE_OUTPUT = {
 export const OUTREACH_SEARCH_PEOPLE_SAMPLE_OUTPUT = {
   success: true,
   total: 1,
-  dataSource: 'unipile',
+  dataSource: 'linkedin',
   error: '',
   people: [
     {
@@ -335,7 +335,7 @@ const OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_COMPANY = {
 
 export const OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT = {
   success: true,
-  dataSource: 'unipile',
+  dataSource: 'linkedin',
   error: '',
   company: OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_COMPANY,
   companies: [OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_COMPANY],

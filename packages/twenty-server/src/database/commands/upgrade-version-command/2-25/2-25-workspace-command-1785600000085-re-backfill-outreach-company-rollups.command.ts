@@ -12,11 +12,11 @@ import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/w
 import {
   appendProjectId,
   parseProjectIds,
-} from 'src/engine/core-modules/outreach-command/utils/project-ids.util';
+} from 'src/domains/engagement/outreach-command/utils/project-ids.util';
 import {
   computeCoverageBucket,
   rollupOutreachFunnelStage,
-} from 'src/engine/core-modules/outreach-command/utils/outreach-command-materialize.util';
+} from 'src/domains/engagement/outreach-command/utils/outreach-command-materialize.util';
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';

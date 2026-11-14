@@ -6,7 +6,7 @@ import { type WorkflowRunStepLog } from 'twenty-shared/workflow';
 import { CreateCalendarEventTool } from 'src/engine/core-modules/tool/tools/calendar-tool/create-calendar-event-tool';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
-import { OutreachMessagePersistService } from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
+import { OutreachMessagePersistService } from 'src/domains/engagement/outreach-command/services/outreach-message-persist.service';
 import {
   WorkflowStepExecutorException,
   WorkflowStepExecutorExceptionCode,

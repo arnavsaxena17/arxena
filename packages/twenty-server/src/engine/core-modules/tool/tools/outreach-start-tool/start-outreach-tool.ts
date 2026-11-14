@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { OutreachProjectOutreachControlService } from 'src/engine/core-modules/outreach-command/services/outreach-project-outreach-control.service';
+import { OutreachProjectOutreachControlService } from 'src/domains/engagement/outreach-command/services/outreach-project-outreach-control.service';
 import {
   type StartOutreachInput,
   StartOutreachInputZodSchema,

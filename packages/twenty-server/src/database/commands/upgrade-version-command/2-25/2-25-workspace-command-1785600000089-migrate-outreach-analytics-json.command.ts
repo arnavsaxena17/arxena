@@ -20,7 +20,7 @@ import { findEntitiesByIdInBatches } from 'src/database/commands/upgrade-version
 import {
   computeCoverageBucket,
   mapMessagingChannelToOutreachChannel,
-} from 'src/engine/core-modules/outreach-command/utils/outreach-command-materialize.util';
+} from 'src/domains/engagement/outreach-command/utils/outreach-command-materialize.util';
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
@@ -115,12 +115,14 @@ const toIso = (value: string | Date | null | undefined): string | null => {
 // scan is complete and deterministic regardless of row count.
 const forEachRowPage = async <TRow extends ObjectLiteral>({
   queryService,
+  workspaceId,
   schemaName,
   tableName,
   columns,
   onPage,
 }: {
   queryService: WorkspaceQueryService;
+  workspaceId: string;
   schemaName: string;
   tableName: string;
   columns: string[];
@@ -140,6 +142,7 @@ const forEachRowPage = async <TRow extends ObjectLiteral>({
         LIMIT $1
       `,
       [PAGE_SIZE, lastId],
+      workspaceId,
     );
 
     if (rows.length === 0) {
@@ -166,11 +169,13 @@ const assertSafeSchemaName = (schemaName: string): void => {
 
 const applyAnalyticsPatches = async ({
   queryService,
+  workspaceId,
   schemaName,
   tableName,
   patches,
 }: {
   queryService: WorkspaceQueryService;
+  workspaceId: string;
   schemaName: string;
   tableName: string;
   patches: AnalyticsPatch[];
@@ -191,16 +196,19 @@ const applyAnalyticsPatches = async ({
         batch.map((patch) => patch.id),
         batch.map((patch) => JSON.stringify(patch.outreachAnalytics)),
       ],
+      workspaceId,
     );
   }
 };
 
 const applyConfigPatches = async ({
   queryService,
+  workspaceId,
   schemaName,
   patches,
 }: {
   queryService: WorkspaceQueryService;
+  workspaceId: string;
   schemaName: string;
   patches: ConfigPatch[];
 }): Promise<void> => {
@@ -220,6 +228,7 @@ const applyConfigPatches = async ({
         batch.map((patch) => patch.id),
         batch.map((patch) => JSON.stringify(patch.outreachConfig)),
       ],
+      workspaceId,
     );
   }
 };
@@ -290,6 +299,7 @@ export class MigrateOutreachAnalyticsJsonCommand extends ProvisionedWorkspaceCom
 
     await forEachRowPage<CandidateRow>({
       queryService: this.workspaceQueryService,
+      workspaceId,
       schemaName,
       tableName: candidateTable,
       columns: CANDIDATE_COLUMNS,
@@ -357,6 +367,7 @@ export class MigrateOutreachAnalyticsJsonCommand extends ProvisionedWorkspaceCom
 
         await applyAnalyticsPatches({
           queryService: this.workspaceQueryService,
+          workspaceId,
           schemaName,
           tableName: candidateTable,
           patches,
@@ -375,6 +386,7 @@ export class MigrateOutreachAnalyticsJsonCommand extends ProvisionedWorkspaceCom
                 WHERE "id" = ANY($1::uuid[])
               `,
               [personIds],
+              workspaceId,
             ),
           peopleIds,
         );
@@ -398,6 +410,7 @@ export class MigrateOutreachAnalyticsJsonCommand extends ProvisionedWorkspaceCom
         }
 
         await this.rebuildCompanyRollups({
+          workspaceId,
           schemaName,
           companyTable,
           candidatesByCompany,
@@ -409,6 +422,7 @@ export class MigrateOutreachAnalyticsJsonCommand extends ProvisionedWorkspaceCom
 
     await forEachRowPage<ProjectRow>({
       queryService: this.workspaceQueryService,
+      workspaceId,
       schemaName,
       tableName: '_project',
       columns: PROJECT_COLUMNS,
@@ -443,6 +457,7 @@ export class MigrateOutreachAnalyticsJsonCommand extends ProvisionedWorkspaceCom
 
         await applyConfigPatches({
           queryService: this.workspaceQueryService,
+          workspaceId,
           schemaName,
           patches,
         });
@@ -462,10 +477,12 @@ export class MigrateOutreachAnalyticsJsonCommand extends ProvisionedWorkspaceCom
   }
 
   private async rebuildCompanyRollups({
+    workspaceId,
     schemaName,
     companyTable,
     candidatesByCompany,
   }: {
+    workspaceId: string;
     schemaName: string;
     companyTable: string;
     candidatesByCompany: Map<
@@ -486,6 +503,7 @@ export class MigrateOutreachAnalyticsJsonCommand extends ProvisionedWorkspaceCom
               AND "deletedAt" IS NULL
           `,
           [companyIdBatch],
+          workspaceId,
         );
 
       const patches: AnalyticsPatch[] = [];
@@ -563,6 +581,7 @@ export class MigrateOutreachAnalyticsJsonCommand extends ProvisionedWorkspaceCom
 
       await applyAnalyticsPatches({
         queryService: this.workspaceQueryService,
+        workspaceId,
         schemaName,
         tableName: companyTable,
         patches,

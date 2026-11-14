@@ -17,7 +17,7 @@ import { MessageQueueService } from 'src/engine/core-modules/message-queue/servi
 
 import { LogicFunctionExecutorService } from 'src/engine/core-modules/logic-function/logic-function-executor/logic-function-executor.service';
 import { NativeLogicFunctionRegistry } from 'src/engine/core-modules/logic-function/logic-function-executor/native-logic-function.registry';
-import { maybeWithLlmFormattedText } from 'src/engine/core-modules/outreach-command/utils/with-llm-formatted-text.util';
+import { maybeWithLlmFormattedText } from 'src/domains/engagement/outreach-command/utils/with-llm-formatted-text.util';
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
 import {

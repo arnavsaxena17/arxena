@@ -7,7 +7,7 @@ import { type Repository } from 'typeorm';
 
 import { SendEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/send-email-tool';
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
-import { OutreachMessagePersistService } from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
+import { OutreachMessagePersistService } from 'src/domains/engagement/outreach-command/services/outreach-message-persist.service';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { ConnectedAccountEntity } from 'src/engine/metadata-modules/connected-account/entities/connected-account.entity';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';

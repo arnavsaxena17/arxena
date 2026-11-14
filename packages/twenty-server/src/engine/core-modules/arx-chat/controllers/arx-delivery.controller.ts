@@ -24,9 +24,9 @@ import { EngagedCandidateQueueService } from 'src/engine/core-modules/arx-chat/s
 import { GmailDraftShortlistQueueService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/gmail-draft-shortlist-queue.service';
 import { ShortlistDocumentService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/shortlist-document.service';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
-import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
-import { ResumeReadParseUploadService } from 'src/engine/core-modules/candidate-sourcing/services/resume-read-parse-upload.service';
-import { createProjectIdErrorResponse, validateAndExtractProjectId } from 'src/engine/core-modules/candidate-sourcing/utils/project-id.utils';
+import { CandidateService } from 'src/domains/ingestion/candidate-sourcing/services/candidate.service';
+import { ResumeReadParseUploadService } from 'src/domains/ingestion/candidate-sourcing/services/resume-read-parse-upload.service';
+import { createProjectIdErrorResponse, validateAndExtractProjectId } from 'src/domains/ingestion/candidate-sourcing/utils/project-id.utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';

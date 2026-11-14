@@ -2,7 +2,7 @@ import { isNonEmptyString } from '@sniptt/guards';
 
 import { isDefined } from 'twenty-shared/utils';
 
-import { type ResolvedCompanyFromRawName } from 'src/engine/core-modules/org-chart/services/company-name-resolver.service';
+import { type ResolvedCompanyFromRawName } from 'src/domains/org-graph/org-chart/services/company-name-resolver.service';
 import {
   buildCompanyVariants,
   companyBrandKey,

@@ -14,7 +14,7 @@ import {
   buildProjectExperimentConfigUpdate,
   readProjectExperimentConfig,
   type OutreachExperimentConfig,
-} from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
+} from 'src/domains/engagement/outreach-command/utils/outreach-experiment.util';
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';

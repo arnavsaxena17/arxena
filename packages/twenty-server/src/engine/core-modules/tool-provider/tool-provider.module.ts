@@ -34,7 +34,7 @@ import { ViewSortModule } from 'src/engine/metadata-modules/view-sort/view-sort.
 import { ViewModule } from 'src/engine/metadata-modules/view/view.module';
 import { WebhookModule } from 'src/engine/metadata-modules/webhook/webhook.module';
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
-import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
+import { OutreachCommandModule } from 'src/domains/engagement/outreach-command/outreach-command.module';
 
 import { ToolIndexResolver } from './resolvers/tool-index.resolver';
 import { ToolRegistryService } from './services/tool-registry.service';

@@ -3,11 +3,11 @@ import {
   fetchTabForQuality,
 } from 'src/engine/metadata-modules/ai/ai-chat/__tests__/sourcing-eval/live-tools';
 import { type ToolCall } from 'src/engine/metadata-modules/ai/ai-chat/__tests__/sourcing-eval/run-scenario';
-import { type OutreachTabRow } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
+import { type OutreachTabRow } from 'src/domains/engagement/outreach-command/services/outreach-tab.service';
 import {
   computePairFunnel,
   type SourcingPairFunnel,
-} from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
+} from 'src/domains/engagement/outreach-command/utils/sourcing-ledger.util';
 
 export type QualityReport = {
   companies: TabSlice;

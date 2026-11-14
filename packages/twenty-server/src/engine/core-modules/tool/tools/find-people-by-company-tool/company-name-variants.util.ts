@@ -1,4 +1,4 @@
-import { normalizeCompanyName } from 'src/engine/core-modules/org-chart/utils/match-bright-data-company-name.util';
+import { normalizeCompanyName } from 'src/domains/org-graph/org-chart/utils/match-bright-data-company-name.util';
 
 const COUNTRY_WORDS = new Set(['india', 'indian', 'usa', 'uk', 'global']);
 

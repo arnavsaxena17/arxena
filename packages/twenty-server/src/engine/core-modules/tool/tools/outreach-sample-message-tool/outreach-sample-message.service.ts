@@ -6,32 +6,32 @@ import { resolveOutreachConfigPersonaGuidance } from 'twenty-shared/arx';
 import { isDefined, isValidUuid } from 'twenty-shared/utils';
 import { type FindOptionsWhere, type ObjectLiteral } from 'typeorm';
 
-import { OrgChartCompanyNewsService } from 'src/engine/core-modules/org-chart/services/org-chart-company-news.service';
-import { filterRecentCompanyNewsItems } from 'src/engine/core-modules/org-chart/utils/filter-recent-company-news-items.util';
+import { OrgChartCompanyNewsService } from 'src/domains/org-graph/org-chart/services/org-chart-company-news.service';
+import { filterRecentCompanyNewsItems } from 'src/domains/org-graph/org-chart/utils/filter-recent-company-news-items.util';
 import {
   buildOutreachFirstMessagePrompt,
   validateOutreachOpenerMessage,
-} from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
-import { FetchLinkedinMessagesService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-messages.service';
-import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
-import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
+} from 'src/domains/engagement/outreach-command/prompts/outreach.prompts';
+import { FetchLinkedinMessagesService } from 'src/domains/engagement/outreach-command/services/fetch-linkedin-messages.service';
+import { FetchLinkedinProfileService } from 'src/domains/engagement/outreach-command/services/fetch-linkedin-profile.service';
+import { OutreachSenderProfileService } from 'src/domains/engagement/outreach-command/services/outreach-sender-profile.service';
 import {
   type OutreachSampleMessageDraft,
   type OutreachSampleMessageDrafter,
   type OutreachSampleMessageInclude,
   type OutreachSampleMessageProspect,
-} from 'src/engine/core-modules/outreach-command/types/outreach-sample-message.types';
+} from 'src/domains/engagement/outreach-command/types/outreach-sample-message.types';
 import {
   buildFindRecordsLlmText,
   formatOutreachProspectPostsForLlm,
   formatOutreachProspectProfileForLlm,
   formatOutreachTranscriptForLlm,
   rewriteOutreachResolvedPromptSections,
-} from 'src/engine/core-modules/outreach-command/utils/format-outreach-llm-context.util';
+} from 'src/domains/engagement/outreach-command/utils/format-outreach-llm-context.util';
 import {
   pickOutreachOpenerShape,
   pickOutreachOpenerVariant,
-} from 'src/engine/core-modules/outreach-command/utils/outreach-opener-assignment.util';
+} from 'src/domains/engagement/outreach-command/utils/outreach-opener-assignment.util';
 import { UsageOperationType } from 'src/engine/core-modules/usage/enums/usage-operation-type.enum';
 import { AgentAsyncExecutorService } from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-async-executor.service';
 import { AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';

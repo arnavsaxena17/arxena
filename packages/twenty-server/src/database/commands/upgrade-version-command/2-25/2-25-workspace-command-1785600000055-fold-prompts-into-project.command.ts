@@ -3,7 +3,7 @@ import { Command } from 'nest-commander';
 import { ProvisionedWorkspaceCommandRunner } from 'src/database/commands/command-runners/provisioned-workspace.command-runner';
 import { WorkspaceIteratorService } from 'src/database/commands/command-runners/workspace-iterator.service';
 import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/workspace.command-runner';
-import { isJsonColumnEmpty } from 'src/engine/core-modules/candidate-sourcing/utils/migrate-other-fields.utils';
+import { isJsonColumnEmpty } from 'src/domains/ingestion/candidate-sourcing/utils/migrate-other-fields.utils';
 import { DEFAULT_PROJECT_PROMPTS } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';

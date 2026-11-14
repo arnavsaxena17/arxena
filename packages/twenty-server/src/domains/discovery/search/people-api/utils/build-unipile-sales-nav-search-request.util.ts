@@ -1,0 +1,101 @@
+import type { LinkedInRoleFilter } from 'src/domains/discovery/transport/linkedin-search/types/linkedin-search-request.type';
+import type { LinkedInSeniorityType } from 'src/domains/discovery/transport/linkedin-search/types/linkedin-search-parameter.type';
+
+export type UnipileSalesNavSearchRequest = {
+  keywords?: string;
+  role?: LinkedInRoleFilter;
+  company?: { include: string[] };
+  function?: { include: string[] };
+  seniority?: { include: LinkedInSeniorityType[] };
+  location?: { include?: string[]; exclude?: string[] };
+};
+
+export const shouldOmitSalesNavKeywords = (args: {
+  functionIds: string[];
+  seniorities: LinkedInSeniorityType[];
+}): boolean =>
+  args.functionIds.length > 0 || args.seniorities.length > 0;
+
+export const buildUnipileSalesNavSearchRequest = (input: {
+  keywords?: string;
+  jobTitle?: string;
+  companyParameterIds: string[];
+  primaryCompanyName: string;
+  country?: string;
+  locationIds?: string[];
+  locationExcludeIds?: string[];
+  functionIds: string[];
+  seniorities: LinkedInSeniorityType[];
+  includeManualLinkedInQuery?: boolean;
+}): UnipileSalesNavSearchRequest => {
+  const jobTitle = input.jobTitle?.trim();
+  const hasBooleanTitleOrManualQuery =
+    !!jobTitle || !!input.includeManualLinkedInQuery;
+  const omitGeneratedText =
+    !hasBooleanTitleOrManualQuery &&
+    shouldOmitSalesNavKeywords({
+      functionIds: input.functionIds,
+      seniorities: input.seniorities,
+    });
+
+  const keywordParts: string[] = [];
+  if (!omitGeneratedText && input.keywords?.trim()) {
+    keywordParts.push(input.keywords.trim());
+  }
+  const companyName = input.primaryCompanyName.trim();
+  if (
+    input.companyParameterIds.length === 0 &&
+    companyName &&
+    companyName.toLowerCase() !== 'company'
+  ) {
+    keywordParts.push(`"${companyName}"`);
+  }
+  if (
+    !omitGeneratedText &&
+    !input.includeManualLinkedInQuery &&
+    !(input.locationIds && input.locationIds.length > 0) &&
+    input.country?.trim() &&
+    input.country.trim().toLowerCase() !== 'global'
+  ) {
+    keywordParts.push(input.country.trim());
+  }
+
+  const omitFunctionAndSeniorityFacets =
+    !!jobTitle ||
+    (!!input.includeManualLinkedInQuery && keywordParts.length > 0);
+
+  return {
+    ...(keywordParts.length > 0
+      ? { keywords: keywordParts.join(' AND ') }
+      : {}),
+    ...(jobTitle
+      ? {
+          role: {
+            include: [jobTitle],
+          },
+        }
+      : {}),
+    ...(input.companyParameterIds.length > 0
+      ? { company: { include: input.companyParameterIds } }
+      : {}),
+    ...(!omitFunctionAndSeniorityFacets && input.functionIds.length > 0
+      ? { function: { include: input.functionIds } }
+      : {}),
+    ...(!omitFunctionAndSeniorityFacets && input.seniorities.length > 0
+      ? { seniority: { include: input.seniorities } }
+      : {}),
+    ...((input.locationIds && input.locationIds.length > 0) ||
+    (input.locationExcludeIds && input.locationExcludeIds.length > 0)
+      ? {
+          location: {
+            ...(input.locationIds && input.locationIds.length > 0
+              ? { include: input.locationIds }
+              : {}),
+            ...(input.locationExcludeIds && input.locationExcludeIds.length > 0
+              ? { exclude: input.locationExcludeIds }
+              : {}),
+          },
+        }
+      : {}),
+  };
+};

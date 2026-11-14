@@ -1,0 +1,35 @@
+import type { CompanyDataSourceAlias } from './constants/company-data-source-aliases';
+import type { UnipileLinkedinProduct } from 'src/domains/discovery/transport/linkedin-search/utils/unipile-linkedin-product.util';
+
+export type CompanySearchHit = {
+  id: string;
+  name: string;
+  website: string;
+  linkedinUrl: string;
+  // Google Maps place URL from local-business discover — not a LinkedIn URL
+  googleMapsUrl?: string;
+  industry: string;
+  country?: string;
+  region?: string;
+  locality?: string;
+  size?: string;
+  founded?: string;
+};
+
+export type CompanySearchResponse = {
+  status: 'ok';
+  dataSource: Exclude<CompanyDataSourceAlias, 'auto'>;
+  unipileProduct?: UnipileLinkedinProduct;
+  total: number;
+  items: CompanySearchHit[];
+};
+
+export type CompanyDataSourcesStatusResponse = {
+  status: 'ok';
+  sources: Array<{
+    alias: CompanyDataSourceAlias;
+    label: string;
+    description: string;
+    configured: boolean;
+  }>;
+};

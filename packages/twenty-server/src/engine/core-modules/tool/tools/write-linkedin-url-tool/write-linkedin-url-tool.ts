@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 
-import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
+import { OutreachTabService } from 'src/domains/engagement/outreach-command/services/outreach-tab.service';
 import {
   WriteLinkedinUrlToolInputZodSchema,
   type WriteLinkedinUrlToolInput,

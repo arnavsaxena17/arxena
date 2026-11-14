@@ -17,7 +17,7 @@ import {
 import { Request } from 'express';
 import { isNonEmptyString } from '@sniptt/guards';
 
-import { OrgChartClientIpService } from 'src/engine/core-modules/org-chart/services/org-chart-client-ip.service';
+import { OrgChartClientIpService } from 'src/domains/org-graph/org-chart/services/org-chart-client-ip.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { WebsiteTrackerService } from 'src/engine/core-modules/website-tracker/website-tracker.service';
 import { normalizeWebsiteHostname } from 'src/engine/core-modules/website-tracker/website-tracker.types';

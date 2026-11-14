@@ -6,8 +6,8 @@ import { v4 } from 'uuid';
 import {
   type FilterFieldSpec,
   type FilterSpec,
-} from 'src/engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-contract';
-import { AiFilterEngineService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-engine.service';
+} from 'src/domains/ingestion/candidate-sourcing/services/ai-filter-engine/ai-filter-contract';
+import { AiFilterEngineService } from 'src/domains/ingestion/candidate-sourcing/services/ai-filter-engine/ai-filter-engine.service';
 import { AiFilterContextService } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/ai-filter-context.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';

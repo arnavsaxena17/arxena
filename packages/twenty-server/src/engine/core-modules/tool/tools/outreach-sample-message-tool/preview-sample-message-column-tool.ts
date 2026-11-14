@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
-import { OutreachAiColumnService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column.service';
-import { OUTREACH_SAMPLE_MESSAGE_COLUMN_KEY } from 'src/engine/core-modules/outreach-command/types/outreach-sample-message.types';
+import { OutreachAiColumnService } from 'src/domains/engagement/outreach-command/services/outreach-ai-column.service';
+import { OUTREACH_SAMPLE_MESSAGE_COLUMN_KEY } from 'src/domains/engagement/outreach-command/types/outreach-sample-message.types';
 import { PreviewSampleMessageColumnInputZodSchema } from 'src/engine/core-modules/tool/tools/outreach-sample-message-tool/preview-sample-message-column-schema';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';

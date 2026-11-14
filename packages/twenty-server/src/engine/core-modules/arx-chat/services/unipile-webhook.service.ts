@@ -31,9 +31,9 @@ import {
   resolveAcceptedRelationIdentity,
 } from '../utils/unipile-new-relation.util';
 import { UnipileAccountPoolService } from './unipile-account-pool.service';
-import { OutreachCommandMaterializeService } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
-import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
-import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
+import { OutreachCommandMaterializeService } from 'src/domains/engagement/outreach-command/services/outreach-command-materialize.service';
+import { LinkedinProviderIdStoreService } from 'src/domains/engagement/outreach-command/services/linkedin-provider-id.store';
+import { OutreachInboundReplyWindowService } from 'src/domains/engagement/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { IncomingWhatsappMessages } from './whatsapp-api/incoming-messages';
 import { WorkspaceMemberUnipileService } from './workspace-member-unipile.service';
 

@@ -6,8 +6,8 @@ import { FieldActorSource } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
-import { readProjectExperimentConfig } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
-import { isOutreachSequencerWorkflow } from 'src/engine/core-modules/outreach-command/utils/resolve-outreach-pause-resume-workflow-ids.util';
+import { readProjectExperimentConfig } from 'src/domains/engagement/outreach-command/utils/outreach-experiment.util';
+import { isOutreachSequencerWorkflow } from 'src/domains/engagement/outreach-command/utils/resolve-outreach-pause-resume-workflow-ids.util';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';

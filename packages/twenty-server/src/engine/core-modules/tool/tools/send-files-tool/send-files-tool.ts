@@ -11,8 +11,8 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { FileService } from 'src/engine/core-modules/file/services/file.service';
-import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
-import { normalizeOutreachSenderProfile } from 'src/engine/core-modules/outreach-command/utils/outreach-sender-profile.util';
+import { OutreachSenderProfileService } from 'src/domains/engagement/outreach-command/services/outreach-sender-profile.service';
+import { normalizeOutreachSenderProfile } from 'src/domains/engagement/outreach-command/utils/outreach-sender-profile.util';
 import { SendEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/send-email-tool';
 import {
   SendFilesToolInputZodSchema,

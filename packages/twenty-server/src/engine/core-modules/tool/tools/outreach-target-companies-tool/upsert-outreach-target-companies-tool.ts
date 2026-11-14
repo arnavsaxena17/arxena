@@ -6,9 +6,9 @@ import { isNonEmptyString } from '@sniptt/guards';
 import {
   type OutreachEphemeralCompany,
   OutreachCompaniesCacheService,
-} from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
-import { ChatTabWritesService } from 'src/engine/core-modules/outreach-command/services/chat-tab-writes.service';
-import { mergeOutreachOtherFields } from 'src/engine/core-modules/outreach-command/utils/merge-outreach-other-fields.util';
+} from 'src/domains/engagement/outreach-command/services/outreach-companies-cache.service';
+import { ChatTabWritesService } from 'src/domains/engagement/outreach-command/services/chat-tab-writes.service';
+import { mergeOutreachOtherFields } from 'src/domains/engagement/outreach-command/utils/merge-outreach-other-fields.util';
 import {
   type UpsertOutreachTargetCompaniesInput,
   UpsertOutreachTargetCompaniesInputZodSchema,

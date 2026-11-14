@@ -3,15 +3,15 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 
-import { OUTREACH_TAB_MAX_ROWS } from 'src/engine/core-modules/outreach-command/constants/outreach-tab.constants';
-import { SourcingBudgetService } from 'src/engine/core-modules/outreach-command/services/sourcing-budget.service';
-import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
-import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
+import { OUTREACH_TAB_MAX_ROWS } from 'src/domains/engagement/outreach-command/constants/outreach-tab.constants';
+import { SourcingBudgetService } from 'src/domains/engagement/outreach-command/services/sourcing-budget.service';
+import { SourcingLedgerService } from 'src/domains/engagement/outreach-command/services/sourcing-ledger.service';
+import { BrightDataBusinessSearchService } from 'src/domains/discovery/providers/bright-data/services/bright-data-business-search.service';
 import {
   type BrightDataLudicrousPlan,
   type BrightDataLudicrousRunResult,
-} from 'src/engine/core-modules/bright-data/ludicrous/types/bright-data-ludicrous.types';
-import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-search.service';
+} from 'src/domains/discovery/providers/bright-data/ludicrous/types/bright-data-ludicrous.types';
+import { BrightDataLudicrousSearchService } from 'src/domains/discovery/providers/bright-data/services/ludicrous/bright-data-ludicrous-search.service';
 import {
   mapBrightDataCompanyToEphemeral,
   mapBrightDataCompanyToSearchHit,
@@ -23,17 +23,17 @@ import {
   parseBrightDataInstantLookupQuery,
   type BrightDataBusinessSearchDocument,
   type BrightDataInstantLookup,
-} from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
+} from 'src/domains/discovery/providers/bright-data/utils/bright-data-business-search.util';
 import {
   SearchBrightDataBusinessToolInputZodSchema,
   type SearchBrightDataBusinessToolInput,
 } from 'src/engine/core-modules/tool/tools/bright-data-business-search-tool/search-bright-data-business-tool-input.type';
 import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
-import { BrightDataPersonFitFilterService } from 'src/engine/core-modules/bright-data/services/bright-data-person-fit-filter.service';
+import { BrightDataPersonFitFilterService } from 'src/domains/discovery/providers/bright-data/services/bright-data-person-fit-filter.service';
 import {
   buildDeprioritisationFields,
   type DeprioritisationReason,
-} from 'src/engine/core-modules/outreach-command/utils/outreach-people-deprioritisation.util';
+} from 'src/domains/engagement/outreach-command/utils/outreach-people-deprioritisation.util';
 import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';

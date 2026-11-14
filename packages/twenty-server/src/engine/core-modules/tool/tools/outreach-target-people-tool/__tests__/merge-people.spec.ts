@@ -1,13 +1,13 @@
-import { type OutreachEphemeralPerson } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
+import { type OutreachEphemeralPerson } from 'src/domains/engagement/outreach-command/services/outreach-people-cache.service';
 import {
   compactPeople,
   mergePeople,
-} from 'src/engine/core-modules/outreach-command/utils/merge-people.util';
+} from 'src/domains/engagement/outreach-command/utils/merge-people.util';
 import {
   normalizeCompanyName,
   normalizeLinkedinProfileKey,
   personIdentityKeys,
-} from 'src/engine/core-modules/outreach-command/utils/person-identity.util';
+} from 'src/domains/engagement/outreach-command/utils/person-identity.util';
 import { toEphemeralPerson } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 
 const person = (

@@ -30,7 +30,7 @@ import { MessageQueueService } from 'src/engine/core-modules/message-queue/servi
 import {
   OUTREACH_WORKSPACE_PROFILE_BOOTSTRAP_JOB_NAME,
   type OutreachWorkspaceProfileBootstrapJobData,
-} from 'src/engine/core-modules/outreach-command/jobs/outreach-workspace-profile-bootstrap.job-constants';
+} from 'src/domains/engagement/outreach-command/jobs/outreach-workspace-profile-bootstrap.job-constants';
 import { DnsManagerService } from 'src/engine/core-modules/dns-manager/services/dns-manager.service';
 import { CustomDomainManagerService } from 'src/engine/core-modules/domain/custom-domain-manager/services/custom-domain-manager.service';
 import { SubdomainManagerService } from 'src/engine/core-modules/domain/subdomain-manager/services/subdomain-manager.service';

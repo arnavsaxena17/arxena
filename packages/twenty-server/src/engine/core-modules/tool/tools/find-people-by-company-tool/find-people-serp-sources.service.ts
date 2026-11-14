@@ -7,10 +7,10 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 
 import { type Candidate } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company.types';
-import { TheOfficialBoardService } from 'src/engine/core-modules/theofficialboard/services/theofficialboard.service';
-import { type TheOfficialBoardCompanyResponse } from 'src/engine/core-modules/theofficialboard/types/theofficialboard.types';
-import { TheOrgService } from 'src/engine/core-modules/theorg/services/theorg.service';
-import { type TheOrgCompanyResponse } from 'src/engine/core-modules/theorg/types/theorg.types';
+import { TheOfficialBoardService } from 'src/domains/discovery/providers/theofficialboard/services/theofficialboard.service';
+import { type TheOfficialBoardCompanyResponse } from 'src/domains/discovery/providers/theofficialboard/types/theofficialboard.types';
+import { TheOrgService } from 'src/domains/discovery/providers/theorg/services/theorg.service';
+import { type TheOrgCompanyResponse } from 'src/domains/discovery/providers/theorg/types/theorg.types';
 
 // TheOrg and The Official Board already publish a company's leadership as
 // structured people, so they are asked beside the Google SERP fan-out instead

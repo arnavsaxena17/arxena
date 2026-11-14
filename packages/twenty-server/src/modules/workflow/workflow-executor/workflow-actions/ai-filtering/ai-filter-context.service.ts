@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { parseIcpSpec } from 'src/engine/core-modules/outreach-command/utils/outreach-icp-spec.util';
+import { parseIcpSpec } from 'src/domains/engagement/outreach-command/utils/outreach-icp-spec.util';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
 const ENRICHMENT_TEXT_KEYS = [

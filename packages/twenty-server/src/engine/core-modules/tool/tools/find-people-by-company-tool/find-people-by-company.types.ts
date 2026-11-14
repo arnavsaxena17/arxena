@@ -1,16 +1,16 @@
-import { type RowProfile } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
-import { type PersonJudgement } from 'src/engine/core-modules/bright-data/services/bright-data-person-fit-filter.service';
+import { type RowProfile } from 'src/domains/ingestion/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
+import { type PersonJudgement } from 'src/domains/discovery/providers/bright-data/services/bright-data-person-fit-filter.service';
 import { type FindPeopleByCompanyInput } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool.schema';
-import { type DeprioritisationReason } from 'src/engine/core-modules/outreach-command/utils/outreach-people-deprioritisation.util';
+import { type DeprioritisationReason } from 'src/domains/engagement/outreach-command/utils/outreach-people-deprioritisation.util';
 import {
   type FindPeopleNoneFoundReason,
   type FindPeopleRung,
   type FindPeopleTerminalState,
-} from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
+} from 'src/domains/engagement/outreach-command/utils/outreach-people-found.util';
 import {
   type SourcingConfidence,
   type SourcingCoverage,
-} from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
+} from 'src/domains/engagement/outreach-command/utils/sourcing-ledger.util';
 import { type PersonFreshness } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-confidence.util';
 
 // The input is capped at 25 companies, so the default runs them all at once

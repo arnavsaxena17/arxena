@@ -1,4 +1,4 @@
-import { type OutreachTabRow } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
+import { type OutreachTabRow } from 'src/domains/engagement/outreach-command/services/outreach-tab.service';
 import { summarizeOutreachTabRows } from 'src/engine/core-modules/tool/tools/outreach-ai-column-tool/outreach-ai-column-tools';
 
 const row = (

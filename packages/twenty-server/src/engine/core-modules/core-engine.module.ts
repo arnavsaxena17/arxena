@@ -18,7 +18,6 @@ import { ApprovedAccessDomainModule } from 'src/engine/core-modules/approved-acc
 import { ArxChatAgentModule } from 'src/engine/core-modules/arx-chat/arx-chat-agent.module';
 import { AssistantModule } from 'src/engine/core-modules/assistant/assistant.module';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
-import { AutonomousRecruiterModule } from 'src/engine/core-modules/autonomous-recruiter/autonomous-recruiter.module';
 import { BillingWebhookModule } from 'src/engine/core-modules/billing-webhook/billing-webhook.module';
 import { AppBillingModule } from 'src/engine/core-modules/billing/app-billing/app-billing.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
@@ -29,13 +28,13 @@ import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-
 import { ProviderCallLogModule } from 'src/engine/core-modules/provider-call-log/provider-call-log.module';
 import { TimelineCalendarEventModule } from 'src/engine/core-modules/calendar/timeline-calendar-event.module';
 import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/candidate-avatar.module';
-import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
-import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
+import { CandidateSearchModule } from 'src/domains/planning/candidate-search/candidate-search.module';
+import { CandidateSourcingModule } from 'src/domains/ingestion/candidate-sourcing/candidate-sourcing.module';
 import { CaptchaModule } from 'src/engine/core-modules/captcha/captcha.module';
 import { CloudflareModule } from 'src/engine/core-modules/cloudflare/cloudflare.module';
 import { CodeInterpreterModule } from 'src/engine/core-modules/code-interpreter/code-interpreter.module';
 import { CodeInterpreterSessionCleanupModule } from 'src/engine/core-modules/code-interpreter/crons/code-interpreter-session-cleanup.module';
-import { ContactEnrichmentModule } from 'src/engine/core-modules/contact-enrichment/contact-enrichment.module';
+import { ContactEnrichmentModule } from 'src/domains/discovery/providers/contact-enrichment/contact-enrichment.module';
 import { DnsManagerModule } from 'src/engine/core-modules/dns-manager/dns-manager.module';
 import { DpaModule } from 'src/engine/core-modules/dpa/dpa.module';
 import { EmailModule } from 'src/engine/core-modules/email/email.module';
@@ -55,10 +54,10 @@ import { HealthModule } from 'src/engine/core-modules/health/health.module';
 import { ImapSmtpCaldavModule } from 'src/engine/core-modules/imap-smtp-caldav-connection/imap-smtp-caldav-connection.module';
 import { ImpersonationModule } from 'src/engine/core-modules/impersonation/impersonation.module';
 import { LabModule } from 'src/engine/core-modules/lab/lab.module';
-import { SerpCompanySearchModule } from 'src/engine/core-modules/serp-company-search/serp-company-search.module';
-import { WikidataModule } from 'src/engine/core-modules/wikidata/wikidata.module';
-import { LinkedinQueryGenerationModule } from 'src/engine/core-modules/linkedin-query-generation/linkedin-query-generation.module';
-import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
+import { SerpCompanySearchModule } from 'src/domains/discovery/providers/serp-company-search/serp-company-search.module';
+import { WikidataModule } from 'src/domains/discovery/providers/wikidata/wikidata.module';
+import { LinkedinQueryGenerationModule } from 'src/domains/discovery/query/linkedin-query-generation/linkedin-query-generation.module';
+import { LinkedInSearchModule } from 'src/domains/discovery/transport/linkedin-search/linkedin-search.module';
 import { LLMChatModelModule } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module';
 import { llmChatModelModuleFactory } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module-factory';
 import { LLMTracingModule } from 'src/engine/core-modules/llm-tracing/llm-tracing.module';
@@ -72,25 +71,20 @@ import { TimelineMessagingModule } from 'src/engine/core-modules/messaging/timel
 import { MetricsModule } from 'src/engine/core-modules/metrics/metrics.module';
 import { MetricsService } from 'src/engine/core-modules/metrics/metrics.service';
 import { OpenApiModule } from 'src/engine/core-modules/open-api/open-api.module';
-import { OrgChartEmbedModule } from 'src/engine/core-modules/org-chart-embed/org-chart-embed.module';
-import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
-import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
-import { PeopleApiModule } from 'src/engine/core-modules/people-api/people-api.module';
-import { CompanyApiModule } from 'src/engine/core-modules/company-api/company-api.module';
-import { JobsApiModule } from 'src/engine/core-modules/jobs-api/jobs-api.module';
-import { LocalBusinessDataModule } from 'src/engine/core-modules/local-business-data/local-business-data.module';
-import { PostsApiModule } from 'src/engine/core-modules/posts-api/posts-api.module';
+import { OrgChartEmbedModule } from 'src/domains/org-graph/org-chart-embed/org-chart-embed.module';
+import { OrgChartModule } from 'src/domains/org-graph/org-chart/org-chart.module';
+import { OutreachCommandModule } from 'src/domains/engagement/outreach-command/outreach-command.module';
+import { LocalBusinessDataModule } from 'src/domains/discovery/providers/local-business-data/local-business-data.module';
 import { PrivacyConsentModule } from 'src/engine/core-modules/privacy-consent/privacy-consent.module';
 import { PublicDomainModule } from 'src/engine/core-modules/public-domain/public-domain.module';
 import { RedisClientModule } from 'src/engine/core-modules/redis-client/redis-client.module';
 import { RedisClientService } from 'src/engine/core-modules/redis-client/redis-client.service';
-import { SearchModelsModule } from 'src/engine/core-modules/search-models/search-models.module';
 import { SearchModule } from 'src/engine/core-modules/search/search.module';
 import { WorkspaceSSOModule } from 'src/engine/core-modules/sso/sso.module';
 import { TelemetryModule } from 'src/engine/core-modules/telemetry/telemetry.module';
-import { BuiltWithModule } from 'src/engine/core-modules/builtwith/builtwith.module';
-import { TheOfficialBoardModule } from 'src/engine/core-modules/theofficialboard/theofficialboard.module';
-import { TheOrgModule } from 'src/engine/core-modules/theorg/theorg.module';
+import { BuiltWithModule } from 'src/domains/discovery/providers/builtwith/builtwith.module';
+import { TheOfficialBoardModule } from 'src/domains/discovery/providers/theofficialboard/theofficialboard.module';
+import { TheOrgModule } from 'src/domains/discovery/providers/theorg/theorg.module';
 import { TwentyConfigModule } from 'src/engine/core-modules/twenty-config/twenty-config.module';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { UnipileAttachmentModule } from 'src/engine/core-modules/unipile-attachments/unipile-attachment.module';
@@ -125,9 +119,11 @@ import { SendEmailModule } from 'src/modules/messaging/message-outbound-manager/
 import { ClientConfigModule } from './client-config/client-config.module';
 import { EventLogsViewerModule } from './event-logs/event-logs-viewer.module';
 import { FileModule } from './file/file.module';
+import { DiscoverySearchModule } from 'src/domains/discovery/search/search.module';
 
 @Module({
   imports: [
+    DiscoverySearchModule,
     EnvironmentModule,
     TwentyConfigModule.forRoot(),
     HealthModule,
@@ -222,9 +218,7 @@ import { FileModule } from './file/file.module';
     CandidateAvatarModule,
     AssistantModule,
     McpFederationModule,
-    AutonomousRecruiterModule,
     ExtensionBridgeModule,
-    SearchModelsModule,
     TheOrgModule,
     TheOfficialBoardModule,
     BuiltWithModule,
@@ -232,11 +226,7 @@ import { FileModule } from './file/file.module';
     SerpCompanySearchModule,
     WikidataModule,
     LinkedInSearchModule,
-    PeopleApiModule,
-    CompanyApiModule,
-    JobsApiModule,
     LocalBusinessDataModule,
-    PostsApiModule,
     OutreachCommandModule,
     ArxChatAgentModule,
     GoogleCalendarModule,

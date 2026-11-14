@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ToolModule } from 'src/engine/core-modules/tool/tool.module';
-import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
+import { OutreachCommandModule } from 'src/domains/engagement/outreach-command/outreach-command.module';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { ConnectedAccountEntity } from 'src/engine/metadata-modules/connected-account/entities/connected-account.entity';
 import { DraftEmailWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/mail-sender/draft-email.workflow-action';

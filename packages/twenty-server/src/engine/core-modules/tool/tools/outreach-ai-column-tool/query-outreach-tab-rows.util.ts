@@ -1,11 +1,11 @@
 import { isDefined } from 'twenty-shared/utils';
 
-import { type OutreachTabRow } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
+import { type OutreachTabRow } from 'src/domains/engagement/outreach-command/services/outreach-tab.service';
 import {
   matchesTableFilter,
   readCellText,
-} from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
-import { type OutreachTableFilter } from 'src/engine/core-modules/outreach-command/utils/outreach-cache-realtime.constants';
+} from 'src/domains/engagement/outreach-command/services/outreach-table-view.service';
+import { type OutreachTableFilter } from 'src/domains/engagement/outreach-command/utils/outreach-cache-realtime.constants';
 
 const OTHER_FIELDS_PREFIX = 'otherFields.';
 const EMPTY_GROUP_LABEL = '(empty)';

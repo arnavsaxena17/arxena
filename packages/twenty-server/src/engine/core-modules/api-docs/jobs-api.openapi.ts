@@ -1,6 +1,6 @@
 import { OpenAPIV3_1 } from 'openapi-types';
 
-import { JOB_DATA_SOURCE_CATEGORIES } from '../jobs-api/constants/job-data-source-aliases';
+import { JOB_DATA_SOURCE_CATEGORIES } from 'src/domains/discovery/search/jobs-api/constants/job-data-source-aliases';
 
 const dataSourceEnum = JOB_DATA_SOURCE_CATEGORIES.map(
   (category) => category.alias,
@@ -164,7 +164,7 @@ export const buildJobsApiOpenApiDocument = (
         },
         example: {
           status: 'ok',
-          dataSource: 'unipile',
+          dataSource: 'linkedin',
           total: 1,
           items: [
             {

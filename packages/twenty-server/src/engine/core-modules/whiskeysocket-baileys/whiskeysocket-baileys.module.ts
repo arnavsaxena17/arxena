@@ -17,7 +17,7 @@ import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-s
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { AuthModule } from '../auth/auth.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
-import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
+import { OutreachCommandModule } from 'src/domains/engagement/outreach-command/outreach-command.module';
 import { EventsGateway } from './events-gateway-module/events-gateway';
 import { WhatsAppMonitoringController } from './whatsapp-monitoring.controller';
 import { BaileysWhatsappController } from './whiskeysocket-baileys.controller';

@@ -1,7 +1,7 @@
 import { isNonEmptyString } from '@sniptt/guards';
 
-import { type OutreachEphemeralCompany } from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
-import { type ResolvedCompanyFromRawName } from 'src/engine/core-modules/org-chart/services/company-name-resolver.service';
+import { type OutreachEphemeralCompany } from 'src/domains/engagement/outreach-command/services/outreach-companies-cache.service';
+import { type ResolvedCompanyFromRawName } from 'src/domains/org-graph/org-chart/services/company-name-resolver.service';
 import { normalizeDomain } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
 
 export const UNRESOLVABLE_COMPANY_STATUS = 'unresolvable';

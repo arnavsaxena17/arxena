@@ -4,7 +4,7 @@ import { extractVariablesFromInput } from 'twenty-shared/workflow';
 import {
   buildFindRecordsLlmText,
   rewriteOutreachResolvedPromptSections,
-} from 'src/engine/core-modules/outreach-command/utils/format-outreach-llm-context.util';
+} from 'src/domains/engagement/outreach-command/utils/format-outreach-llm-context.util';
 
 export const getValueAtWorkflowVariablePath = (
   context: Record<string, unknown>,

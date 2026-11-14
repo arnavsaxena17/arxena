@@ -7,15 +7,15 @@ import {
   estimateRunCostUsd,
   getAiColumnAutoRunMaxUsd,
   needsCostApproval,
-} from 'src/engine/core-modules/outreach-command/utils/ai-column-cost-limit.util';
-import { OutreachAiColumnService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column.service';
-import { OutreachAiColumnRunService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column-run.service';
-import { SourcingBudgetService } from 'src/engine/core-modules/outreach-command/services/sourcing-budget.service';
-import { OutreachTableViewService } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
+} from 'src/domains/engagement/outreach-command/utils/ai-column-cost-limit.util';
+import { OutreachAiColumnService } from 'src/domains/engagement/outreach-command/services/outreach-ai-column.service';
+import { OutreachAiColumnRunService } from 'src/domains/engagement/outreach-command/services/outreach-ai-column-run.service';
+import { SourcingBudgetService } from 'src/domains/engagement/outreach-command/services/sourcing-budget.service';
+import { OutreachTableViewService } from 'src/domains/engagement/outreach-command/services/outreach-table-view.service';
 import {
   type OutreachTabRow,
   OutreachTabService,
-} from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
+} from 'src/domains/engagement/outreach-command/services/outreach-tab.service';
 import {
   AiColumnRunIdInputZodSchema,
   ApplyOutreachTableViewInputZodSchema,

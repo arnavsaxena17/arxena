@@ -1,0 +1,906 @@
+import { Injectable } from '@nestjs/common';
+import {
+  MessagingChannel,
+  type CandidateTableRow,
+  type PersonCandidateDraft,
+} from 'twenty-shared';
+import {
+  LinkedInPeopleSearchResult,
+  LinkedInSearchResult,
+} from 'src/domains/discovery/transport/linkedin-search/types/linkedin-search-response.type';
+import { DataProcessingUtils } from '../../utils/data-processing.utils';
+import { pickEmploymentPositionMatchingCompany } from '../../utils/linkedin-orgchart-company-match.util';
+import { pickCurrentPositionForSearchIntent } from 'src/domains/discovery/search/people-api/utils/pick-current-position-for-search-intent.util';
+import { isValidUuid } from 'twenty-shared/utils';
+import {
+  BaseDataSourceTransformerService,
+  TransformationContext,
+} from './base-data-source-transformer.service';
+
+export type { CandidateTableRow };
+
+type LinkedInSearchOrMappedHit = LinkedInPeopleSearchResult & {
+  firstName?: string;
+  lastName?: string;
+  linkedinUrl?: string;
+  profileUrl?: string;
+  profilePictureUrl?: string;
+  displayPicture?: string;
+  jobCompanyId?: string;
+  companyId?: string;
+  jobTitle?: string;
+  company?: string;
+  jobCompanyName?: string;
+  summary?: string | null;
+  salesNavigatorProfileUrl?: string;
+  sharedConnectionsCount?: number;
+  recentlyHired?: boolean;
+};
+
+const readSalesNavigatorProfileUrl = (
+  candidateData: LinkedInSearchOrMappedHit,
+): string => {
+  const candidates = [
+    candidateData.salesNavigatorProfileUrl,
+    candidateData.profile_url,
+    candidateData.profileUrl,
+  ];
+
+  for (const value of candidates) {
+    if (
+      typeof value === 'string' &&
+      /linkedin\.com\/sales\//i.test(value.trim())
+    ) {
+      return value.trim();
+    }
+  }
+
+  return '';
+};
+
+@Injectable()
+export class LinkedInSearchTransformerService extends BaseDataSourceTransformerService {
+  constructor(dataProcessingUtils: DataProcessingUtils) {
+    super(dataProcessingUtils);
+  }
+
+  getDataSourceIdentifier(): string {
+    return 'linkedin_search';
+  }
+
+  transformToUserProfile(
+    candidateData: LinkedInSearchResult,
+    context: TransformationContext,
+  ): PersonCandidateDraft {
+    // Cast to LinkedInPeopleSearchResult since this transformer handles people search results
+    const peopleData = candidateData as LinkedInPeopleSearchResult;
+    const userProfile = this.createBaseUserProfile(peopleData, context);
+
+    // Process LinkedIn-specific data
+    this.processLinkedInProfileData(peopleData, userProfile);
+    this.processLinkedInContactData(peopleData, userProfile);
+    this.processLinkedInExperienceData(peopleData, userProfile, context);
+    this.processLinkedInEducationData(peopleData, userProfile);
+    this.processLinkedInSkillsData(peopleData, userProfile);
+
+    // Ensure uniqueStringKey is properly generated after all data is processed
+    this.ensureUniqueStringKey(userProfile, peopleData);
+    return userProfile;
+  }
+
+  private processLinkedInProfileData(
+    candidateData: LinkedInSearchOrMappedHit,
+    userProfile: PersonCandidateDraft,
+  ): void {
+    if (candidateData.name) {
+      const nameParts = candidateData.name.split(' ');
+      userProfile.firstName = nameParts[0] || '';
+      userProfile.lastName = nameParts.slice(1).join(' ') || '';
+    }
+
+    if (candidateData.first_name || candidateData.firstName) {
+      userProfile.firstName =
+        candidateData.first_name || candidateData.firstName;
+    }
+
+    if (candidateData.last_name || candidateData.lastName) {
+      userProfile.lastName = candidateData.last_name || candidateData.lastName;
+    }
+
+    if (candidateData.headline) {
+      userProfile.linkedinHeadline = candidateData.headline;
+    }
+
+    const summary =
+      candidateData.summary ||
+      (candidateData as { linkedinSummary?: string }).linkedinSummary;
+    if (summary) {
+      userProfile.linkedinSummary = summary;
+    }
+
+    if (candidateData.location) {
+      userProfile.locationName = candidateData.location;
+    }
+
+    if (candidateData.industry) {
+      userProfile.industry = candidateData.industry;
+    }
+
+    // LinkedIn-specific fields
+    if (candidateData.public_identifier) {
+      userProfile.linkedinUrl = `https://www.linkedin.com/in/${candidateData.public_identifier}`;
+    } else if (candidateData.profile_url) {
+      userProfile.linkedinUrl = candidateData.profile_url;
+    } else if (candidateData.linkedinUrl) {
+      userProfile.linkedinUrl = candidateData.linkedinUrl;
+    } else if (candidateData.profileUrl) {
+      userProfile.linkedinUrl = candidateData.profileUrl;
+    }
+
+    if (candidateData.public_profile_url) {
+      userProfile.profileUrl = candidateData.public_profile_url;
+    } else if (candidateData.profileUrl) {
+      userProfile.profileUrl = candidateData.profileUrl;
+    } else if (userProfile.linkedinUrl) {
+      userProfile.profileUrl = userProfile.linkedinUrl;
+    }
+
+    const profilePictureUrl =
+      candidateData.profile_picture_url ||
+      candidateData.profilePictureUrl ||
+      (typeof candidateData.displayPicture === 'string'
+        ? candidateData.displayPicture
+        : undefined);
+    const profilePictureUrlLarge =
+      candidateData.profile_picture_url_large ||
+      (
+        candidateData as {
+          linkedinSpecificData?: { profilePictureUrlLarge?: string };
+        }
+      ).linkedinSpecificData?.profilePictureUrlLarge ||
+      undefined;
+
+    if (profilePictureUrl) {
+      userProfile.displayPicture = profilePictureUrl;
+      userProfile.profilePictureUrl = profilePictureUrl;
+    } else if (profilePictureUrlLarge) {
+      userProfile.displayPicture = profilePictureUrlLarge;
+      userProfile.profilePictureUrl = profilePictureUrlLarge;
+    }
+
+    const jobCompanyId =
+      (typeof candidateData.jobCompanyId === 'string' &&
+      /^\d+$/.test(candidateData.jobCompanyId.trim())
+        ? candidateData.jobCompanyId.trim()
+        : '') ||
+      (typeof candidateData.companyId === 'string' &&
+      /^\d+$/.test(candidateData.companyId.trim())
+        ? candidateData.companyId.trim()
+        : '');
+
+    if (jobCompanyId) {
+      userProfile.jobCompanyId = jobCompanyId;
+    }
+
+    if (
+      typeof candidateData.companyId === 'string' &&
+      isValidUuid(candidateData.companyId.trim())
+    ) {
+      (userProfile as PersonCandidateDraft & { companyId?: string }).companyId =
+        candidateData.companyId.trim();
+    }
+
+    // Persist Unipile / Sales Nav identity + picture variants for org-chart / otherFields
+    const salesNavigatorProfileUrl =
+      readSalesNavigatorProfileUrl(candidateData);
+
+    userProfile.linkedinSpecificData = {
+      ...userProfile.linkedinSpecificData,
+      ...(candidateData.id
+        ? { unipileSearchId: String(candidateData.id) }
+        : {}),
+      ...(candidateData.member_urn
+        ? { memberUrn: candidateData.member_urn }
+        : {}),
+      ...(candidateData.public_identifier
+        ? { publicIdentifier: candidateData.public_identifier }
+        : {}),
+      ...(candidateData.network_distance
+        ? { networkDistance: candidateData.network_distance }
+        : {}),
+      ...(candidateData.pending_invitation !== undefined
+        ? { pendingInvitation: candidateData.pending_invitation }
+        : {}),
+      ...(candidateData.last_outreach_activity
+        ? { lastOutreachActivity: candidateData.last_outreach_activity }
+        : {}),
+      ...(typeof candidateData.recent_posts_count === 'number'
+        ? { recentPostsCount: candidateData.recent_posts_count }
+        : {}),
+      ...(typeof candidateData.shared_connections_count === 'number'
+        ? { sharedConnectionsCount: candidateData.shared_connections_count }
+        : typeof candidateData.sharedConnectionsCount === 'number'
+          ? { sharedConnectionsCount: candidateData.sharedConnectionsCount }
+          : {}),
+      ...(candidateData.recently_hired !== undefined
+        ? { recentlyHired: candidateData.recently_hired }
+        : candidateData.recentlyHired !== undefined
+          ? { recentlyHired: candidateData.recentlyHired }
+          : {}),
+      ...(salesNavigatorProfileUrl ? { salesNavigatorProfileUrl } : {}),
+      ...(candidateData.premium !== undefined
+        ? { isPremium: candidateData.premium }
+        : {}),
+      ...(candidateData.open_profile !== undefined
+        ? { isOpenProfile: candidateData.open_profile }
+        : {}),
+      ...(profilePictureUrl ? { profilePictureUrl } : {}),
+      ...(profilePictureUrlLarge ? { profilePictureUrlLarge } : {}),
+    };
+
+    // Top-level so enrollment stage + otherFields keys survive create
+    if (candidateData.pending_invitation !== undefined) {
+      (
+        userProfile as PersonCandidateDraft & { pendingInvitation?: boolean }
+      ).pendingInvitation = candidateData.pending_invitation;
+    }
+    if (candidateData.network_distance) {
+      (
+        userProfile as PersonCandidateDraft & { networkDistance?: string }
+      ).networkDistance = candidateData.network_distance;
+    }
+    if (candidateData.last_outreach_activity) {
+      (
+        userProfile as PersonCandidateDraft & {
+          lastOutreachActivity?: LinkedInPeopleSearchResult['last_outreach_activity'];
+        }
+      ).lastOutreachActivity = candidateData.last_outreach_activity;
+    }
+    if (typeof candidateData.recent_posts_count === 'number') {
+      (
+        userProfile as PersonCandidateDraft & { recentPostsCount?: number }
+      ).recentPostsCount = candidateData.recent_posts_count;
+    }
+    if (typeof candidateData.shared_connections_count === 'number') {
+      (
+        userProfile as PersonCandidateDraft & { sharedConnectionsCount?: number }
+      ).sharedConnectionsCount = candidateData.shared_connections_count;
+    } else if (typeof candidateData.sharedConnectionsCount === 'number') {
+      (
+        userProfile as PersonCandidateDraft & { sharedConnectionsCount?: number }
+      ).sharedConnectionsCount = candidateData.sharedConnectionsCount;
+    }
+    if (candidateData.recently_hired !== undefined) {
+      (userProfile as PersonCandidateDraft & { recentlyHired?: boolean }).recentlyHired =
+        candidateData.recently_hired;
+    } else if (candidateData.recentlyHired !== undefined) {
+      (userProfile as PersonCandidateDraft & { recentlyHired?: boolean }).recentlyHired =
+        candidateData.recentlyHired;
+    }
+    if (salesNavigatorProfileUrl) {
+      (
+        userProfile as PersonCandidateDraft & { salesNavigatorProfileUrl?: string }
+      ).salesNavigatorProfileUrl = salesNavigatorProfileUrl;
+    }
+
+    // Add job process event
+    this.addProjectProcessEvent(userProfile, 'linkedin_profile_processed', {
+      profileUrl: candidateData.profile_url,
+      publicProfileUrl: candidateData.public_profile_url,
+      memberUrn: candidateData.member_urn,
+    });
+  }
+
+  private processLinkedInContactData(
+    candidateData: LinkedInPeopleSearchResult,
+    userProfile: PersonCandidateDraft,
+  ): void {
+    // LinkedIn doesn't provide direct contact info in search results
+    // This would typically be enriched later through other means
+    if (candidateData.can_send_inmail || candidateData.recruiter_candidate_id) {
+      userProfile.linkedinSpecificData = {
+        ...userProfile.linkedinSpecificData,
+        canSendInmail: candidateData.can_send_inmail,
+        recruiterCandidateId: candidateData.recruiter_candidate_id,
+      };
+    }
+  }
+
+  private pickCurrentPosition(
+    peopleResult: LinkedInPeopleSearchResult,
+    target?: {
+      companyName?: string;
+      companyId?: string;
+      companyIds?: string[];
+      companySlug?: string;
+    },
+  ) {
+    const positions = peopleResult.current_positions ?? [];
+    if (positions.length === 0) {
+      return undefined;
+    }
+
+    const intentPresent = !!(
+      target?.companyName?.trim() ||
+      target?.companyId?.trim() ||
+      target?.companySlug?.trim() ||
+      (target?.companyIds?.length ?? 0) > 0
+    );
+    const matched = pickEmploymentPositionMatchingCompany(positions, {
+      companyName: target?.companyName,
+      companyId: target?.companyId,
+      companyIds: target?.companyIds,
+      companySlug: target?.companySlug,
+    });
+
+    if (matched) {
+      return matched;
+    }
+
+    if (intentPresent) {
+      return undefined;
+    }
+
+    return pickCurrentPositionForSearchIntent(
+      peopleResult as unknown as Record<string, unknown>,
+    ) as (typeof positions)[number] | undefined;
+  }
+
+  private processLinkedInExperienceData(
+    candidateData: LinkedInSearchOrMappedHit,
+    userProfile: PersonCandidateDraft,
+    context: TransformationContext,
+  ): void {
+    if (
+      candidateData.current_positions &&
+      candidateData.current_positions.length > 0
+    ) {
+      const currentPosition = this.pickCurrentPosition(candidateData, {
+        companyName: context.targetCompanyName,
+        companyId:
+          typeof context.targetCompanyId === 'string' &&
+          /^\d+$/.test(context.targetCompanyId.trim())
+            ? context.targetCompanyId.trim()
+            : typeof candidateData.jobCompanyId === 'string' &&
+                /^\d+$/.test(candidateData.jobCompanyId.trim())
+              ? candidateData.jobCompanyId.trim()
+              : context.targetCompanyId,
+        companyIds: context.targetCompanyIds,
+        companySlug: context.targetCompanySlug,
+      });
+
+      if (currentPosition) {
+        userProfile.jobCompanyName = currentPosition.company;
+        userProfile.jobTitle = currentPosition.role;
+        userProfile.locationName =
+          currentPosition.location || userProfile.locationName;
+        if (currentPosition.company_id) {
+          userProfile.jobCompanyId = String(currentPosition.company_id);
+        }
+
+        userProfile.linkedinSpecificData = {
+          ...userProfile.linkedinSpecificData,
+          currentJobDescription: currentPosition.description,
+          currentJobStartDate: currentPosition.start
+            ? `${currentPosition.start.year}-${String(currentPosition.start.month ?? 1).padStart(2, '0')}-01`
+            : null,
+          // Keep full tenure objects (years + months); Sales Nav often has months-only
+          tenureAtCompany: currentPosition.tenure_at_company ?? null,
+          tenureAtRole: currentPosition.tenure_at_role ?? null,
+          currentCompanyIndustry: currentPosition.industry ?? null,
+          currentPositions: candidateData.current_positions,
+        };
+
+        this.addProjectProcessEvent(userProfile, 'current_position_processed', {
+          company: currentPosition.company,
+          role: currentPosition.role,
+          tenureAtCompany: currentPosition.tenure_at_company,
+          tenureAtRole: currentPosition.tenure_at_role,
+        });
+      }
+    } else {
+      if (
+        typeof candidateData.jobTitle === 'string' &&
+        candidateData.jobTitle.trim()
+      ) {
+        userProfile.jobTitle = candidateData.jobTitle.trim();
+        userProfile.profileTitle = candidateData.jobTitle.trim();
+      }
+
+      if (
+        typeof candidateData.company === 'string' &&
+        candidateData.company.trim()
+      ) {
+        userProfile.jobCompanyName = candidateData.company.trim();
+      } else if (
+        typeof candidateData.jobCompanyName === 'string' &&
+        candidateData.jobCompanyName.trim()
+      ) {
+        userProfile.jobCompanyName = candidateData.jobCompanyName.trim();
+      }
+
+      // If no current positions, try to extract job title and company from headline
+      if (
+        typeof candidateData.headline === 'string' &&
+        candidateData.headline.trim()
+      ) {
+        // Extract company from headline if it contains ' at ' (lowercase) or ' AT ' (uppercase, used in all-caps headlines)
+        if (
+          candidateData.headline.includes(' at ') ||
+          candidateData.headline.includes(' AT ')
+        ) {
+          let jobTitleFromHeadline: string | undefined;
+          let companyFromHeadline: string | undefined;
+
+          if (candidateData.headline.includes(' at ')) {
+            const parts = candidateData.headline.split(' at ');
+            jobTitleFromHeadline = parts[0]?.trim();
+            companyFromHeadline = parts.slice(1).join(' at ').trim();
+          } else if (candidateData.headline.includes(' AT ')) {
+            const parts = candidateData.headline.split(' AT ');
+            jobTitleFromHeadline = parts[0]?.trim();
+            companyFromHeadline = parts.slice(1).join(' AT ').trim();
+          }
+
+          if (jobTitleFromHeadline) {
+            userProfile.jobTitle = jobTitleFromHeadline;
+            userProfile.profileTitle = jobTitleFromHeadline;
+          }
+
+          if (companyFromHeadline) {
+            userProfile.jobCompanyName = companyFromHeadline;
+          }
+        } else {
+          // If headline doesn't contain " at ", use the entire headline as job title
+          // This handles cases like "Pulmonologist" where there's no company mentioned
+          userProfile.jobTitle = candidateData.headline.trim();
+          userProfile.profileTitle = candidateData.headline.trim();
+        }
+      }
+    }
+
+    // Map LinkedIn experience (current + past) into the normalized experience array
+    const experienceForBase: Array<{
+      company: string;
+      role: string;
+      startDate: string | null;
+      endDate: string | null;
+      isCurrent?: boolean;
+      description?: string | null;
+      location?: string | null;
+      company_id?: string | null;
+      company_url?: string | null;
+      industry?: string[] | string | null;
+      tenure_at_role?: { years?: number; months?: number } | null;
+      tenure_at_company?: { years?: number; months?: number } | null;
+      skills?: Array<
+        { name?: string; endorsement_count?: number } | string
+      > | null;
+    }> = [];
+
+    // Current positions (if any) are marked as isCurrent: true
+    if (
+      candidateData.current_positions &&
+      candidateData.current_positions.length > 0
+    ) {
+      for (const currentPosition of candidateData.current_positions) {
+        const startDate = currentPosition.start
+          ? `${currentPosition.start.year}-${String(currentPosition.start.month ?? 1).padStart(2, '0')}-01`
+          : null;
+
+        const endDate = currentPosition.end
+          ? `${currentPosition.end.year}-${String(currentPosition.end.month ?? 1).padStart(2, '0')}-01`
+          : null;
+
+        experienceForBase.push({
+          company: currentPosition.company,
+          role: currentPosition.role,
+          startDate,
+          endDate,
+          isCurrent: true,
+          description: currentPosition.description ?? null,
+          location: currentPosition.location ?? null,
+          company_id: currentPosition.company_id
+            ? String(currentPosition.company_id)
+            : null,
+          company_url: currentPosition.company_url ?? null,
+          industry: currentPosition.industry ?? null,
+          tenure_at_role: currentPosition.tenure_at_role ?? null,
+          tenure_at_company: currentPosition.tenure_at_company ?? null,
+          skills: currentPosition.skills ?? null,
+        });
+      }
+    }
+
+    // Past work_experience (e.g. "Past:" roles) are marked as isCurrent: false
+    if (
+      candidateData.work_experience &&
+      candidateData.work_experience.length > 0
+    ) {
+      for (const exp of candidateData.work_experience) {
+        const startDate = exp.start
+          ? `${exp.start.year}-${String(exp.start.month ?? 1).padStart(2, '0')}-01`
+          : null;
+
+        const endDate = exp.end
+          ? `${exp.end.year}-${String(exp.end.month ?? 1).padStart(2, '0')}-01`
+          : null;
+
+        experienceForBase.push({
+          company: exp.company,
+          role: exp.role,
+          startDate,
+          endDate,
+          isCurrent: false,
+          company_id: exp.company_id ? String(exp.company_id) : null,
+          industry: exp.industry ?? null,
+          skills: exp.skills ?? null,
+        });
+      }
+    }
+
+    if (experienceForBase.length > 0) {
+      // Reuse the base transformer logic to populate userProfile.experience and experienceStats
+      this.processExperienceData(
+        { experience: experienceForBase },
+        userProfile,
+      );
+    }
+  }
+
+  private processLinkedInEducationData(
+    candidateData: LinkedInPeopleSearchResult,
+    userProfile: PersonCandidateDraft,
+  ): void {
+    const education = candidateData.education;
+    if (!Array.isArray(education) || education.length === 0) {
+      return;
+    }
+
+    const formatYearMonth = (date?: {
+      year: number;
+      month?: number;
+    }): string => {
+      if (!date?.year) {
+        return '';
+      }
+      const month =
+        typeof date.month === 'number' && date.month >= 1 && date.month <= 12
+          ? date.month
+          : 1;
+      return `${date.year}-${String(month).padStart(2, '0')}-01`;
+    };
+
+    this.processEducationData(
+      {
+        education: education.map((edu) => ({
+          school: edu.school || edu.school_details?.name || '',
+          degree: [edu.degree, edu.field_of_study].filter(Boolean).join(', '),
+          startYear: formatYearMonth(edu.start),
+          endYear: formatYearMonth(edu.end),
+        })),
+      },
+      userProfile,
+    );
+  }
+
+  private processLinkedInSkillsData(
+    candidateData: LinkedInPeopleSearchResult,
+    userProfile: PersonCandidateDraft,
+  ): void {
+    // LinkedIn search results typically don't include detailed skills
+    // This would be enriched through profile scraping or other means
+    // For now, we'll add a placeholder
+    this.addProjectProcessEvent(userProfile, 'skills_data_placeholder', {
+      note: 'Skills data not available in LinkedIn search results - requires profile enrichment',
+    });
+  }
+
+  private ensureUniqueStringKey(
+    userProfile: PersonCandidateDraft,
+    candidateData: LinkedInPeopleSearchResult,
+  ): void {
+    // If uniqueStringKey is empty or invalid, regenerate it with the processed data
+    if (!userProfile.uniqueStringKey || userProfile.uniqueStringKey === '') {
+      const fullName = userProfile.fullName || candidateData.name || '';
+      const companyName = userProfile.jobCompanyName || '';
+
+      console.log(
+        `Regenerating uniqueStringKey for LinkedIn search result: fullName="${fullName}", companyName="${companyName}"`,
+      );
+
+      userProfile.uniqueStringKey =
+        this.dataProcessingUtils.generateUniqueStringKey(
+          {
+            name: fullName,
+            companyName: companyName,
+          },
+          'linkedin_search',
+        );
+
+      console.log(
+        `Generated new uniqueStringKey: "${userProfile.uniqueStringKey}"`,
+      );
+    }
+  }
+
+  /**
+   * Transform LinkedIn search results into DataTable-compatible format
+   * This creates a PersonCandidateDraft with UI-specific extensions for DataTable display
+   */
+  transformSearchResultsToTableFormat(
+    searchResults: LinkedInSearchResult[],
+    projectId: string,
+    jobName: string = 'LinkedIn Search Results',
+    options?: {
+      targetCompanyName?: string;
+      targetCompanyId?: string;
+      targetCompanyIds?: string[];
+      targetCompanySlug?: string;
+    },
+  ): CandidateTableRow[] {
+    return searchResults.map((result, index) => {
+      const peopleResult = result as LinkedInPeopleSearchResult;
+      const timestamp = new Date().toISOString();
+      const peopleId = `people_${peopleResult.id}_${Date.now()}_${index}`;
+      const stableSourcePersonId =
+        peopleResult.id !== undefined && peopleResult.id !== null
+          ? String(peopleResult.id)
+          : '';
+
+      // Create base PersonCandidateDraft using the standard transformation
+      const context: TransformationContext = {
+        projectId,
+        jobName,
+        userId: 'linkedin_search_user',
+        dataSource: 'linkedin_search',
+        timestamp,
+        targetCompanyName: options?.targetCompanyName,
+        targetCompanyId: options?.targetCompanyId,
+        targetCompanyIds: options?.targetCompanyIds,
+        targetCompanySlug: options?.targetCompanySlug,
+      };
+
+      const userProfile = this.transformToUserProfile(result, context);
+
+      // Extend with DataTable UI-specific fields
+      const currentPosition = this.pickCurrentPosition(peopleResult, {
+        companyName: options?.targetCompanyName,
+        companyId: options?.targetCompanyId,
+        companyIds: options?.targetCompanyIds,
+        companySlug: options?.targetCompanySlug,
+      });
+
+      const jobTitleFromCurrentPosition = currentPosition?.role?.trim() || '';
+      const companyFromCurrentPosition = currentPosition?.company?.trim() || '';
+
+      const resolvedJobTitle =
+        jobTitleFromCurrentPosition ||
+        (userProfile.jobTitle ? userProfile.jobTitle.trim() : '') ||
+        this.extractJobTitleFromHeadline(peopleResult.headline) ||
+        'Not specified';
+
+      const resolvedCompany =
+        companyFromCurrentPosition ||
+        (userProfile.jobCompanyName ? userProfile.jobCompanyName.trim() : '') ||
+        this.extractCompanyFromHeadline(peopleResult.headline) ||
+        'Not specified';
+
+      const linkedinUrlValue =
+        peopleResult.public_profile_url ||
+        peopleResult.profile_url ||
+        userProfile.linkedinUrl ||
+        '';
+      const displayPictureValue =
+        peopleResult.profile_picture_url ||
+        peopleResult.profile_picture_url_large ||
+        '';
+
+      const transformedCandidate: CandidateTableRow = {
+        ...userProfile,
+
+        // DataTable UI fields
+        __isFetched: true,
+        tempId: peopleResult.id,
+
+        phoneNumber: {
+          primaryPhoneNumber: userProfile.phoneNumber || '',
+        },
+        email: { primaryEmail: userProfile.emailAddress || '' },
+        linkedinUrl: linkedinUrlValue
+          ? { primaryLinkUrl: linkedinUrlValue }
+          : { primaryLinkUrl: '' },
+        hiringNaukriUrl: {
+          primaryLinkUrl:
+            userProfile.linkedinSpecificData?.hiringNaukriUrl || '',
+        },
+        resdexNaukriUrl: { primaryLinkUrl: '' },
+        displayPicture: displayPictureValue
+          ? { primaryLinkUrl: displayPictureValue }
+          : { primaryLinkUrl: '' },
+
+        // UI state fields
+        status: 'No Status',
+        candConversationStatus: 'No Conversation',
+        startChat: false,
+        stopChat: false,
+        startChatCompleted: false,
+        startVideoInterviewChat: false,
+        startVideoInterviewChatCompleted: false,
+        startMeetingSchedulingChat: false,
+        startMeetingSchedulingChatCompleted: false,
+        engagementStatus: false,
+        lastEngagementChatControl: 'startChat',
+        messagingChannel: MessagingChannel.LINKEDIN_CONNECT,
+        chatCount: 0,
+
+        // Relationship edges
+        chatMessages: { edges: [] },
+        emailMessages: { edges: [] },
+        otherFields: {},
+        attachments: { edges: [] },
+        videoInterview: { edges: [] },
+        project: { id: projectId, name: jobName },
+        people: { id: peopleId },
+        whatsappProvider: 'application03',
+        input: '',
+        remarks: '',
+
+        // LinkedIn-specific display fields
+        name: peopleResult.name || userProfile.fullName || 'Unknown',
+        headline: peopleResult.headline || userProfile.linkedinHeadline || '',
+        profilePictureUrl:
+          peopleResult.profile_picture_url ||
+          peopleResult.profile_picture_url_large ||
+          '',
+        networkDistance: peopleResult.network_distance || 'UNKNOWN',
+        premium: peopleResult.premium || false,
+        verified: peopleResult.verified || false,
+        openProfile: peopleResult.open_profile || false,
+        sharedConnectionsCount: peopleResult.shared_connections_count,
+        followersCount: peopleResult.followers_count,
+        connectionsCount: peopleResult.connections_count,
+        keywordsMatch: peopleResult.keywords_match || '',
+        ...(typeof peopleResult.recent_posts_count === 'number'
+          ? { recentPostsCount: peopleResult.recent_posts_count }
+          : {}),
+        ...(peopleResult.pending_invitation !== undefined
+          ? { pendingInvitation: peopleResult.pending_invitation }
+          : {}),
+        ...(peopleResult.last_outreach_activity
+          ? { lastOutreachActivity: peopleResult.last_outreach_activity }
+          : {}),
+
+        // Naming aliases for DataTable compatibility
+        jobTitle: resolvedJobTitle,
+        company: resolvedCompany,
+        location:
+          peopleResult.location || userProfile.locationName || 'Not specified',
+        peopleId: stableSourcePersonId.length > 0 ? stableSourcePersonId : null,
+        updatedAt: timestamp,
+        createdAt: timestamp,
+      };
+      // Keep summary + large picture on the table row so upload-profiles / otherFields retain them
+      if (peopleResult.summary) {
+        transformedCandidate.linkedinSummary = peopleResult.summary;
+      }
+      if (peopleResult.profile_picture_url_large) {
+        transformedCandidate.linkedinSpecificData = {
+          ...transformedCandidate.linkedinSpecificData,
+          profilePictureUrlLarge: peopleResult.profile_picture_url_large,
+        };
+      }
+      return transformedCandidate;
+    });
+  }
+
+  /**
+   * Extract job title from LinkedIn headline
+   */
+  private extractJobTitleFromHeadline(headline?: string): string | null {
+    if (!headline) return null;
+
+    const patterns = [/^([^|]+)/, /^([^-]+)/, /^([^at]+)/, /^([^@]+)/];
+
+    for (const pattern of patterns) {
+      const match = headline.match(pattern);
+      if (match && match[1]) {
+        const title = match[1].trim();
+        if (title.length > 0 && title.length < 100) {
+          return title;
+        }
+      }
+    }
+
+    return headline.length > 100
+      ? headline.substring(0, 100) + '...'
+      : headline;
+  }
+
+  /**
+   * Extract company name from LinkedIn headline
+   */
+  private extractCompanyFromHeadline(headline?: string): string | null {
+    if (!headline) return null;
+
+    const patterns = [
+      /at\s+([^|]+)/i,
+      /@\s+([^|]+)/i,
+      /\|\s*([^|]+)/,
+      /-\s*([^-]+)$/,
+    ];
+
+    for (const pattern of patterns) {
+      const match = headline.match(pattern);
+      if (match && match[1]) {
+        const company = match[1].trim();
+        if (company.length > 0 && company.length < 100) {
+          return company;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Add additional metadata to transformed candidates
+   */
+  addMetadataToCandidates(
+    candidates: CandidateTableRow[],
+    searchMetadata: {
+      searchType: string;
+      searchCategory: string;
+      timestamp: string;
+      processingTime: number;
+    },
+  ): CandidateTableRow[] {
+    return candidates.map((candidate) => ({
+      ...candidate,
+      campaign: `linkedin_${searchMetadata.searchType}_${searchMetadata.searchCategory}`,
+      source: `linkedin_${searchMetadata.searchType}`,
+    }));
+  }
+
+  /**
+   * Filter candidates based on criteria
+   */
+  filterCandidates(
+    candidates: CandidateTableRow[],
+    filters: {
+      hasProfilePicture?: boolean;
+      isPremium?: boolean;
+      isVerified?: boolean;
+      minSharedConnections?: number;
+    },
+  ): CandidateTableRow[] {
+    return candidates.filter((candidate) => {
+      if (filters.hasProfilePicture && !candidate.profilePictureUrl) {
+        return false;
+      }
+
+      if (
+        filters.isPremium !== undefined &&
+        candidate.premium !== filters.isPremium
+      ) {
+        return false;
+      }
+
+      if (
+        filters.isVerified !== undefined &&
+        candidate.verified !== filters.isVerified
+      ) {
+        return false;
+      }
+
+      if (
+        filters.minSharedConnections !== undefined &&
+        (candidate.sharedConnectionsCount || 0) < filters.minSharedConnections
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+}

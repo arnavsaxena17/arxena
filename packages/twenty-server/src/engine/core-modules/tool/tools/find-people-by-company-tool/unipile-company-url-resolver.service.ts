@@ -4,9 +4,9 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { isUnipileLinkedinAccountUnusableError } from 'src/engine/core-modules/arx-chat/utils/is-unipile-linkedin-account-unusable-error.util';
 import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
-import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
-import { UnipileSearchAccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-search-account.resolver';
-import { isHarvestCompanyNameMatch } from 'src/engine/core-modules/org-chart/utils/harvest-company-name-match.util';
+import { LinkedInSearchService } from 'src/domains/discovery/transport/linkedin-search/services/linkedin-search.service';
+import { UnipileSearchAccountResolver } from 'src/domains/discovery/transport/linkedin-search/services/unipile-search-account.resolver';
+import { isHarvestCompanyNameMatch } from 'src/domains/org-graph/org-chart/utils/harvest-company-name-match.util';
 
 // Parameter lookups are account-agnostic -- the same company resolves to the
 // same LinkedIn id on every connected account -- so the cache key is the name

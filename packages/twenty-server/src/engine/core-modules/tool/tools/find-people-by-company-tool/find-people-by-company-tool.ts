@@ -1,4 +1,5 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
+import { roundUsd } from 'src/domains/ingestion/candidate-sourcing/sources/adapter';
 
 import { appendFileSync } from 'fs';
 
@@ -20,12 +21,12 @@ import {
 
 import { normalizeLinkedinProfileUrl } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/parse-linkedin-serp-result.util';
 import { createFindPeopleProgressReporter } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-progress.util';
-import { TitleExpansionService } from 'src/engine/core-modules/title-taxonomy/title-expansion.service';
+import { TitleExpansionService } from 'src/domains/discovery/query/title-taxonomy/title-expansion.service';
 import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
-import { brightDataRecordToPersonOtherFields } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/bright-data-person-row-fields.util';
+import { brightDataRecordToPersonOtherFields } from 'src/domains/ingestion/candidate-sourcing/services/profile-fetch/bright-data-person-row-fields.util';
 
-import { PROFILE_FIELD_KEY } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
-import { buildDeprioritisationFields } from 'src/engine/core-modules/outreach-command/utils/outreach-people-deprioritisation.util';
+import { PROFILE_FIELD_KEY } from 'src/domains/ingestion/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
+import { buildDeprioritisationFields } from 'src/domains/engagement/outreach-command/utils/outreach-people-deprioritisation.util';
 
 // A note on a kept person is a hint, not the evidence
 const MAX_RESULT_NOTE_LENGTH = 120;
@@ -34,16 +35,16 @@ import {
   pairKeyOf,
   readPairStates,
   type FindPeoplePairState,
-} from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
-import { SourcingBudgetService } from 'src/engine/core-modules/outreach-command/services/sourcing-budget.service';
-import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
+} from 'src/domains/engagement/outreach-command/utils/outreach-people-found.util';
+import { SourcingBudgetService } from 'src/domains/engagement/outreach-command/services/sourcing-budget.service';
+import { SourcingLedgerService } from 'src/domains/engagement/outreach-command/services/sourcing-ledger.service';
 import {
   computePairFunnel,
   summarizePairStates,
   type SourcingBrief,
   SOURCING_PLAN_DEFAULTS,
-} from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
-import { isChunkedRunTerminal } from 'src/engine/core-modules/outreach-command/utils/chunked-run.util';
+} from 'src/domains/engagement/outreach-command/utils/sourcing-ledger.util';
+import { isChunkedRunTerminal } from 'src/domains/engagement/outreach-command/utils/chunked-run.util';
 import {
   FIND_PEOPLE_COMPANIES_PER_CHUNK,
   FindPeopleRunService,
@@ -54,9 +55,9 @@ import {
   matchesTableFilter,
   OutreachTableViewService,
   readCellText,
-} from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
+} from 'src/domains/engagement/outreach-command/services/outreach-table-view.service';
 
-import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
+import { OutreachTabService } from 'src/domains/engagement/outreach-command/services/outreach-tab.service';
 
 import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 
@@ -864,7 +865,7 @@ export class FindPeopleByCompanyTool implements Tool {
               })),
           )
           .slice(0, 50),
-        spentUsd: Number(spentUsd.toFixed(4)),
+        spentUsd: roundUsd(spentUsd),
         written: written.count,
         ...(isDefined(written.error) && { writeError: written.error }),
         ...extra,

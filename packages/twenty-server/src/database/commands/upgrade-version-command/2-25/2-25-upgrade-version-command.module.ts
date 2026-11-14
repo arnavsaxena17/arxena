@@ -177,7 +177,7 @@ import { SimplifyOutreachDashboardCommand } from 'src/database/commands/upgrade-
 import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';
 import { DropChatMessageObjWithTimeStampCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000099-drop-chat-message-obj-with-time-stamp.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
-import { MigrateOtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/migrate-other-fields.service';
+import { MigrateOtherFieldsService } from 'src/domains/ingestion/candidate-sourcing/services/migrate-other-fields.service';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/field-metadata.module';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';

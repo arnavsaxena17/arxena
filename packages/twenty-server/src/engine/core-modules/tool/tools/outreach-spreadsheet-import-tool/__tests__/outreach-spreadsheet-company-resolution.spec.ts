@@ -4,13 +4,13 @@ import { type FileService } from 'src/engine/core-modules/file/services/file.ser
 import {
   type CompanyNameResolverService,
   type ResolvedCompanyFromRawName,
-} from 'src/engine/core-modules/org-chart/services/company-name-resolver.service';
+} from 'src/domains/org-graph/org-chart/services/company-name-resolver.service';
 import {
   type OutreachCompaniesCacheService,
   type OutreachEphemeralCompany,
-} from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
-import { type OutreachPeopleCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
-import { type OutreachSpreadsheetMappingService } from 'src/engine/core-modules/outreach-command/services/outreach-spreadsheet-mapping.service';
+} from 'src/domains/engagement/outreach-command/services/outreach-companies-cache.service';
+import { type OutreachPeopleCacheService } from 'src/domains/engagement/outreach-command/services/outreach-people-cache.service';
+import { type OutreachSpreadsheetMappingService } from 'src/domains/engagement/outreach-command/services/outreach-spreadsheet-mapping.service';
 import { ImportOutreachSpreadsheetTool } from 'src/engine/core-modules/tool/tools/outreach-spreadsheet-import-tool/outreach-spreadsheet-import-tool';
 import { type OutreachSpreadsheetMapping } from 'src/engine/core-modules/tool/tools/outreach-spreadsheet-import-tool/outreach-spreadsheet-mapping.util';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';

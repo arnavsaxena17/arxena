@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 
-import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
+import { OutreachCommandModule } from 'src/domains/engagement/outreach-command/outreach-command.module';
 import { ToolModule } from 'src/engine/core-modules/tool/tool.module';
 import { CommentOnLinkedinPostWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/comment-on-linkedin-post.workflow-action';
 import { FetchLinkedinActivityWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/fetch-linkedin-activity.workflow-action';

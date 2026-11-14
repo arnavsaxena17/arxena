@@ -29,7 +29,7 @@ import { ProxyRotationManager } from './utils/proxy-rotation';
 
 import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';
 import { IncomingWhatsappMessages } from '../arx-chat/services/whatsapp-api/incoming-messages';
-import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
+import { OutreachInboundReplyWindowService } from 'src/domains/engagement/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
 import { InjectMessageQueue } from '../message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from '../message-queue/message-queue.constants';

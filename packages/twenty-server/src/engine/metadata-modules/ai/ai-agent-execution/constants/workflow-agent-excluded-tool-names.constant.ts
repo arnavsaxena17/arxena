@@ -15,6 +15,8 @@ export const WORKFLOW_AGENT_EXCLUDED_TOOL_NAMES = [
   'find_people_by_company',
   'fetch_profiles',
   'get_sourcing_ledger',
+  'sourcing_start',
+  'sourcing_next',
   'get_outreach_tab',
   'preview_sample_message_column',
   'preview_ai_column',

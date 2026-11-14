@@ -8,7 +8,7 @@ import { type ObjectLiteral } from 'typeorm';
 import { isUserAuthContext } from 'src/engine/core-modules/auth/guards/is-user-auth-context.guard';
 import { getWorkspaceAuthContext } from 'src/engine/core-modules/auth/storage/workspace-auth-context.storage';
 import { NativeLogicFunctionRegistry } from 'src/engine/core-modules/logic-function/logic-function-executor/native-logic-function.registry';
-import { maybeWithLlmFormattedText } from 'src/engine/core-modules/outreach-command/utils/with-llm-formatted-text.util';
+import { maybeWithLlmFormattedText } from 'src/domains/engagement/outreach-command/utils/with-llm-formatted-text.util';
 import {
   findWorkflowStepOrThrow,
   getWorkflowStepsToHydrateForPrompt,
@@ -46,7 +46,7 @@ import { isWorkflowLogicFunctionAction } from 'src/modules/workflow/workflow-exe
 import { isWorkflowFindRecordsAction } from 'src/modules/workflow/workflow-executor/workflow-actions/record-crud/guards/is-workflow-find-records-action.guard';
 import { isWorkflowFetchLinkedinActivityAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/guards/is-workflow-fetch-linkedin-activity-action.guard';
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
-import { formatOutreachProspectPostsForLlm } from 'src/engine/core-modules/outreach-command/utils/format-outreach-llm-context.util';
+import { formatOutreachProspectPostsForLlm } from 'src/domains/engagement/outreach-command/utils/format-outreach-llm-context.util';
 
 const CANDIDATE_OBJECT_NAME = 'candidate';
 const PERSON_OBJECT_NAME = 'person';

@@ -1,4 +1,4 @@
-import { normalizeOutreachSenderProfile } from 'src/engine/core-modules/outreach-command/utils/outreach-sender-profile.util';
+import { normalizeOutreachSenderProfile } from 'src/domains/engagement/outreach-command/utils/outreach-sender-profile.util';
 
 describe('normalizeOutreachSenderProfile collateralFiles', () => {
   it('preserves collateral file ids for send_files resolution', () => {

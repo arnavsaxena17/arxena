@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 
-import { CompanyNameResolverService } from 'src/engine/core-modules/org-chart/services/company-name-resolver.service';
+import { CompanyNameResolverService } from 'src/domains/org-graph/org-chart/services/company-name-resolver.service';
 import {
   ResolveCompanyFromRawNameToolInputZodSchema,
   type ResolveCompanyFromRawNameToolInput,

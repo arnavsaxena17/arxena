@@ -6,14 +6,14 @@ import { FileService } from 'src/engine/core-modules/file/services/file.service'
 import {
   CompanyNameResolverService,
   type ResolvedCompanyFromRawName,
-} from 'src/engine/core-modules/org-chart/services/company-name-resolver.service';
+} from 'src/domains/org-graph/org-chart/services/company-name-resolver.service';
 import {
   type OutreachEphemeralCompany,
   OutreachCompaniesCacheService,
-} from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
-import { OutreachSpreadsheetMappingService } from 'src/engine/core-modules/outreach-command/services/outreach-spreadsheet-mapping.service';
-import { OutreachPeopleCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
-import { mergePeople } from 'src/engine/core-modules/outreach-command/utils/merge-people.util';
+} from 'src/domains/engagement/outreach-command/services/outreach-companies-cache.service';
+import { OutreachSpreadsheetMappingService } from 'src/domains/engagement/outreach-command/services/outreach-spreadsheet-mapping.service';
+import { OutreachPeopleCacheService } from 'src/domains/engagement/outreach-command/services/outreach-people-cache.service';
+import { mergePeople } from 'src/domains/engagement/outreach-command/utils/merge-people.util';
 import {
   companyDedupeKey,
   toEphemeralCompany,

@@ -2,28 +2,28 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { isDefined } from 'twenty-shared/utils';
 
-import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
-import { BrightDataLinkedinProfileScrapeService } from 'src/engine/core-modules/bright-data/services/bright-data-linkedin-profile-scrape.service';
-import { type BrightDataLinkedinProfileRecord } from 'src/engine/core-modules/bright-data/types/bright-data-linkedin-profile.types';
-import { type FitmentVerdict } from 'src/engine/core-modules/candidate-sourcing/services/fitment/fitment-score.util';
-import { brightDataRecordToPersonOtherFields } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/bright-data-person-row-fields.util';
+import { BrightDataBusinessSearchService } from 'src/domains/discovery/providers/bright-data/services/bright-data-business-search.service';
+import { BrightDataLinkedinProfileScrapeService } from 'src/domains/discovery/providers/bright-data/services/bright-data-linkedin-profile-scrape.service';
+import { type BrightDataLinkedinProfileRecord } from 'src/domains/discovery/providers/bright-data/types/bright-data-linkedin-profile.types';
+import { type FitmentVerdict } from 'src/domains/ingestion/candidate-sourcing/services/fitment/fitment-score.util';
+import { brightDataRecordToPersonOtherFields } from 'src/domains/ingestion/candidate-sourcing/services/profile-fetch/bright-data-person-row-fields.util';
 import {
   PROFILE_FIELD_KEY,
   isUsableProfile,
   profileToRowProfile,
   readRowProfile,
   type RowProfile,
-} from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
-import { BrightDataPersonFitFilterService } from 'src/engine/core-modules/bright-data/services/bright-data-person-fit-filter.service';
+} from 'src/domains/ingestion/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
+import { BrightDataPersonFitFilterService } from 'src/domains/discovery/providers/bright-data/services/bright-data-person-fit-filter.service';
 import { profileMatchesCompany } from 'src/engine/core-modules/tool/tools/fetch-profiles-tool/utils/profile-match.util';
 import {
   LinkedinProfileResolverService,
   type ResolvedLinkedinProfile,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/linkedin-profile-resolver.service';
-import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
-import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
-import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
-import { HarvestLinkedinService } from 'src/engine/core-modules/org-chart/services/harvest-linkedin.service';
+import { normalizeLinkedInUrl } from 'src/domains/ingestion/candidate-sourcing/utils/linkedin-url.utils';
+import { SourcingLedgerService } from 'src/domains/engagement/outreach-command/services/sourcing-ledger.service';
+import { OutreachTabService } from 'src/domains/engagement/outreach-command/services/outreach-tab.service';
+import { HarvestLinkedinService } from 'src/domains/org-graph/org-chart/services/harvest-linkedin.service';
 
 // Bright Data takes many URLs in one request; a few requests run side by side
 const BRIGHT_DATA_BATCH_SIZE = 20;

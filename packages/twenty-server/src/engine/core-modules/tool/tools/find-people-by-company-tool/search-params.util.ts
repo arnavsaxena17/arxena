@@ -1,10 +1,10 @@
 import { isNonEmptyString } from '@sniptt/guards';
 
-import { toSearchTerms } from 'src/engine/core-modules/title-taxonomy/role-mention-split.util';
+import { toSearchTerms } from 'src/domains/discovery/query/title-taxonomy/role-mention-split.util';
 import {
   isGoogleTitleClauseUsable,
   toGoogleTitleClause,
-} from 'src/engine/core-modules/title-taxonomy/title-boolean.util';
+} from 'src/domains/discovery/query/title-taxonomy/title-boolean.util';
 import { type CompanyIdentity } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/company-identity.util';
 
 // One role family's query cell: the roles it covers, its titles and its

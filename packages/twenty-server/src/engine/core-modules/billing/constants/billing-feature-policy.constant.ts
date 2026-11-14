@@ -1,6 +1,6 @@
 /* @license Enterprise */
 
-import { BRIGHT_DATA_BILLING_MARGIN_MULTIPLIER } from 'src/engine/core-modules/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
+import { BRIGHT_DATA_BILLING_MARGIN_MULTIPLIER } from 'src/domains/discovery/providers/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
 import { type BillingTreatment } from 'src/engine/core-modules/billing/types/billing-treatment.type';
 import { UsageOperationType } from 'src/engine/core-modules/usage/enums/usage-operation-type.enum';
 import { UsageResourceType } from 'src/engine/core-modules/usage/enums/usage-resource-type.enum';

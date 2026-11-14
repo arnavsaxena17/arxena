@@ -2,8 +2,8 @@ import {
   type FindPeopleNoneFoundReason,
   type FindPeopleRung,
   type FindPeopleTerminalState,
-} from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
-import { type SourcingConfidence } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
+} from 'src/domains/engagement/outreach-command/utils/outreach-people-found.util';
+import { type SourcingConfidence } from 'src/domains/engagement/outreach-command/utils/sourcing-ledger.util';
 import { titleContainsWord } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/role-title-matching.util';
 
 export type PersonFreshness = 'current' | 'unverified' | 'unknown';

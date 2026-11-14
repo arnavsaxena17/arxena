@@ -2,7 +2,7 @@ import { Controller, Get, Headers, Query, Req } from '@nestjs/common';
 
 import { Request } from 'express';
 
-import { OrgChartClientIpService } from 'src/engine/core-modules/org-chart/services/org-chart-client-ip.service';
+import { OrgChartClientIpService } from 'src/domains/org-graph/org-chart/services/org-chart-client-ip.service';
 import { VisitorCompanyResolutionService } from 'src/engine/core-modules/geo/visitor-company-resolution.service';
 
 /**

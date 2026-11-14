@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Redis } from 'ioredis';
-import { ORGCHART_PROGRESS_CHANNEL_PREFIX } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
+import { ORGCHART_PROGRESS_CHANNEL_PREFIX } from 'src/domains/ingestion/candidate-sourcing/services/orgchart-progress-redis.service';
 import { RedisClientService } from 'src/engine/core-modules/redis-client/redis-client.service';
 import { WebSocketService } from './websocket.service';
 

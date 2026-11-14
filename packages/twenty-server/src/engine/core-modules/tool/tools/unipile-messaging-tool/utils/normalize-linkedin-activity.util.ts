@@ -1,6 +1,6 @@
 import { isNonEmptyString } from '@sniptt/guards';
 
-import { summarizeLinkedinPosts } from 'src/engine/core-modules/org-chart-outreach/utils/linkedin-profile-context.util';
+import { summarizeLinkedinPosts } from 'src/domains/engagement/outreach-command/icp-outreach/utils/linkedin-profile-context.util';
 
 export type NormalizedLinkedinActivityPost = {
   id?: string;

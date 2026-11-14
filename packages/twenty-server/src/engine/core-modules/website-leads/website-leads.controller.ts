@@ -11,7 +11,7 @@ import {
 import { Request } from 'express';
 
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
-import { isOrgChartPdlProxyAuthorized } from 'src/engine/core-modules/org-chart/utils/org-chart-pdl-proxy.util';
+import { isOrgChartPdlProxyAuthorized } from 'src/domains/org-graph/org-chart/utils/org-chart-pdl-proxy.util';
 
 import { FreeTrialLeadDto } from './dto/free-trial-lead.dto';
 import { CalendlyBookingCompletedDto } from './dto/calendly-booking-completed.dto';

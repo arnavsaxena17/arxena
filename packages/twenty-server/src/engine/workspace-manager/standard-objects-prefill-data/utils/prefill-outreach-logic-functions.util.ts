@@ -2,7 +2,7 @@ import { v5 as uuidv5 } from 'uuid';
 
 import { type WorkflowActionTriggerSettings } from 'twenty-shared/application';
 
-import { getOutreachNativeLogicFunctionHandler } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-native-handlers.const';
+import { getOutreachNativeLogicFunctionHandler } from 'src/domains/engagement/outreach-command/constants/outreach-logic-function-native-handlers.const';
 import {
   OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
@@ -34,7 +34,7 @@ import {
   OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
   OUTREACH_SEND_WAVE_ADMISSION_LOGIC_FUNCTION_NAME,
   OUTREACH_COMPANY_DEDUPE_LOGIC_FUNCTION_NAME,
-} from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
+} from 'src/domains/engagement/outreach-command/constants/outreach-logic-function-names.const';
 import {
   OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
   OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
@@ -66,7 +66,7 @@ import {
   OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_SAMPLE_OUTPUT,
   OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_SAMPLE_OUTPUT,
   OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_SAMPLE_OUTPUT,
-} from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-sample-output.const';
+} from 'src/domains/engagement/outreach-command/constants/outreach-logic-function-sample-output.const';
 import { type PrefilledWorkflowCodeStepLogicFunctionDefinition } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
 
 const OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE =

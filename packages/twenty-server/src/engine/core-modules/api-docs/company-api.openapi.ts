@@ -1,6 +1,6 @@
 import { OpenAPIV3_1 } from 'openapi-types';
 
-import { COMPANY_DATA_SOURCE_CATEGORIES } from '../company-api/constants/company-data-source-aliases';
+import { COMPANY_DATA_SOURCE_CATEGORIES } from 'src/domains/discovery/search/company-api/constants/company-data-source-aliases';
 
 const dataSourceEnum = COMPANY_DATA_SOURCE_CATEGORIES.map(
   (category) => category.alias,

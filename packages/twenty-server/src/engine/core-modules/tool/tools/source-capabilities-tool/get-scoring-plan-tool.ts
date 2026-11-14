@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 
 import { z } from 'zod';
 
-import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
-import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
+import { OutreachTabService } from 'src/domains/engagement/outreach-command/services/outreach-tab.service';
+import { SourcingLedgerService } from 'src/domains/engagement/outreach-command/services/sourcing-ledger.service';
 import {
   planScoring,
   STEP_COSTS_USD,
@@ -14,7 +14,7 @@ import {
   readPersonCoverage,
   type RowCoverage,
 } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/row-coverage.util';
-import { type SourcingBrief } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
+import { type SourcingBrief } from 'src/domains/engagement/outreach-command/utils/sourcing-ledger.util';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';

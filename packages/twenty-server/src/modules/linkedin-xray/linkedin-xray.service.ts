@@ -7,7 +7,7 @@ import {
 
 import OpenAI from 'openai';
 
-import { TitleExpansionService } from 'src/engine/core-modules/title-taxonomy/title-expansion.service';
+import { TitleExpansionService } from 'src/domains/discovery/query/title-taxonomy/title-expansion.service';
 
 import {
   LINKEDIN_XRAY_COUNTRIES,

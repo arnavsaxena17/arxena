@@ -2,24 +2,23 @@ import { Body, Controller, InternalServerErrorException, NotFoundException, Post
 import moment from 'moment-timezone';
 import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 import { graphqlToFetchAllCandidateData, graphQltoUpdateOneCandidate, mutationToUpdateOnePerson } from 'twenty-shared';
-import { CandidateSourcingController } from '../candidate-sourcing/controllers/candidate-sourcing.controller';
-import { ProcessCandidatesService } from '../candidate-sourcing/jobs/process-candidates.service';
-import { AiFilteringProcessorService } from '../candidate-sourcing/services/ai-filtering-processor.service';
-import { AiFilteringService } from '../candidate-sourcing/services/ai-filtering.service';
-import { CandidateDataService } from '../candidate-sourcing/services/candidate-data.service';
-import { CandidateService } from '../candidate-sourcing/services/candidate.service';
-import { ChatService } from '../candidate-sourcing/services/chat.service';
-import { FilterDescriptionProcessorService } from '../candidate-sourcing/services/filter-description-processor.service';
-import { PersonService } from '../candidate-sourcing/services/person.service';
+import { CandidateSourcingController } from 'src/domains/ingestion/candidate-sourcing/controllers/candidate-sourcing.controller';
+import { ProcessCandidatesService } from 'src/domains/ingestion/candidate-sourcing/jobs/process-candidates.service';
+import { AiFilteringService } from 'src/domains/ingestion/candidate-sourcing/services/ai-filtering.service';
+import { CandidateDataService } from 'src/domains/ingestion/candidate-sourcing/services/candidate-data.service';
+import { CandidateService } from 'src/domains/ingestion/candidate-sourcing/services/candidate.service';
+import { ChatService } from 'src/domains/ingestion/candidate-sourcing/services/chat.service';
+import { FilterDescriptionProcessorService } from 'src/domains/ingestion/candidate-sourcing/services/filter-description-processor.service';
+import { PersonService } from 'src/domains/ingestion/candidate-sourcing/services/person.service';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { GoogleSheetsService } from './google-sheets.service';
 
-import { ProcessAiFiltersService } from '../candidate-sourcing/jobs/process-ai-filters.service';
-import { CandidateWorkspaceGraphQLService } from '../candidate-sourcing/services/candidate-workspace-graphql.service';
-import { JDParserService } from '../candidate-sourcing/services/jd-parser.service';
-import { OtherFieldsService } from '../candidate-sourcing/services/other-fields.service';
-import { UploadProgressPubSubService } from '../candidate-sourcing/services/upload-progress-pubsub.service';
+import { ProcessAiFiltersService } from 'src/domains/ingestion/candidate-sourcing/jobs/process-ai-filters.service';
+import { CandidateWorkspaceGraphQLService } from 'src/domains/ingestion/candidate-sourcing/services/candidate-workspace-graphql.service';
+import { JDParserService } from 'src/domains/ingestion/candidate-sourcing/services/jd-parser.service';
+import { OtherFieldsService } from 'src/domains/ingestion/candidate-sourcing/services/other-fields.service';
+import { UploadProgressPubSubService } from 'src/domains/ingestion/candidate-sourcing/services/upload-progress-pubsub.service';
 import { FileStorageService } from '../file-storage/services/file-storage.service';
 
 @Controller('fetch-google-apps-data')
@@ -35,7 +34,6 @@ export class GoogleSheetsDataController {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly webSocketGateway: WebSocketGateway,
     private readonly aiFilteringService: AiFilteringService,
-    private readonly aiFilteringProcessorService: AiFilteringProcessorService,
     private readonly candidateDataService: CandidateDataService,
     private readonly filterDescriptionProcessorService: FilterDescriptionProcessorService,
     private readonly uploadProgressPubSubService: UploadProgressPubSubService,

@@ -5,16 +5,16 @@ import { isNonEmptyString } from '@sniptt/guards';
 import {
   OutreachCompaniesCacheService,
   type OutreachEphemeralCompany,
-} from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
-import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
+} from 'src/domains/engagement/outreach-command/services/outreach-companies-cache.service';
+import { OutreachTabService } from 'src/domains/engagement/outreach-command/services/outreach-tab.service';
 import {
   OutreachPeopleCacheService,
   type OutreachEphemeralPerson,
-} from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
-import { OutreachTabDedupeService } from 'src/engine/core-modules/outreach-command/services/outreach-tab-dedupe.service';
-import { OutreachTabExportService } from 'src/engine/core-modules/outreach-command/services/outreach-tab-export.service';
-import { compactPeople } from 'src/engine/core-modules/outreach-command/utils/merge-people.util';
-import { outreachTabRowsToListRows } from 'src/engine/core-modules/outreach-command/utils/outreach-tab-rows.util';
+} from 'src/domains/engagement/outreach-command/services/outreach-people-cache.service';
+import { OutreachTabDedupeService } from 'src/domains/engagement/outreach-command/services/outreach-tab-dedupe.service';
+import { OutreachTabExportService } from 'src/domains/engagement/outreach-command/services/outreach-tab-export.service';
+import { compactPeople } from 'src/domains/engagement/outreach-command/utils/merge-people.util';
+import { outreachTabRowsToListRows } from 'src/domains/engagement/outreach-command/utils/outreach-tab-rows.util';
 import { OutreachTabToolInputZodSchema } from 'src/engine/core-modules/tool/tools/outreach-tab-tool/outreach-tab-tool-input.type';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';

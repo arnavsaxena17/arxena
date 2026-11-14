@@ -10,7 +10,7 @@ import {
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/interfaces/workflow-action.interface';
 
 import { FindRecordsService } from 'src/engine/core-modules/record-crud/services/find-records.service';
-import { buildFindRecordsLlmText } from 'src/engine/core-modules/outreach-command/utils/format-outreach-llm-context.util';
+import { buildFindRecordsLlmText } from 'src/domains/engagement/outreach-command/utils/format-outreach-llm-context.util';
 import { WorkflowCommonWorkspaceService } from 'src/modules/workflow/common/workspace-services/workflow-common.workspace-service';
 import {
   WorkflowStepExecutorException,

@@ -98,7 +98,7 @@ describe('buildPeopleApiOpenApiDocument', () => {
           default?: string;
         }
       )?.enum,
-    ).toEqual(expect.arrayContaining(['auto', 'index', 'unipile', 'pool']));
+    ).toEqual(expect.arrayContaining(['auto', 'index', 'linkedin', 'linkedin_pool']));
     expect(
       (searchRequest.properties?.dataSource as { default?: string }).default,
     ).toBe('auto');

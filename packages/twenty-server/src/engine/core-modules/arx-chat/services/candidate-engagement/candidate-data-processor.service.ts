@@ -13,7 +13,7 @@ import {
 } from 'twenty-shared';
 import { z } from 'zod';
 
-import { ResumeReadParseUploadService } from 'src/engine/core-modules/candidate-sourcing/services/resume-read-parse-upload.service';
+import { ResumeReadParseUploadService } from 'src/domains/ingestion/candidate-sourcing/services/resume-read-parse-upload.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 

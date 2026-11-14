@@ -1,0 +1,193 @@
+import { SearchPeopleForCompanyService } from '../search-people-for-company.service';
+
+describe('SearchPeopleForCompanyService', () => {
+  const companyId = 'c811bdd7-0489-46b2-b7d7-3bab7c93e610';
+  const projectId = '84a08312-0e86-59ed-8103-f575c3f17812';
+  const peopleApiService = {
+    searchPeople: jest.fn(),
+  };
+  const ensureOutreachProjectService = {
+    ensureForCompany: jest.fn(),
+  };
+  const gtmWorkspaceAuthTokenService = {
+    resolveApiKeyToken: jest.fn(),
+  };
+  const unipileSearchAccountResolver = {
+    resolveDefaultWorkspaceAccount: jest.fn(),
+  };
+  const linkedInSearchTransformer = {
+    transformSearchResultsToTableFormat: jest.fn((items: unknown[]) => items),
+    addMetadataToCandidates: jest.fn((items: unknown[]) => items),
+  };
+  const outreachSenderProfileService = {
+    resolveOperatorSenderProfile: jest.fn(),
+  };
+  const companyRepository = {
+    findOne: jest.fn(),
+  };
+  const projectRepository = {
+    findOne: jest.fn(),
+  };
+  const globalWorkspaceOrmManager = {
+    getRepository: jest.fn(async (_workspaceId: string, objectName: string) => {
+      if (objectName === 'company') {
+        return companyRepository;
+      }
+      if (objectName === 'project') {
+        return projectRepository;
+      }
+
+      throw new Error(`Unexpected repository: ${objectName}`);
+    }),
+    executeInWorkspaceContext: jest.fn(
+      async (callback: () => Promise<unknown>) => callback(),
+    ),
+  };
+
+  const service = new SearchPeopleForCompanyService(
+    globalWorkspaceOrmManager as never,
+    peopleApiService as never,
+    linkedInSearchTransformer as never,
+    ensureOutreachProjectService as never,
+    gtmWorkspaceAuthTokenService as never,
+    unipileSearchAccountResolver as never,
+    outreachSenderProfileService as never,
+  );
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    ensureOutreachProjectService.ensureForCompany.mockResolvedValue({
+      projectId,
+      projectIds: projectId,
+    });
+    companyRepository.findOne.mockResolvedValue({
+      id: companyId,
+      name: 'Egon Zehnder',
+      domainName: { primaryLinkUrl: 'http://www.egonzehnder.com' },
+      linkedinLink: {
+        primaryLinkUrl: 'https://www.linkedin.com/company/egon-zehnder/',
+      },
+    });
+    projectRepository.findOne.mockResolvedValue({
+      id: projectId,
+      name: 'GTM Harvest',
+      maxPersonasPerCompany: 2,
+    });
+    outreachSenderProfileService.resolveOperatorSenderProfile.mockResolvedValue(
+      {
+        targetTitles: ['Head of Talent'],
+        locations: ['United States', 'United Kingdom'],
+        brief: 'Sender brief',
+      },
+    );
+    gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue('tok');
+    unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
+      { accountId: 'acct-1', product: 'classic' },
+    );
+    peopleApiService.searchPeople.mockResolvedValue({
+      status: 'ok',
+      dataSource: 'linkedin',
+      total: 0,
+      items: [],
+    });
+  });
+
+  it('forwards the saved company LinkedIn URL into People search', async () => {
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: { companyId },
+      }),
+    ).resolves.toMatchObject({
+      success: true,
+      projectId,
+    });
+
+    expect(peopleApiService.searchPeople).toHaveBeenCalledWith(
+      expect.objectContaining({
+        companyId,
+        companyName: 'Egon Zehnder',
+        website: 'www.egonzehnder.com',
+        linkedinCompanyUrl: 'https://www.linkedin.com/company/egon-zehnder/',
+        jobTitle: 'Head of Talent',
+        locations: ['United States', 'United Kingdom'],
+        accountId: 'acct-1',
+        dataSource: 'auto',
+        limit: 10,
+      }),
+      'tok',
+      { workspaceId: 'ws-1' },
+    );
+  });
+
+  it('uses the provided job title instead of the sender target title', async () => {
+    await service.execute({
+      workspaceId: 'ws-1',
+      input: { companyId, jobTitle: 'VP Engineering' },
+    });
+
+    expect(peopleApiService.searchPeople).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobTitle: 'VP Engineering',
+        locations: ['United States', 'United Kingdom'],
+      }),
+      'tok',
+      { workspaceId: 'ws-1' },
+    );
+  });
+
+  it('falls back to the sender target title when job title is blank', async () => {
+    await service.execute({
+      workspaceId: 'ws-1',
+      input: { companyId, jobTitle: '   ' },
+    });
+
+    expect(peopleApiService.searchPeople).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobTitle: 'Head of Talent',
+      }),
+      'tok',
+      { workspaceId: 'ws-1' },
+    );
+  });
+
+  it('uses empty titles when the operator has no sender profile', async () => {
+    outreachSenderProfileService.resolveOperatorSenderProfile.mockResolvedValue(
+      null,
+    );
+
+    await service.execute({
+      workspaceId: 'ws-1',
+      input: { companyId },
+    });
+
+    expect(peopleApiService.searchPeople).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobTitle: '',
+        locations: [],
+      }),
+      'tok',
+      { workspaceId: 'ws-1' },
+    );
+  });
+
+  it('uses a 50-person limit for Sales Navigator accounts', async () => {
+    unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
+      { accountId: 'acct-sn', product: 'sales_navigator' },
+    );
+
+    await service.execute({
+      workspaceId: 'ws-1',
+      input: { companyId },
+    });
+
+    expect(peopleApiService.searchPeople).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: 'acct-sn',
+        limit: 50,
+      }),
+      'tok',
+      { workspaceId: 'ws-1' },
+    );
+  });
+});

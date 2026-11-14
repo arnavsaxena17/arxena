@@ -1,7 +1,7 @@
 import { isNonEmptyString } from '@sniptt/guards';
 
 import { SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME } from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-names.const';
-import { OUTREACH_TAB_SOURCE_TOOLS } from 'src/engine/core-modules/outreach-command/rows/utils/outreach-rows-normalizers.util';
+import { OUTREACH_TAB_SOURCE_TOOLS } from 'src/domains/engagement/outreach-command/rows/utils/outreach-rows-normalizers.util';
 
 // Tools whose projectId means "write the results to this project's tab". Other
 // tools take projectId as a filter, so they never get a default.

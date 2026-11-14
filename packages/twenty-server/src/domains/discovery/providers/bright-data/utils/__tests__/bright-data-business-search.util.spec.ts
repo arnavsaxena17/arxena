@@ -1,0 +1,291 @@
+import {
+  aggregateBrightDataDocuments,
+  buildBrightDataCompanyOtherFields,
+  buildBrightDataPersonOtherFields,
+  filterBrightDataDocumentsByDomain,
+  mapBrightDataCompanyToEphemeral,
+  mapBrightDataCompanyToSearchHit,
+  mapBrightDataPersonToEphemeral,
+  mapBrightDataPersonToSearchItem,
+  normalizeBrightDataBusinessSearchMode,
+  parseBrightDataDomainLookupQuery,
+  planBrightDataBusinessSearchPages,
+} from 'src/domains/discovery/providers/bright-data/utils/bright-data-business-search.util';
+
+const apparelCompany = {
+  brightId: 'ab0f11c90553695d64d6fdb94e672889f127a3fa082bd827a1eb5001960a1938',
+  data: {
+    name: 'Aditya Birla Fashion and Retail Ltd.',
+    industry: 'Retail Apparel and Fashion',
+    organization_type: 'Public Company',
+    headquarters_country_code: 'IN',
+    headquarters_city: 'Mumbai',
+    employees_in_linkedin: 14911,
+    founded_year: 2007,
+    domain: 'abfrl.com',
+    website: 'https://www.abfrl.com/',
+    url: 'https://www.linkedin.com/company/abfrl',
+  },
+};
+
+describe('bright data business search util', () => {
+  it('parses bare domains and URLs for company domain lookup', () => {
+    expect(parseBrightDataDomainLookupQuery('stripe.com')).toBe('stripe.com');
+    expect(
+      parseBrightDataDomainLookupQuery('https://www.Stripe.com/about'),
+    ).toBe('stripe.com');
+    expect(parseBrightDataDomainLookupQuery('company website stripe.com')).toBe(
+      null,
+    );
+    expect(parseBrightDataDomainLookupQuery('stripe')).toBe(null);
+  });
+
+  it('keeps only documents whose website host matches the domain', () => {
+    const kept = filterBrightDataDocumentsByDomain(
+      [
+        apparelCompany,
+        {
+          brightId: 'other',
+          data: { name: 'Other', website: 'https://stripes.co' },
+        },
+      ],
+      'abfrl.com',
+    );
+
+    expect(kept).toEqual([apparelCompany]);
+  });
+
+  it('keeps the page with the largest following when several list the same site', () => {
+    const dummy = {
+      brightId: 'dummy',
+      data: {
+        name: 'Mamaearth Dummy',
+        website: 'mamaearth.in',
+        linkedin_followers: 35,
+        employees_in_linkedin: 1,
+      },
+    };
+    const real = {
+      brightId: 'real',
+      data: {
+        name: 'Mamaearth',
+        website: 'https://mamaearth.in/',
+        linkedin_followers: '222,003',
+        employees_in_linkedin: 1800,
+      },
+    };
+
+    expect(
+      filterBrightDataDocumentsByDomain([dummy, real], 'mamaearth.in'),
+    ).toEqual([real]);
+  });
+
+  it('normalizes mode case, defaults to ludicrous and rejects unknown modes', () => {
+    expect(normalizeBrightDataBusinessSearchMode('Smart')).toBe('smart');
+    expect(normalizeBrightDataBusinessSearchMode()).toBe('ludicrous');
+    expect(normalizeBrightDataBusinessSearchMode('INSTANT')).toBe('instant');
+    expect(normalizeBrightDataBusinessSearchMode('Ludicrous')).toBe(
+      'ludicrous',
+    );
+    expect(() => normalizeBrightDataBusinessSearchMode('turbo')).toThrow(
+      'ludicrous, smart or instant',
+    );
+  });
+
+  it('pages ludicrous searches at 100 and stops at offset 1000', () => {
+    const pages = planBrightDataBusinessSearchPages({
+      mode: 'ludicrous',
+      limit: 5000,
+    });
+
+    expect(pages).toHaveLength(11);
+    expect(pages[0]).toEqual({ offset: 0, limit: 100 });
+    expect(pages[10]).toEqual({ offset: 1000, limit: 100 });
+    expect(
+      planBrightDataBusinessSearchPages({
+        mode: 'ludicrous',
+        limit: 300,
+        offset: 900,
+      }),
+    ).toEqual([
+      { offset: 900, limit: 100 },
+      { offset: 1000, limit: 100 },
+    ]);
+  });
+
+  it('pages smart searches at 10 and caps at 100', () => {
+    expect(
+      planBrightDataBusinessSearchPages({ mode: 'smart', limit: 25 }),
+    ).toEqual([
+      { offset: 0, limit: 10 },
+      { offset: 10, limit: 10 },
+      { offset: 20, limit: 5 },
+    ]);
+    expect(
+      planBrightDataBusinessSearchPages({ mode: 'smart', limit: 500 }),
+    ).toHaveLength(10);
+    // Bright Data 500s once offset + limit passes 100 in smart and instant
+    expect(
+      planBrightDataBusinessSearchPages({
+        mode: 'instant',
+        limit: 250,
+        offset: 50,
+      }),
+    ).toEqual([{ offset: 50, limit: 50 }]);
+    expect(() =>
+      planBrightDataBusinessSearchPages({
+        mode: 'instant',
+        limit: 10,
+        offset: 100,
+      }),
+    ).toThrow('Use ludicrous mode');
+  });
+
+  it('maps a company document into search and ephemeral rows', () => {
+    expect(mapBrightDataCompanyToSearchHit(apparelCompany)).toMatchObject({
+      id: apparelCompany.brightId,
+      name: 'Aditya Birla Fashion and Retail Ltd.',
+      website: 'https://www.abfrl.com/',
+      linkedinUrl: 'https://www.linkedin.com/company/abfrl',
+      industry: 'Retail Apparel and Fashion',
+      country: 'IN',
+      locality: 'Mumbai',
+      size: '14911',
+      founded: '2007',
+    });
+    expect(mapBrightDataCompanyToEphemeral(apparelCompany)).toMatchObject({
+      id: apparelCompany.brightId,
+      domain: 'abfrl.com',
+      employees: '14911',
+      segment: 'Public Company',
+      status: 'new',
+    });
+    expect(
+      mapBrightDataCompanyToEphemeral(apparelCompany)?.otherFields,
+    ).toMatchObject({
+      linkedinUrl: 'https://www.linkedin.com/company/abfrl',
+      headquartersCountry: 'IN',
+      headquartersCity: 'Mumbai',
+      employeesOnLinkedin: 14911,
+      foundedYear: 2007,
+    });
+    expect(
+      mapBrightDataCompanyToEphemeral(apparelCompany)?.otherFields?.relevant,
+    ).toBeUndefined();
+    expect(
+      mapBrightDataCompanyToEphemeral({
+        ...apparelCompany,
+        relevant: false,
+      })?.otherFields?.relevant,
+    ).toBe(false);
+  });
+
+  it('keeps empty Bright Data fields out of the row columns', () => {
+    const otherFields = buildBrightDataCompanyOtherFields({
+      name: 'Tiny Cafe',
+      about: '',
+      offices_addresses: ['MG Road, Pune, IN', 'FC Road, Pune, IN'],
+      logo: 'https://example.com/logo.png',
+    });
+
+    expect(otherFields).toEqual({ officeAddressCount: 2 });
+  });
+
+  it('maps a person document into search and ephemeral rows', () => {
+    const person = {
+      brightId: 'person-1',
+      data: {
+        name: 'Ada Lovelace',
+        first_name: 'Ada',
+        current_title: 'Managing Director',
+        current_company_name: 'QSR India',
+        url: 'https://www.linkedin.com/in/ada',
+        location: 'Mumbai, India',
+        about: 'Runs restaurants',
+        connections: 500,
+        followers: 1264,
+        past_job_titles: 'Volunteer; Analyst',
+        past_company_names: 'Dream Org; Acme',
+        education_schools: 'IGNOU',
+        education_details: 'BA',
+        experience_years: 7,
+      },
+    };
+
+    expect(mapBrightDataPersonToSearchItem(person)).toMatchObject({
+      name: 'Ada Lovelace',
+      title: 'Managing Director',
+      companyName: 'QSR India',
+      url: 'https://www.linkedin.com/in/ada',
+      source: 'bright_data',
+      connections_count: 500,
+      followers_count: 1264,
+      work_experience: [
+        { role: 'Volunteer', company: 'Dream Org' },
+        { role: 'Analyst', company: 'Acme' },
+      ],
+      education: [{ school: 'IGNOU', degree: 'BA' }],
+    });
+    expect(mapBrightDataPersonToEphemeral(person)).toMatchObject({
+      id: 'person-1',
+      name: 'Ada Lovelace',
+      title: 'Managing Director',
+      companyName: 'QSR India',
+      linkedinUrl: 'https://www.linkedin.com/in/ada',
+      stage: 'queued',
+    });
+    expect(mapBrightDataPersonToEphemeral(person)?.otherFields).toMatchObject({
+      connections: 500,
+      followers: 1264,
+      pastJobTitles: 'Volunteer; Analyst',
+      educationSchools: 'IGNOU',
+      workExperience: [
+        { role: 'Volunteer', company: 'Dream Org' },
+        { role: 'Analyst', company: 'Acme' },
+      ],
+      education: [{ school: 'IGNOU', degree: 'BA' }],
+    });
+    expect(
+      mapBrightDataPersonToEphemeral({ ...person, relevant: true })?.otherFields
+        ?.relevant,
+    ).toBe(true);
+  });
+
+  it('keeps empty Bright Data people fields out of the row columns', () => {
+    expect(
+      buildBrightDataPersonOtherFields({
+        name: 'Sparse',
+        about: '',
+        connections: 12,
+        avatar: '',
+      }),
+    ).toEqual({ connections: 12 });
+  });
+});
+
+describe('aggregateBrightDataDocuments', () => {
+  it('should return counts only, whatever the number of records', () => {
+    const documents = Array.from({ length: 5000 }, (_, index) => ({
+      brightId: `id-${index}`,
+      data: {
+        name: `Company ${index}`,
+        about: 'x'.repeat(2000),
+        industry:
+          index % 2 === 0 ? 'Restaurants' : 'Food and Beverage Services',
+        headquarters_country_code: 'IN',
+      },
+    }));
+
+    const aggregate = aggregateBrightDataDocuments('company', documents);
+    const serialized = JSON.stringify(aggregate);
+
+    expect(aggregate.total).toBe(5000);
+    expect(aggregate.topIndustries[0]).toEqual({
+      name: 'Restaurants',
+      count: 2500,
+    });
+    expect(aggregate.topCountries).toEqual([{ name: 'IN', count: 5000 }]);
+    expect(serialized).not.toContain('Company 1');
+    expect(serialized.length).toBeLessThan(1000);
+  });
+});

@@ -2,7 +2,7 @@ import {
   FindPeopleCascadeService,
   selectPeoplePerRole,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-cascade.service';
-import { type PersonJudgement } from 'src/engine/core-modules/bright-data/services/bright-data-person-fit-filter.service';
+import { type PersonJudgement } from 'src/domains/discovery/providers/bright-data/services/bright-data-person-fit-filter.service';
 import {
   type Candidate,
   type CompanyOutcome,

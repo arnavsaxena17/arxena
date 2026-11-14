@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { GeoModule } from 'src/engine/core-modules/geo/geo.module';
-import { OrgChartClientIpModule } from 'src/engine/core-modules/org-chart/org-chart-client-ip.module';
+import { OrgChartClientIpModule } from 'src/domains/org-graph/org-chart/org-chart-client-ip.module';
 import { WebsiteTrackerController } from 'src/engine/core-modules/website-tracker/website-tracker.controller';
 import { WebsiteTrackerService } from 'src/engine/core-modules/website-tracker/website-tracker.service';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';

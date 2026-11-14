@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
+import { CandidateSearchHandlerService } from 'src/domains/planning/candidate-search/services/candidate-search-handler.service';
 import { StreamEventSender } from './assistant.types';
 import { STREAMING_TOOL_NAMES } from './mcp-assistant.constants';
 import { McpToolCallCacheService } from './mcp-tool-call-cache.service';
@@ -63,10 +63,10 @@ export class McpInProcessToolRunnerService {
     if (isGenerateSearchParams) {
       sendEvent?.('status', {
         message:
-          'Generating search parameters from LinkedIn query generation...',
+          'Generating search parameters...',
       });
       this.logger.log(
-        `Generating search parameters from LinkedIn query generation...`,
+        `Generating search parameters...`,
       );
       const prompt = (args.prompt ?? args.query) as string | undefined;
       const searchType =
@@ -94,10 +94,17 @@ export class McpInProcessToolRunnerService {
         throwIfAborted(abortSignal);
         const rawQuery = (args.rawQuery as string) ?? prompt;
         const unresolvedSearchParams =
-          await this.candidateSearchHandlerService.generateUnresolvedSearchParametersFromLinkedinQueryGeneration(
+          await this.candidateSearchHandlerService.generateUnresolvedSearchParams(
+            rawQuery,
             rawQuery,
             searchType,
+            searchCategory,
+            apiToken,
+            prompt,
+            undefined,
+            undefined,
             sendEvent,
+            false,
           );
         throwIfAborted(abortSignal);
         sendEvent?.('status', {

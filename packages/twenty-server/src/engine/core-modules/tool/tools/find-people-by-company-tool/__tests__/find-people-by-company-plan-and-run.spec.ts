@@ -1,4 +1,4 @@
-import { type SourcingLedgerEvent } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
+import { type SourcingLedgerEvent } from 'src/domains/engagement/outreach-command/utils/sourcing-ledger.util';
 import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
 import { type CompanyOutcome } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company.types';
 import { FindPeopleRunService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-run.service';

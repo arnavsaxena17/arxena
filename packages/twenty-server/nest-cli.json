@@ -69,7 +69,7 @@
         "outDir": "dist"
       },
       {
-        "include": "engine/core-modules/outreach-command/utils/mock-unipile-profiles/*.json",
+        "include": "domains/engagement/outreach-command/utils/mock-unipile-profiles/*.json",
         "outDir": "dist"
       },
       {

@@ -36,7 +36,4 @@ export const INTERNAL_TOOL_NAMES = new Set<string>([
   'generate_unresolved_search_parameters',
   'resolve_parameters',
   'generate_linkedin_query_agent1',
-  'generate_linkedin_query_agent2',
-  'generate_linkedin_query_agent3',
-  'generate_linkedin_query_agent4',
 ]);

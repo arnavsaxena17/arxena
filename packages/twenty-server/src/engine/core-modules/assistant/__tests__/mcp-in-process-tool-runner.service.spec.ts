@@ -1,5 +1,5 @@
 jest.mock(
-  'src/engine/core-modules/candidate-search/services/candidate-search-handler.service',
+  'src/domains/planning/candidate-search/services/candidate-search-handler.service',
   () => ({
     CandidateSearchHandlerService: class CandidateSearchHandlerService {},
   }),
@@ -14,9 +14,7 @@ describe('McpInProcessToolRunnerService', () => {
       searchStrategies: [],
     };
     const candidateSearchHandlerService = {
-      generateUnresolvedSearchParametersFromLinkedinQueryGeneration: jest
-        .fn()
-        .mockResolvedValue(unresolved),
+      generateUnresolvedSearchParams: jest.fn().mockResolvedValue(unresolved),
     };
     const toolCallCache = {
       buildKey: jest.fn().mockReturnValue('cache-key'),
@@ -41,11 +39,18 @@ describe('McpInProcessToolRunnerService', () => {
     );
 
     expect(
-      candidateSearchHandlerService.generateUnresolvedSearchParametersFromLinkedinQueryGeneration,
+      candidateSearchHandlerService.generateUnresolvedSearchParams,
     ).toHaveBeenCalledWith(
       'Senior engineer in Berlin',
+      'Senior engineer in Berlin',
       'classic',
+      'people',
+      'api-token',
+      'Senior engineer in Berlin',
+      undefined,
+      undefined,
       expect.any(Function),
+      false,
     );
     expect(result).toContain('"foo":"bar"');
     expect(toolCallCache.cacheToolResult).toHaveBeenCalled();

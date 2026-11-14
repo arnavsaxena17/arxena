@@ -7,16 +7,16 @@ import { isDefined } from 'twenty-shared/utils';
 import {
   type OutreachEphemeralPerson,
   OutreachPeopleCacheService,
-} from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
-import { OutreachCompaniesCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
-import { ChatTabWritesService } from 'src/engine/core-modules/outreach-command/services/chat-tab-writes.service';
-import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
-import { mergePeople } from 'src/engine/core-modules/outreach-command/utils/merge-people.util';
+} from 'src/domains/engagement/outreach-command/services/outreach-people-cache.service';
+import { OutreachCompaniesCacheService } from 'src/domains/engagement/outreach-command/services/outreach-companies-cache.service';
+import { ChatTabWritesService } from 'src/domains/engagement/outreach-command/services/chat-tab-writes.service';
+import { OutreachTabService } from 'src/domains/engagement/outreach-command/services/outreach-tab.service';
+import { mergePeople } from 'src/domains/engagement/outreach-command/utils/merge-people.util';
 import {
   personIdentityKey,
   personIdentityKeys,
-} from 'src/engine/core-modules/outreach-command/utils/person-identity.util';
-import { resolvePeopleCompanyIds } from 'src/engine/core-modules/outreach-command/utils/resolve-people-company-ids.util';
+} from 'src/domains/engagement/outreach-command/utils/person-identity.util';
+import { resolvePeopleCompanyIds } from 'src/domains/engagement/outreach-command/utils/resolve-people-company-ids.util';
 import {
   type UpsertOutreachTargetPeopleInput,
   UpsertOutreachTargetPeopleInputZodSchema,

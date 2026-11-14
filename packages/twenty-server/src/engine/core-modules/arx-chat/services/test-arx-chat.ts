@@ -4,7 +4,7 @@ import {
   graphqlToFetchAllCandidateDataWithFieldValues,
   PageInfo,
 } from 'twenty-shared';
-import { CandidateService } from '../../candidate-sourcing/services/candidate.service';
+import { CandidateService } from 'src/domains/ingestion/candidate-sourcing/services/candidate.service';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { ArxChatEndpoint } from '../controllers/arx-chat-agent.controller';
 

@@ -1,4 +1,4 @@
-import { type ResolvedRoles } from 'src/engine/core-modules/title-taxonomy/title-expansion.service';
+import { type ResolvedRoles } from 'src/domains/discovery/query/title-taxonomy/title-expansion.service';
 
 // One paid search: a taxonomy class (or an unclassified role on its own) and
 // the roles that share it. Roles that share a class (Procurement Head and CPO)

@@ -1,7 +1,7 @@
 import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
 
-import { OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
+import { OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES } from 'src/domains/engagement/outreach-command/constants/outreach-logic-function-names.const';
 import {
   type WorkflowToolContext,
   type WorkflowToolDependencies,

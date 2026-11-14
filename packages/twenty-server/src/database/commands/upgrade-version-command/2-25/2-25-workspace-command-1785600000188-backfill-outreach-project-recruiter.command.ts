@@ -60,8 +60,22 @@ export class BackfillOutreachProjectRecruiterCommand extends ProvisionedWorkspac
             'candidate',
             { shouldBypassPermissionChecks: true },
           );
+        const workspaceMemberRepository =
+          await this.globalWorkspaceOrmManager.getRepository<{ id: string }>(
+            workspaceId,
+            'workspaceMember',
+            { shouldBypassPermissionChecks: true },
+          );
 
         const projects = await projectRepository.find();
+        // Pins and creator ids can point at members deleted after the project
+        // was created; writing one back would break the recruiter foreign key.
+        const workspaceMembers = await workspaceMemberRepository.find({
+          select: ['id'],
+        });
+        const existingWorkspaceMemberIds = new Set(
+          workspaceMembers.map((workspaceMember) => workspaceMember.id),
+        );
         let alreadySet = 0;
         let fromPin = 0;
         let fromCreator = 0;
@@ -88,6 +102,11 @@ export class BackfillOutreachProjectRecruiterCommand extends ProvisionedWorkspac
             '';
 
           if (!isNonEmptyString(nextRecruiterId)) {
+            unresolved += 1;
+            continue;
+          }
+
+          if (!existingWorkspaceMemberIds.has(nextRecruiterId)) {
             unresolved += 1;
             continue;
           }

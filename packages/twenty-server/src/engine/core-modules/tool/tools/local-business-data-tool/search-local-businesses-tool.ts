@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 
-import { LocalBusinessDataService } from 'src/engine/core-modules/local-business-data/local-business-data.service';
+import { LocalBusinessDataService } from 'src/domains/discovery/providers/local-business-data/local-business-data.service';
 import {
   SearchLocalBusinessesToolInputZodSchema,
   type SearchLocalBusinessesToolInput,

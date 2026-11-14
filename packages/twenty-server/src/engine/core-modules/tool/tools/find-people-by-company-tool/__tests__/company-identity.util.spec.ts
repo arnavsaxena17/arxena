@@ -3,7 +3,7 @@ import {
   identityBrandKey,
   identityVariants,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/company-identity.util';
-import { type ResolvedCompanyFromRawName } from 'src/engine/core-modules/org-chart/services/company-name-resolver.service';
+import { type ResolvedCompanyFromRawName } from 'src/domains/org-graph/org-chart/services/company-name-resolver.service';
 
 const resolvedCompany = (
   overrides: Partial<ResolvedCompanyFromRawName> = {},

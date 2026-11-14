@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
-import { CleanPhoneNumbers } from 'src/engine/core-modules/candidate-sourcing/utils/clean-phone-numbers';
+import { CleanPhoneNumbers } from 'src/domains/ingestion/candidate-sourcing/utils/clean-phone-numbers';
 import { parseStringPromise } from 'xml2js';
 
 import { findManyPhoneCalls, graphqlMutationToCreatePhoneCall, graphqlMutationToCreateSMS, graphqlMutationToUpdateSMS, graphqlQueryToFindSMS, mutationToUpdateOnePhoneCall } from 'twenty-shared';

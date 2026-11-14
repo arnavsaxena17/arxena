@@ -1,8 +1,8 @@
 import { OpenAPIV3_1 } from 'openapi-types';
 
-import { FUNCTION_ROOT_VALUES } from '../candidate-search/schemas/org-chart.schema';
-import { PEOPLE_DATA_SOURCE_CATEGORIES } from '../people-api/constants/people-data-source-aliases';
-import { PEOPLE_SEARCH_MAX_LIMIT } from '../people-api/constants/people-search-limits';
+import { FUNCTION_ROOT_VALUES } from 'src/domains/org-graph/org-chart/schemas/org-chart.schema';
+import { PEOPLE_DATA_SOURCE_CATEGORIES } from 'src/domains/discovery/search/people-api/constants/people-data-source-aliases';
+import { PEOPLE_SEARCH_MAX_LIMIT } from 'src/domains/discovery/search/people-api/constants/people-search-limits';
 
 const dataSourceEnum = PEOPLE_DATA_SOURCE_CATEGORIES.map(
   (category) => category.alias,
@@ -274,7 +274,7 @@ export const buildPeopleApiOpenApiDocument = (
         example: {
           jobTitle: 'CEO',
           website: 'stayvista.com',
-          dataSource: 'pool',
+          dataSource: 'linkedin_pool',
           limit: 10,
         },
       },
@@ -489,10 +489,10 @@ export const buildPeopleApiOpenApiDocument = (
           },
           dataSource: {
             type: 'string',
-            enum: ['harvest', 'unipile', 'pool'],
+            enum: ['harvest', 'linkedin', 'linkedin_pool'],
             description:
               'LinkedIn Sales Navigator source. `pool` is the shared Unipile Sales Nav pool; `unipile` requires accountId; `harvest` uses Harvest SN lead-search. Defaults to unipile.',
-            example: 'pool',
+            example: 'linkedin_pool',
           },
           accountId: {
             type: 'string',
@@ -519,7 +519,7 @@ export const buildPeopleApiOpenApiDocument = (
           website: 'stayvista.com',
           stdFunctionRoot: 'corporate',
           stdGrade: 'leadership',
-          dataSource: 'pool',
+          dataSource: 'linkedin_pool',
           limit: 20,
         },
       },
@@ -529,7 +529,7 @@ export const buildPeopleApiOpenApiDocument = (
           status: { type: 'string', enum: ['ok'] },
           dataSource: {
             type: 'string',
-            enum: ['harvest', 'unipile', 'pool'],
+            enum: ['harvest', 'linkedin', 'linkedin_pool'],
           },
           query: {
             type: 'object',
@@ -1361,7 +1361,7 @@ export const buildPeopleApiOpenApiDocument = (
                   value: {
                     jobTitle: 'CEO',
                     website: 'stayvista.com',
-                    dataSource: 'pool',
+                    dataSource: 'linkedin_pool',
                     limit: 10,
                   },
                 },
@@ -1409,7 +1409,7 @@ export const buildPeopleApiOpenApiDocument = (
                     website: 'stripe.com',
                     stdFunctionRoot: 'engineering',
                     stdGrade: 'leadership',
-                    dataSource: 'pool',
+                    dataSource: 'linkedin_pool',
                     limit: 20,
                   },
                 },
@@ -1419,7 +1419,7 @@ export const buildPeopleApiOpenApiDocument = (
                     website: 'stayvista.com',
                     stdFunctionRoot: 'corporate',
                     stdGrade: 'leadership',
-                    dataSource: 'pool',
+                    dataSource: 'linkedin_pool',
                     limit: 10,
                   },
                 },

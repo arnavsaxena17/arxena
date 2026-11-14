@@ -23,7 +23,7 @@ import {
   buildOutreachSnoozeFollowUpPrompt,
   buildOutreachStampSequenceStagePrompt,
   OUTREACH_DONT_RESPOND_SENTINEL,
-} from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
+} from 'src/domains/engagement/outreach-command/prompts/outreach.prompts';
 import {
   OUTREACH_ENRICH_CONTACT_SAMPLE_OUTPUT,
   OUTREACH_RENDER_DRAFT_TEMPLATE_SAMPLE_OUTPUT,
@@ -45,7 +45,7 @@ import {
   OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_SAMPLE_OUTPUT,
   OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_SAMPLE_OUTPUT,
   OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_SAMPLE_OUTPUT,
-} from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-sample-output.const';
+} from 'src/domains/engagement/outreach-command/constants/outreach-logic-function-sample-output.const';
 import {
   OUTREACH_WF_AGENT_EMAIL,
   OUTREACH_WF_AGENT_EXTRACT,

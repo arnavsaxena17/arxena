@@ -4,12 +4,12 @@
     "src/engine/core-modules/candidate-sourcing": {
       "errors": 162,
       "suppressions": 0,
-      "explicitAny": 336
+      "explicitAny": 334
     },
     "src/engine/core-modules/candidate-search": {
-      "errors": 65,
+      "errors": 58,
       "suppressions": 0,
-      "explicitAny": 145
+      "explicitAny": 114
     },
     "src/engine/core-modules/org-chart": {
       "errors": 29,
@@ -28,8 +28,8 @@
     }
   },
   "totals": {
-    "errors": 262,
+    "errors": 255,
     "suppressions": 0,
-    "explicitAny": 567
+    "explicitAny": 534
   }
 }

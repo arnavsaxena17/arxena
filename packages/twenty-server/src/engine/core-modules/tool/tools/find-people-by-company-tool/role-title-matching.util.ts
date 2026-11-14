@@ -1,7 +1,7 @@
 import { isNonEmptyString } from '@sniptt/guards';
 
-import { type TitleClass } from 'src/engine/core-modules/title-taxonomy/title-class.type';
-import { expandRoleWithFamilyFallback } from 'src/engine/core-modules/title-taxonomy/title-family-fallback.util';
+import { type TitleClass } from 'src/domains/discovery/query/title-taxonomy/title-class.type';
+import { expandRoleWithFamilyFallback } from 'src/domains/discovery/query/title-taxonomy/title-family-fallback.util';
 
 // A title with one of these does not hold the role itself
 const DISQUALIFYING_PREFIX =

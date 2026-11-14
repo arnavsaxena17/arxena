@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { LocalBusinessDataService } from 'src/engine/core-modules/local-business-data/local-business-data.service';
+import { LocalBusinessDataService } from 'src/domains/discovery/providers/local-business-data/local-business-data.service';
 import { GetLocalBusinessDetailsToolInputZodSchema } from 'src/engine/core-modules/tool/tools/local-business-data-tool/types/get-local-business-details-tool-input.type';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';

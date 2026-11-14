@@ -1,7 +1,7 @@
 import { GmailDraftShortlistJobData } from 'twenty-shared';
 
 import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
-import { ResumeReadParseUploadService } from 'src/engine/core-modules/candidate-sourcing/services/resume-read-parse-upload.service';
+import { ResumeReadParseUploadService } from 'src/domains/ingestion/candidate-sourcing/services/resume-read-parse-upload.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';

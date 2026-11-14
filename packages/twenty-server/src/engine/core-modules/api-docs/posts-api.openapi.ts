@@ -1,6 +1,6 @@
 import { OpenAPIV3_1 } from 'openapi-types';
 
-import { POST_DATA_SOURCE_CATEGORIES } from '../posts-api/constants/post-data-source-aliases';
+import { POST_DATA_SOURCE_CATEGORIES } from 'src/domains/discovery/search/posts-api/constants/post-data-source-aliases';
 
 const dataSourceEnum = POST_DATA_SOURCE_CATEGORIES.map(
   (category) => category.alias,
@@ -189,7 +189,7 @@ export const buildPostsApiOpenApiDocument = (
         },
         example: {
           status: 'ok',
-          dataSource: 'unipile',
+          dataSource: 'linkedin',
           total: 1,
           items: [
             {

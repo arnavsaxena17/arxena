@@ -7,7 +7,7 @@ import {
   REFRESH_PENDING_HITL_AFTER_PROMPT_CHANGE_DELAY_MS,
   REFRESH_PENDING_HITL_AFTER_PROMPT_CHANGE_JOB_NAME,
   type RefreshPendingHitlAfterPromptChangeJobData,
-} from 'src/engine/core-modules/outreach-command/jobs/refresh-pending-hitl-after-prompt-change.job';
+} from 'src/domains/engagement/outreach-command/jobs/refresh-pending-hitl-after-prompt-change.job';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';

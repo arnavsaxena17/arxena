@@ -4,7 +4,7 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
 
-import { type GoogleSerpOrganicItem } from 'src/engine/core-modules/org-chart/utils/map-google-serp-organic.util';
+import { type GoogleSerpOrganicItem } from 'src/domains/org-graph/org-chart/utils/map-google-serp-organic.util';
 import {
   isLinkedinProfileUrl,
   linkedinProfileUrlFromPostUrl,

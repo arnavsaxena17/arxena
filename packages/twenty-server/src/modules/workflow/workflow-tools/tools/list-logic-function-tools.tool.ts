@@ -2,7 +2,7 @@ import { CODE_STEP_LOGIC_FUNCTION_NAME } from 'twenty-shared/logic-function';
 import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
 
-import { OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
+import { OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES } from 'src/domains/engagement/outreach-command/constants/outreach-logic-function-names.const';
 import { type WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { type FlatLogicFunction } from 'src/engine/metadata-modules/logic-function/types/flat-logic-function.type';
 import { type WorkflowToolContext } from 'src/modules/workflow/workflow-tools/types/workflow-tool-dependencies.type';

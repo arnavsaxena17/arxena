@@ -9,9 +9,9 @@ import { ProvisionedWorkspaceCommandRunner } from 'src/database/commands/command
 import { WorkspaceIteratorService } from 'src/database/commands/command-runners/workspace-iterator.service';
 import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/workspace.command-runner';
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
-import { flattenFatOutreachSenderProfile } from 'src/engine/core-modules/outreach-command/utils/flatten-fat-outreach-sender-profile.util';
-import { normalizeOutreachSenderProfile } from 'src/engine/core-modules/outreach-command/utils/outreach-sender-profile.util';
-import { parseIcpSpec } from 'src/engine/core-modules/outreach-command/utils/outreach-icp-spec.util';
+import { flattenFatOutreachSenderProfile } from 'src/domains/engagement/outreach-command/utils/flatten-fat-outreach-sender-profile.util';
+import { normalizeOutreachSenderProfile } from 'src/domains/engagement/outreach-command/utils/outreach-sender-profile.util';
+import { parseIcpSpec } from 'src/domains/engagement/outreach-command/utils/outreach-icp-spec.util';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';

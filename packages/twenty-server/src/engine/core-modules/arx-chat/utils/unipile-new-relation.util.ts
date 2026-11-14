@@ -1,7 +1,7 @@
 import {
   canonicalizeLinkedinProfileUrl,
   extractLinkedinProfileId,
-} from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
+} from 'src/domains/engagement/outreach-command/utils/extract-linkedin-profile-id.util';
 
 import { type UnipileNewRelationWebhook } from '../types/unipile-webhook.types';
 

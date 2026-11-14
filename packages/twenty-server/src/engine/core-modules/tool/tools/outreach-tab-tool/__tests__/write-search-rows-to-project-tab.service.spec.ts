@@ -1,5 +1,5 @@
 import { WriteSearchRowsToProjectTabService } from 'src/engine/core-modules/tool/tools/outreach-tab-tool/write-search-rows-to-project-tab.service';
-import { type OutreachRow } from 'src/engine/core-modules/outreach-command/rows/outreach-rows.types';
+import { type OutreachRow } from 'src/domains/engagement/outreach-command/rows/outreach-rows.types';
 
 const companyRow = (name: string, domain: string): OutreachRow => ({
   key: `d:${domain}`,

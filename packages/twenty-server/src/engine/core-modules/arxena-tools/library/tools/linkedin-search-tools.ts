@@ -22,9 +22,6 @@ import {
   FETCH_CONTACTS_INPUT_DESCRIPTOR,
   FETCH_EMAIL_OR_PHONE_INPUT_DESCRIPTOR,
   GENERATE_LINKEDIN_QUERY_AGENT1_INPUT_DESCRIPTOR,
-  GENERATE_LINKEDIN_QUERY_AGENT2_INPUT_DESCRIPTOR,
-  GENERATE_LINKEDIN_QUERY_AGENT3_INPUT_DESCRIPTOR,
-  GENERATE_LINKEDIN_QUERY_AGENT4_INPUT_DESCRIPTOR,
   GENERATE_LINKEDIN_QUERY_BATCH_INPUT_DESCRIPTOR,
   GENERATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR,
   GET_CONTACT_ENRICHMENT_JOB_INPUT_DESCRIPTOR,
@@ -732,100 +729,6 @@ export const linkedinSearchTools: McpTool[] = [
         {
           rawRequirement,
           queryIpLocation,
-          model,
-          temperature,
-        },
-      );
-    },
-  },
-
-  {
-    definition: {
-      name: 'generate_linkedin_query_agent2',
-      description:
-        'Generate master lists (keywords, job titles, companies, locations) from parsed requirement (Agent 2).',
-      inputSchema: descriptorToInputSchema(
-        GENERATE_LINKEDIN_QUERY_AGENT2_INPUT_DESCRIPTOR,
-      ),
-    },
-    handler: async (args, config) => {
-      const { parsedRequirement, model, temperature } = args as {
-        parsedRequirement: Record<string, unknown>;
-        model?: string;
-        temperature?: number;
-      };
-
-      return callRestAPI(
-        config.baseUrl,
-        config.apiToken,
-        'linkedin-query-generation',
-        'agent2/master-lists',
-        {
-          parsedRequirement,
-          model,
-          temperature,
-        },
-      );
-    },
-  },
-
-  {
-    definition: {
-      name: 'generate_linkedin_query_agent3',
-      description:
-        'Create primary query from parsed requirement and master lists (Agent 3).',
-      inputSchema: descriptorToInputSchema(
-        GENERATE_LINKEDIN_QUERY_AGENT3_INPUT_DESCRIPTOR,
-      ),
-    },
-    handler: async (args, config) => {
-      const { parsedRequirement, masterLists, model, temperature } = args as {
-        parsedRequirement: Record<string, unknown>;
-        masterLists: Record<string, unknown>;
-        model?: string;
-        temperature?: number;
-      };
-
-      return callRestAPI(
-        config.baseUrl,
-        config.apiToken,
-        'linkedin-query-generation',
-        'agent3/primary-query',
-        {
-          parsedRequirement,
-          masterLists,
-          model,
-          temperature,
-        },
-      );
-    },
-  },
-
-  {
-    definition: {
-      name: 'generate_linkedin_query_agent4',
-      description:
-        'Factor primary query into LinkedIn-compatible format (Agent 4).',
-      inputSchema: descriptorToInputSchema(
-        GENERATE_LINKEDIN_QUERY_AGENT4_INPUT_DESCRIPTOR,
-      ),
-    },
-    handler: async (args, config) => {
-      const { parsedRequirement, primaryQuery, model, temperature } = args as {
-        parsedRequirement: Record<string, unknown>;
-        primaryQuery: Record<string, unknown>;
-        model?: string;
-        temperature?: number;
-      };
-
-      return callRestAPI(
-        config.baseUrl,
-        config.apiToken,
-        'linkedin-query-generation',
-        'agent4/factoring',
-        {
-          parsedRequirement,
-          primaryQuery,
           model,
           temperature,
         },

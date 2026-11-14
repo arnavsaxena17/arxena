@@ -22,7 +22,7 @@ import {
 } from 'src/engine/core-modules/tool-provider/utils/format-tool-call-log.util';
 import { wrapWithErrorHandler } from 'src/engine/core-modules/tool-provider/utils/tool-error.util';
 import { sourceRefusalFor } from 'src/engine/core-modules/tool-provider/utils/sourcing-source-guard.util';
-import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
+import { SourcingLedgerService } from 'src/domains/engagement/outreach-command/services/sourcing-ledger.service';
 import { ToolOutputSpillService } from 'src/engine/core-modules/tool/services/tool-output-spill.service';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { type RolePermissionConfig } from 'src/engine/twenty-orm/types/role-permission-config';

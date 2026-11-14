@@ -10,8 +10,8 @@ import {
 import { type EntityManager } from 'typeorm';
 import { v5 } from 'uuid';
 
-import { LOCAL_PLACE_CLASSIFIER_MODEL_ID } from 'src/engine/core-modules/outreach-command/prompts/local-place-classifier.prompt';
-import { OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS } from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
+import { LOCAL_PLACE_CLASSIFIER_MODEL_ID } from 'src/domains/engagement/outreach-command/prompts/local-place-classifier.prompt';
+import { OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS } from 'src/domains/engagement/outreach-command/prompts/outreach.prompts';
 
 import {
   OUTREACH_SEEDED_EXTRACT_SIGNALS_SCHEMA,
@@ -20,7 +20,7 @@ import {
   OUTREACH_SEEDED_QUALIFY_PROSPECT_SCHEMA,
   OUTREACH_SEEDED_LOCAL_PLACE_CLASSIFIER_SCHEMA,
   OUTREACH_SEEDED_REPLY_SCHEMA,
-} from 'src/engine/core-modules/outreach-command/prompts/outreach-seeded-agent-schemas';
+} from 'src/domains/engagement/outreach-command/prompts/outreach-seeded-agent-schemas';
 
 import { getOutreachLogicFunctionIds } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-logic-functions.util';
 import { retireDuplicateOutreachSequencerWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/outreach-workflow-cleanup.util';

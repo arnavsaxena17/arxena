@@ -141,13 +141,14 @@ re-opens a `fail`.
 
 ```
 candidate-sourcing/run/
-  sourcing-run.service.ts   start / next — the loop, no business logic
+  sourcing-run.service.ts   start / next / cancel — the loop, no business logic
+  sourcing-run.ports.ts     the ports, made from the compiler, tools, tab and scoring
   plan.util.ts              brief -> candidates (calls the Python compiler)
   select.util.ts            pure: rank + budget split
   judge.util.ts             pure: verdicts -> qualified | unknown | to_confirm | fail
   enrich.util.ts            the undecided set only, budgeted
   stop.util.ts              pure: shouldStop — landed, not wired
-  round.util.ts             pure-ish: run one candidate, write one ledger row
+  round.util.ts             pure-ish: run one candidate page by page — landed, used by search
 candidate-sourcing/sources/
   registry.ts               alias -> adapter. The one place a source is chosen.
   adapter.ts                three capability kinds, one return shape
@@ -186,14 +187,14 @@ The loop cannot be simple while these exist. None of them changes behaviour.
 | `strategyLimit = 1` in `strategy-execution.service.ts` | debug cap; the budget replaces it | done — `SOURCING_STRATEGY_LIMIT` |
 | `search-generation.service.ts` | 403 lines, all commented | done |
 | `company-tools.ts` | 270 lines commented; company search is `company-api` | done |
-| `candidate-search-pipeline.controller.ts` | debug surface, 25 routes | **not dead** — three callers: `arx-jd-upload/hooks/useSearchParameters.ts` (`generate-unresolved-search-parameters`), `arxena-tools/.../candidate-search-tools.ts`, `arxena-tools/.../internal-tools.ts`. Migrate or drop those first |
-| `query-constructor`, `booltree-hint` services | reachable only from the debug controller | the controller above |
-| `job-title-expander`, `company-expander` services | debug controller, plus `candidate-search.controller.ts` (`expand-job-titles`, `expand-companies`) | **not dead** — decide whether those two routes stay before deleting |
-| `ai-filtering-processor.service.ts` | second filter stack; keep `ai-filter-engine` | **not dead** — `google-sheets` depends on it; migrate that caller first |
-| per-candidate LLM scoring | ~250 calls/run, no threshold, no consumer but a column | repoint the table column at fitment |
-| 3 × term-limit code (2 TS, 1 Python) | Python is authoritative, keep only it | delete the TS paths with the loop |
+| `candidate-search-pipeline.controller.ts` | debug surface, 25 routes | done for 23 of them. Two stay at the same URL because they have callers: `generate-unresolved-search-parameters` (`arx-jd-upload/hooks/useSearchParameters.ts`, `internal-tools.ts`) and `job-brief-understanding` (`candidate-search-tools.ts`). Both are still unguarded, as before |
+| `query-constructor`, `booltree-hint` services | reachable only from the debug controller | done — services, prompt, schema and mapper |
+| `job-title-expander`, `company-expander` services | `candidate-search.controller.ts` (`expand-job-titles`, `expand-companies`) | **not dead** — `candidate-search-tools.ts` calls both routes |
+| `ai-filtering-processor.service.ts` | second filter stack; keep `ai-filter-engine` | done — `AiFilteringService` runs each filter through `AiFilterEngineService`; `candidate-filter-spec.util.ts` turns the recruiting UI's filter config into the engine's `FilterSpec` |
+| per-candidate LLM scoring | ~250 calls/run, no threshold, no consumer but a column | done on the server — `CandidateScoringService` is gone and rows stream unscored. The front-end `relevanceScore` column is now always empty; repoint it at fitment |
+| 3 × term-limit code (2 TS, 1 Python) | Python is authoritative, keep only it | done — the splitter in the query-generation service and `countKeywordTerms` / `simplifyKeywordQuery` are gone. `apply-parsed-requirement.util.ts` still caps what it appends to `keywords` at 6 terms |
 | 3 × provider selection (`PeopleApiService` if-chain, `SearchPeopleService`, tool layer) | one `registry.ts` | registry must land first |
-| `exa_web_search` / `app_exa_web_search` | names with no handler | skill text mentions Exa |
+| `exa_web_search` / `app_exa_web_search` | ~~names with no handler~~ | **not dead** — the `twenty-exa` marketplace app (`packages/twenty-apps/public/twenty-exa`) serves `exa_web_search`, surfaced as `app_exa_web_search`; the `research` skill uses it. Deleting it removes a working source |
 | `dataSource: 'pdl'` in People API | throws NOT_IMPLEMENTED | keep the guard until a PDL search adapter exists |
 | 28-part `sourcing` skill | process moves into code; skills keep only facts | the loop must exist first |
 | `pdb.set_trace()` — `arxena-site/search_model/checks_query.py` | hangs a worker | done — two of them |
@@ -217,12 +218,12 @@ build a `SearchSpec`; nothing else.
 
 | Merge | Into | Removes |
 |---|---|---|
-| `SearchExecutionService` (1505) + `OrgChartSearchService` (2062) + shard planner | one `fetch` round | ~3.5k lines, 3 paging loops, 3 cursor conventions |
+| `SearchExecutionService` (1505) + `OrgChartSearchService` (2062) + shard planner | one `fetch` round | both classes are gone. `SearchExecutionService` became `LinkedInStrategySource` (prepare a strategy, fetch one page) and `runStrategySearch` (one function over the fetch round, with streaming and page review as options). `OrgChartSearchService` became `OrgChartChartBuildService` (people -> Python chart builder, no searching) and `OrgChartLinkedInSearchService` (plan strategies and shards, run each through `runStrategySearch`). The shard planner is still its own service |
 | 3 provider-selection sites | `registry.ts` | the if-chain and 2 re-derivations |
-| two filter stacks | `ai-filter-engine` | ~500 lines, cartesian product, free-form JSON |
+| two filter stacks | `ai-filter-engine` | done — ~500 lines, cartesian product, free-form JSON |
 | 2 × TS term limits + Python enforcer | Python | ~250 lines, and the drift between them |
 | TS `BooltreeHintService` + Python truth tables | Python | a dead filesystem reader, 2 required JSON files |
-| 4-agent LLM chain | Agent 1 (parser) only | 3 sequential calls, 4 schemas, TS factoring |
+| 4-agent LLM chain | Agent 1 (parser) only | done — 3 sequential calls, 3 schemas, TS factoring. `generate` is now parse → Python `/query-set` → fold the requirement in |
 
 **Org chart is not a product.** It is `fetch` with a pair dimension —
 `find_people_by_company` already writes per-pair terminal states. Its shard planner exists
@@ -242,9 +243,10 @@ It replaces `search-tools-config`, the dispatch if-chain, `company-api` capabili
 and the retry knowledge currently living in comments.
 
 **Rows.** `LinkedInSearchResponse`, `PeopleSearchResponse`, `OrgChartSearchResponse`,
-`PersonCandidateDraft`, `CandidateTableRow` — five. Keep `PersonCandidateDraft`; the 15
-registered transformers already normalise into it. Adapters emit it, and
-`apolloPersonToLinkedInPeopleResult()` goes away.
+`PersonCandidateDraft`, `CandidateTableRow` — five, and the project tab's `OutreachRow` is a
+sixth. Decided: the loop keeps `OutreachRow`, because that is what the tab stores and what
+every search tool already normalises into. The older candidate-search path
+(`PersonCandidateDraft`, `CandidateTableRow`) converges onto it later.
 
 **Errors.** Thrown strings, `AccountRateLimitDeferredError`, `NO_RESULTS`, 502/503 mapping
 and `ignoredParameters` become one enum — `deferred | rate_limited | no_results |
@@ -274,7 +276,8 @@ unconfigured | budget | upstream` — driving retry, stop and the message.
 - `harvest-filter-ids.ts` is documented as **silently wrong** on whole-word mismatches. A
   quiet id mapping poisons every run and looks like a bad query.
 - `ignoredParameters` drops unknown keys silently. Correct for users, fatal for a compiler —
-  hard error outside production.
+  hard error outside production. Done in `harvest-search.controller.ts`: outside production
+  an unknown key is a 400 that names it, before any paid call.
 
 ## Invariants
 
@@ -311,6 +314,153 @@ Landed: the reference-free deletions and the two `pdb`s from step 1, and the env
 from step 2, and the pure half of step 5 — `run/stop.util.ts` with its tests, called by
 nothing yet. Step 3, wiring step 5, and steps 6–7 change what the pipeline returns and need
 a reviewed run against a real brief first.
+
+Also landed, with tests and called by nothing yet:
+
+- `run/judge.util.ts` — `judgeRow` (flags + verdicts → `qualified | unknown | to_confirm |
+  fail`, with `settledBy` and the questions) and `tallyJudgeOutcomes`. A level already on the
+  row is not bought again: a must-have the profile could have shown fails, a red flag it
+  could not clear becomes a candidate question. `scoreFitment` and `computeSourcingFunnel`
+  still run the live pipeline; they are not repointed.
+- `run/select.util.ts` — `selectCandidates`: rank by expected qualified per dollar, split the
+  budget, at most 10 pages per candidate per round.
+- `sources/adapter.ts` — the spec, result and error shapes, `roundUsd`, `pageCostUsd`,
+  `actionForSourceError`.
+- `sources/registry.ts` — one descriptor per source, keyed by the alias the APIs accept:
+  `index`, `apollo`, `contactout`, `pdl`, `harvest`, `linkedin`, `linkedin_pool`,
+  `recruiter`, `bright_data`, `serp`, `xray`, `apify`. Which LinkedIn product is searched is
+  the request's `searchType`, not a source, so count reliability for the LinkedIn accounts is
+  `isSourceCountReliable(alias, searchType)` (never on classic). It holds no adapters yet.
+  Apollo, ContactOut, PDL, X-Ray and Apify are `unpriced`; `pageCostUsd` returns `null` for
+  them so the loop cannot treat them as free.
+- One source enum for the public APIs: the People, Company, Jobs and Posts `dataSource` types
+  are `'auto' | PickSource<…>` over the registry, so an alias the registry lacks does not
+  compile. `unipile` is now `linkedin` and `pool` is `linkedin_pool` everywhere a
+  `dataSource` is read or written (services, resolvers, OpenAPI docs, tool descriptions,
+  workflow sample outputs). The old values are rejected, not aliased. Still separate:
+  `candidateSource` on the org chart (`unipile | linkedin_xray | apify`), the
+  `DataSourceType` enum of import formats, and the ledger's free-text `source`.
+- `sources/source-error.util.ts` — `toSourceErrorCode`: a thrown value → the one error enum.
+- Money: `roundUsd` is now the rounding used by the ledger funnel, `find_people_by_company`
+  spend and the Harvest controller.
+- People API: `dispatchPeopleSearch` is a table keyed by `PeopleResolvedDataSourceAlias`, so
+  an alias with no entry does not compile.
+
+Python is the only query generator. The `multi_agent` option is gone from the chat handler,
+the org-chart router and every request type; `generate_linkedin_query_agent2/3/4` and their
+routes are deleted. The open-market path now forwards the parsed location to Python as well
+as the role (step 3 of the migration, as far as the parsed requirement allows: it carries no
+function root or grade). A search fails when the Python service is down. The front-end
+org-chart generator preference is still sent and is ignored.
+
+`run/round.util.ts` — `runFetchRound`: one candidate, page by page, until a rule stops it
+(empty page, duplicates only, last page by count, max rows, max pages, no more pages, the
+caller declines, abort, error). A source says whether it has more pages, so cursor paging and
+the raw classic endpoint's offset paging are one convention. `SearchExecutionService` lost
+its two copies of the loop and now only prepares a strategy and emits progress. Two small
+behaviour changes came with it: a chat search with validation on now stops when the source
+returns no cursor (it used to refetch page one and stop on duplicates), and one without
+validation on the raw classic endpoint now pages past page one.
+
+The filter merge changes three things for the recruiting AI filters: prompts and answer
+validation are the engine's, a filter whose required answer is invalid leaves the column
+empty instead of writing whatever came back, and the run uses the platform's model keys, not
+the workspace's own OpenAI key. It is no longer recorded through `MeteredLlmService`; the
+engine returns the cost and nothing bills it yet.
+
+The loop is built, tested against fake sources, and reachable through two tools:
+
+- `run/sourcing-run.service.ts` — `start` (plan only, no spend), `next` (one round: probe or
+  fetch, judge, enrich the undecided, then stop or select) and `cancel`. Every round appends
+  one `round` ledger row carrying the run state; `next` resumes from the latest one, so the
+  ledger is the only store. The budget is checked before every paid page. FIX adds one
+  candidate, at most twice, and only when the run is flat or dry.
+- `run/plan.util.ts` — queries x sources -> candidates, the three spec kinds, the sources it
+  cannot run (unknown, unpriced, no adapter, or a filter the adapter cannot express), and
+  `needsSplit` / `splitCandidate`: a candidate above a source's `maxRowsPerSearch` (2,500 on
+  the LinkedIn accounts) becomes smaller candidates.
+- `run/enrich.util.ts` — only `unknown` rows, cheapest level first, within the budget left.
+- `sources/adapter-registry.ts` — alias -> adapter, a thrown provider error becomes the one
+  error code, a spec kind the source does not accept is a hard error.
+- `tool/tools/sourcing-run-tool/` — `sourcing_start` and `sourcing_next` (with `cancel`),
+  registered in the action tool provider. One run object is built per call from the calling
+  user's context.
+
+**Rows are outreach tab rows**, not `PersonCandidateDraft`. An adapter searches and writes
+the page to the project tab in one step and returns counts (`fetched`, `newUnique`); the loop
+never holds rows. The two adapters that exist run the existing search tools through
+`ArxenaToolProvider.executeStaticTool`, which already normalises, writes the tab and appends
+the ledger `search` row:
+
+| Source | Tool | Cannot express |
+|---|---|---|
+| `index` | `search_people_index` | more than one company per search; a city (it goes in free text) |
+| `harvest` | `search_harvest_leads` | employers by name (it takes LinkedIn company URLs) |
+
+The real ports (`run/sourcing-run.ports.ts`):
+
+- compile — one parse, then the Python compiler (`generateSearchQuerySet`).
+- judge — runs the fitment column the agent previewed (`scoringPreviewId`, and optionally a
+  profile-stage `profileScoringPreviewId`) and reads `fitmentOutcome` off the tab.
+- tally — the same column, counted.
+- enrich — `FetchProfilesService` for rows still `unknown`.
+
+What this does not do yet:
+
+- No adapter for `linkedin`, `linkedin_pool`, `recruiter`, `bright_data`, `serp`, `xray`,
+  `apify`; a brief that picks one gets it back in `unusable`. Apollo, ContactOut and PDL are
+  unusable until a price is recorded.
+- The judge is the live fitment roll-up (`scoreFitment`: pass / unknown / fail), not
+  `judgeRow`. So `to_confirm` is never produced, `settledBy` is not asked for, and the only
+  enrichment queued is a profile. Making `judgeRow` the roll-up means changing
+  `computeFitmentColumns` and shipping the judge skill text with it.
+- `split` (the Unipile shard planner) and `fix` are not wired; both ports are optional.
+- A preview expires after an hour, so a long run needs the scoring preview made again.
+- No skill text tells the agent to use the two tools; the 28-part `sourcing` skill still
+  describes the manual procedure.
+- `select` ranks on unique rows per dollar only: there is no per-candidate qualified rate.
+- It has not been run against a live source.
+
+The org-chart LinkedIn search is not on `sourcing_start` / `sourcing_next`, and cannot be
+as they stand: the loop counts rows on the project tab, while an org chart needs the raw
+LinkedIn items to hand to the Python builder. What it shares with the loop is the fetch round
+and the LinkedIn source.
+
+`OrgChartLinkedInSearchService` now owns the request only — normalisation, the two caches,
+the session and the progress events — and its phases are separate units, in the order they
+run: `planStrategiesAndShards` (router → strategy cap → function-grade cache → cancel →
+probe → search plan → unlimited shards), then `runStrategies` (the per-strategy fetch round,
+persisting the raw snapshot after each), then `dedupeAndReturnCandidates` (dedupe, scope
+filter, node filter). `planUnlimitedShardsOrResume` and
+`resolveBusinessDivisionLinkedInContext` are their own units because the estimate probe
+shares both. The 836-line method is gone; the phases are `services/orgchart-*.util.ts` and
+are unit tested, with `runStrategySearch` still the only paging loop underneath.
+
+The request itself is parsed once, in `services/orgchart-linkedin-request.util.ts`:
+`normalizeOrgchartLinkedInRequest` trims and defaults every field, then
+`deriveOrgchartRequestFilters` decides what the request narrows — after the
+business-division step, because that step can narrow country and function. Both entry
+points go through it, so they can no longer disagree about whether a search is "everyone
+in the company": a LinkedIn location id or `leadershipOnly` now narrows it for the
+estimate as well as the run, which is the divergence that used to be there. One options
+type describes the request, with the five fields only the run can act on as an extension.
+
+**Source encodings.** One enum, and one table per remaining spelling:
+
+| Encoding | Now |
+|---|---|
+| People / Company / Jobs / Posts `dataSource` | `'auto' \| PickSource<…>`; `unipile` -> `linkedin`, `pool` -> `linkedin_pool` |
+| `OutreachSource` (tab row, and the ledger `search` event) | `PickSource<…> \| 'other'`. Index rows are written as `index` and Wikidata rows as `wikidata`; `other` is only read, for rows stored before |
+| org-chart `candidateSource` | values unchanged; `sourceOfOrgChartCandidateSource` maps each to a registry source (`unipile` -> `linkedin`, `linkedin_xray` -> `xray`, `m7kq` and `apollo` -> `apollo`) |
+| `DataSourceType` (import formats) | values unchanged; `sourceOfImportFormat` gives a LinkedIn format its source and a job-board export, upload or parsed CV none |
+
+The two tables are `Record`s over the whole encoding (`sources/source-encodings.ts`), so a
+new value with no source does not compile. `candidateSource` and the import formats were not
+renamed: they are sent by the org-chart client (38 files, front end included), held in queued
+jobs and cache keys, and stored on imported candidates. `exa` and `wikidata` joined the
+registry because the tab already records them.
+
+Still to do: the tool renames to `get_` / `search_` / `run_`.
 
 ## Typecheck ratchet
 
