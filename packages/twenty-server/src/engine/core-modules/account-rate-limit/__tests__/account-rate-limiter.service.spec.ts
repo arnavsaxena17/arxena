@@ -233,6 +233,8 @@ describe('AccountRateLimiterService', () => {
   const createLimiter = (acquire: jest.Mock): AccountRateLimiterService => {
     const redisService = {
       tryAcquireMultiWindowSlots: acquire,
+      getSlidingWindowScores: jest.fn().mockResolvedValue([]),
+      removeMemberFromWindows: jest.fn().mockResolvedValue(0),
       getString: jest.fn().mockResolvedValue(null),
       setString: jest.fn(),
       deleteKeys: jest.fn().mockResolvedValue(0),
@@ -426,6 +428,7 @@ describe('AccountRateLimiterService', () => {
       'linkedin:acc-1:search:minute',
       'linkedin:acc-1:search:day',
       'linkedin:acc-1:endpoint:day',
+      'linkedin:acc-1:endpoint_enrichment:day',
     ]);
     expect(acquire.mock.calls[0][0]).toEqual(
       expect.arrayContaining([
@@ -441,11 +444,16 @@ describe('AccountRateLimiterService', () => {
           key: 'linkedin:acc-1:endpoint:day',
           pace: false,
         }),
+        expect.objectContaining({
+          key: 'linkedin:acc-1:endpoint_enrichment:day',
+          pace: false,
+          limit: 60,
+        }),
       ]),
     );
   });
 
-  it('uses profile pace plus dedicated profile day and shared cumulative day', async () => {
+  it('uses profile pace plus dedicated profile day, shared cumulative day and the send reserve', async () => {
     const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
     const limiter = createLimiter(acquire);
 
@@ -463,6 +471,7 @@ describe('AccountRateLimiterService', () => {
       'linkedin:acc-1:profile:10s',
       'linkedin:acc-1:profile:day',
       'linkedin:acc-1:endpoint:day',
+      'linkedin:acc-1:endpoint_enrichment:day',
     ]);
   });
 
@@ -484,10 +493,11 @@ describe('AccountRateLimiterService', () => {
       'linkedin:acc-1:company_profile:10s',
       'linkedin:acc-1:company_profile:day',
       'linkedin:acc-1:endpoint:day',
+      'linkedin:acc-1:endpoint_enrichment:day',
     ]);
   });
 
-  it('applies only the shared cumulative day window for generic endpoint calls', async () => {
+  it('applies the shared cumulative day window plus the send reserve for generic endpoint calls', async () => {
     const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
     const limiter = createLimiter(acquire);
 
@@ -501,7 +511,10 @@ describe('AccountRateLimiterService', () => {
       (window: { key: string }) => window.key,
     );
 
-    expect(keys).toEqual(['linkedin:acc-1:endpoint:day']);
+    expect(keys).toEqual([
+      'linkedin:acc-1:endpoint:day',
+      'linkedin:acc-1:endpoint_enrichment:day',
+    ]);
   });
 
   it('includes the shared cumulative day window on outreach and search', async () => {
@@ -532,7 +545,119 @@ describe('AccountRateLimiterService', () => {
       'linkedin:acc-1:search:minute',
       'linkedin:acc-1:search:day',
       'linkedin:acc-1:endpoint:day',
+      'linkedin:acc-1:endpoint_enrichment:day',
     ]);
+  });
+
+  it('reserves a send-wave slot atomically at the connect day capacity', async () => {
+    const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
+    const getSlidingWindowScores = jest.fn().mockResolvedValue([]);
+    const limiter = new AccountRateLimiterService(
+      {
+        tryAcquireMultiWindowSlots: acquire,
+        getSlidingWindowScores,
+        removeMemberFromWindows: jest.fn(),
+        getString: jest.fn(),
+        setString: jest.fn(),
+        deleteKeys: jest.fn(),
+        deleteByPattern: jest.fn(),
+      } as never,
+      {
+        readCachedLinkedinLimits: jest.fn(),
+        readCachedWhatsappLimits: jest.fn(),
+      } as never,
+    );
+
+    await expect(
+      limiter.reserveLinkedinSendWaveSlot({ accountId: 'acc-1' }),
+    ).resolves.toEqual({ admitted: true, waitMs: 0 });
+    expect(acquire).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          key: 'linkedin:acc-1:send_wave:day',
+          windowMs: 86_400_000,
+          limit: 20,
+          pace: false,
+        }),
+      ],
+      expect.any(String),
+      expect.any(Number),
+    );
+  });
+
+  it('bounces a candidate and releases its held slot when the wave is full', async () => {
+    const removeMemberFromWindows = jest.fn().mockResolvedValue(1);
+    const limiter = new AccountRateLimiterService(
+      {
+        tryAcquireMultiWindowSlots: jest
+          .fn()
+          .mockResolvedValue({ acquired: false, waitMs: 3_600_000 }),
+        getSlidingWindowScores: jest.fn().mockResolvedValue([]),
+        removeMemberFromWindows,
+        getString: jest.fn(),
+        setString: jest.fn(),
+        deleteKeys: jest.fn(),
+        deleteByPattern: jest.fn(),
+      } as never,
+      {
+        readCachedLinkedinLimits: jest.fn(),
+        readCachedWhatsappLimits: jest.fn(),
+      } as never,
+    );
+
+    await expect(
+      limiter.reserveLinkedinSendWaveSlot({ accountId: 'acc-1' }),
+    ).resolves.toEqual({ admitted: false, waitMs: 3_600_000 });
+    expect(removeMemberFromWindows).toHaveBeenCalledWith(
+      ['linkedin:acc-1:send_wave:day'],
+      expect.any(String),
+    );
+  });
+
+  it('refuses to start a candidate once the enrichment slice is spent', async () => {
+    const acquire = jest.fn();
+    const now = Date.now();
+    const limiter = new AccountRateLimiterService(
+      {
+        tryAcquireMultiWindowSlots: acquire,
+        getSlidingWindowScores: jest.fn(async (key: string) =>
+          key === 'linkedin:acc-1:endpoint_enrichment:day'
+            ? Array.from({ length: 60 }, (_, index) => now - index * 1_000)
+            : [],
+        ),
+        removeMemberFromWindows: jest.fn(),
+        getString: jest.fn(),
+        setString: jest.fn(),
+        deleteKeys: jest.fn(),
+        deleteByPattern: jest.fn(),
+      } as never,
+      {
+        readCachedLinkedinLimits: jest.fn(),
+        readCachedWhatsappLimits: jest.fn(),
+      } as never,
+    );
+
+    const admission = await limiter.reserveLinkedinSendWaveSlot({
+      accountId: 'acc-1',
+    });
+
+    expect(admission.admitted).toBe(false);
+    expect(admission.waitMs).toBeGreaterThan(0);
+    expect(acquire).not.toHaveBeenCalled();
+  });
+
+  it('admits every candidate when no LinkedIn account id is given', async () => {
+    const limiter = new AccountRateLimiterService(
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      limiter.reserveLinkedinSendWaveSlot({ accountId: '  ' }),
+    ).resolves.toEqual({ admitted: true, waitMs: 0 });
+    await expect(
+      limiter.peekLinkedinSendAdmission({ accountId: '' }),
+    ).resolves.toEqual({ admitted: true, waitMs: 0 });
   });
 
   it('forwards an explicit reservation member to Redis', async () => {
@@ -874,6 +999,7 @@ describe('AccountRateLimiterService', () => {
         'linkedin:acc-1:search:minute',
         'linkedin:acc-1:search:day',
         'linkedin:acc-1:endpoint:day',
+        'linkedin:acc-1:endpoint_enrichment:day',
       ],
       `${workflowRunId}:step-2:0`,
     );

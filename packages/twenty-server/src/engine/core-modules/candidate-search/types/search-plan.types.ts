@@ -1,4 +1,4 @@
-import { ParsedJobDescription } from '@/engine/core-modules/candidate-search/types/candidate-search-request.type';
+import { ParsedJobDescription } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import type { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
 import type { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
 

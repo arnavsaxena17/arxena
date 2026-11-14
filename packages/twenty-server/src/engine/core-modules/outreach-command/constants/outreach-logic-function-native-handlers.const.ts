@@ -27,6 +27,8 @@ import {
   OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME,
   OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
+  OUTREACH_SEND_WAVE_ADMISSION_LOGIC_FUNCTION_NAME,
+  OUTREACH_COMPANY_DEDUPE_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
 
 const SEARCH_PEOPLE_FOR_COMPANY_HANDLER = `// Native GTM action: SearchPeopleForCompanyService.
@@ -376,6 +378,26 @@ export const main = async (params: {
 };
 `;
 
+const SEND_WAVE_ADMISSION_HANDLER = `// Native GTM action: OutreachSendWaveAdmissionService.
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  workspaceMemberId?: string;
+  candidateId?: string;
+}) => {
+  return params;
+};
+`;
+
+const COMPANY_DEDUPE_HANDLER = `// Native GTM action: OutreachCompanyDedupeService.
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  candidateId?: string;
+  companyName?: string;
+}) => {
+  return params;
+};
+`;
+
 const NATIVE_HANDLERS: Record<string, string> = {
   [OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME]:
     SEARCH_PEOPLE_FOR_COMPANY_HANDLER,
@@ -422,6 +444,9 @@ const NATIVE_HANDLERS: Record<string, string> = {
     FETCH_AND_UPSERT_LOCAL_BUSINESSES_HANDLER,
   [OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME]:
     CLASSIFY_AND_UPSERT_LOCAL_PLACES_HANDLER,
+  [OUTREACH_SEND_WAVE_ADMISSION_LOGIC_FUNCTION_NAME]:
+    SEND_WAVE_ADMISSION_HANDLER,
+  [OUTREACH_COMPANY_DEDUPE_LOGIC_FUNCTION_NAME]: COMPANY_DEDUPE_HANDLER,
 };
 
 export const getOutreachNativeLogicFunctionHandler = (name: string): string => {

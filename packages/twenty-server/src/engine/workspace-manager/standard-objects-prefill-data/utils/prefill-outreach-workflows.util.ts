@@ -108,6 +108,8 @@ const LF_TOKEN_TO_ID_KEY = {
   '__LF_fetch-and-upsert-local-businesses__':
     'fetchAndUpsertLocalBusinessesId',
   '__LF_classify-and-upsert-local-places__': 'classifyAndUpsertLocalPlacesId',
+  '__LF_outreach-send-wave-admission__': 'sendWaveAdmissionId',
+  '__LF_outreach-company-dedupe__': 'companyDedupeId',
 } as const;
 
 export const getOutreachWorkflowPrefillIds = (workspaceId: string) => {

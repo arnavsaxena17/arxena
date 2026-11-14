@@ -72,6 +72,10 @@ export async function GET(
 
     const response = await fetch(url, {
       method: 'GET',
+      // Per-company upstream calls must not enter the Next Data Cache: keys are
+      // unique per company/path, entries default to a 1-year revalidate, and
+      // nothing evicts them (they had grown to 24 GB / 289k files on disk).
+      cache: 'no-store',
       headers: {
         ...buildOrgChartUpstreamHeaders(request.headers, {
           forwardedUserAgent: effectiveUserAgent,

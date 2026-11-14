@@ -10,6 +10,7 @@ import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-ra
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
+import { type ChatTurnOrigin } from 'src/engine/core-modules/outreach-command/utils/chat-message-turns.util';
 import {
   isClassicLinkedInProviderId,
   isSalesNavigatorLinkedInProviderId,
@@ -97,6 +98,9 @@ export type FetchLinkedinMessageItem = {
   timestamp: string;
   senderId: string;
   isSender: boolean;
+  // 'agent' when the sequencer recorded this send, 'member' when it appears in
+  // the thread but the sequencer never sent it, 'prospect' for inbound.
+  origin?: ChatTurnOrigin;
 };
 
 @Injectable()
@@ -125,6 +129,9 @@ export class FetchLinkedinMessagesService {
     messages: FetchLinkedinMessageItem[];
     hasInboundReply: boolean;
     inboundCount: number;
+    hasManualOutbound: boolean;
+    manualOutboundCount: number;
+    memberSentLast: boolean;
     error?: string;
   }> {
     const isOutreachMockEnabled =
@@ -376,7 +383,17 @@ export class FetchLinkedinMessagesService {
       const rawMessages = isNonEmptyString(chatId)
         ? await this.fetchMessagesFromChat(resolved.accountId, chatId, limit)
         : [];
-      const messages = rawMessages.map((item) => this.mapMessage(item));
+      const providerMessages = rawMessages.map((item) => this.mapMessage(item));
+
+      // Inbound gates trust the provider window. Manual-takeover gates need the
+      // persisted transcript instead: a member replying from LinkedIn never
+      // reaches the Unipile webhook, so only the pull-then-merge path can tell
+      // their message from a sequencer send (see appendOutbound's 'agent' tag).
+      let transcriptMessages: Array<{
+        id: string;
+        isSender: boolean;
+        origin?: ChatTurnOrigin;
+      }> = [];
 
       try {
         await this.gtmOutreachMessagePersistService.mergeFetchedLinkedinMessages(
@@ -385,9 +402,21 @@ export class FetchLinkedinMessagesService {
             candidateId: input.candidateId,
             linkedinProfileId: resolved.identifier,
             chatId,
-            messages,
+            messages: providerMessages,
           },
         );
+
+        const transcript =
+          await this.gtmOutreachMessagePersistService.readLinkedinTranscriptMessages(
+            {
+              workspaceId,
+              candidateId: input.candidateId,
+              linkedinProfileId: resolved.identifier,
+              limit,
+            },
+          );
+
+        transcriptMessages = transcript.messages;
       } catch (error) {
         this.logger.warn(
           `Failed to merge LinkedIn history into messageObj: ${
@@ -396,6 +425,23 @@ export class FetchLinkedinMessagesService {
         );
       }
 
+      const originById = new Map(
+        transcriptMessages.flatMap((item) =>
+          isNonEmptyString(item.id) && isDefined(item.origin)
+            ? [[item.id, item.origin] as const]
+            : [],
+        ),
+      );
+      const messages = providerMessages.map((message) => {
+        const origin = isNonEmptyString(message.id)
+          ? originById.get(message.id)
+          : undefined;
+
+        return isDefined(origin) ? { ...message, origin } : message;
+      });
+      const transcriptSummary =
+        summarizeFetchedLinkedinMessages(transcriptMessages);
+
       return {
         success: true,
         chatId: chatId ?? '',
@@ -403,6 +449,9 @@ export class FetchLinkedinMessagesService {
         total: messages.length,
         messages,
         ...summarizeFetchedLinkedinMessages(messages),
+        hasManualOutbound: transcriptSummary.hasManualOutbound,
+        manualOutboundCount: transcriptSummary.manualOutboundCount,
+        memberSentLast: transcriptSummary.memberSentLast,
         error: '',
       };
     } catch (error) {
@@ -638,7 +687,10 @@ export class FetchLinkedinMessagesService {
       );
   }
 
-  private mapMessage(item: UnipileMessageItem): FetchLinkedinMessageItem {
+  private mapMessage(
+    item: UnipileMessageItem,
+    origin?: ChatTurnOrigin,
+  ): FetchLinkedinMessageItem {
     const senderId =
       item.sender_id ??
       item.sender_attendee_id ??
@@ -653,6 +705,7 @@ export class FetchLinkedinMessagesService {
       timestamp: item.timestamp ?? '',
       senderId,
       isSender: item.is_sender === 1 || item.is_sender === true,
+      ...(isDefined(origin) ? { origin } : {}),
     };
   }
 

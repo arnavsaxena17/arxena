@@ -505,27 +505,149 @@ describe('FetchLinkedinMessagesService', () => {
       },
     );
 
-    await expect(
-      service.execute({
-        workspaceId: 'ws-1',
-        input: {
-          linkedinProfileId: VALID_PROVIDER_ID,
-          forceRefresh: true,
-        },
-      }),
-    ).resolves.toMatchObject({
+    const result = await service.execute({
+      workspaceId: 'ws-1',
+      input: {
+        linkedinProfileId: VALID_PROVIDER_ID,
+        forceRefresh: true,
+      },
+    });
+
+    expect(result).toMatchObject({
       success: true,
       chatId: 'chat-1',
       attendeeId: VALID_PROVIDER_ID,
       total: 1,
       messages: [{ id: 'msg-1', text: 'Hello' }],
     });
+    // A cached turn must never answer the fetch. The transcript read that
+    // follows the pull only supplies author attribution (agent vs member).
+    expect(result.messages.map((message) => message.id)).toEqual(['msg-1']);
     expect(
       gtmOutreachMessagePersistService.readLinkedinTranscriptMessages,
-    ).not.toHaveBeenCalled();
+    ).toHaveBeenCalledTimes(1);
     expect(requestedEndpoints()[2]).toBe(
       '/api/v1/chats/chat-1/messages?limit=50',
     );
+  });
+
+  it('flags a manual member reply the sequencer never recorded', async () => {
+    globalWorkspaceOrmManager.executeInWorkspaceContext.mockResolvedValue({
+      accountId: 'acc-1',
+      identifier: VALID_PROVIDER_ID,
+    });
+    // Unipile's webhook only pushes inbound, so the only way a member's own reply
+    // surfaces is this pull: the thread proves it exists, and the origin tag on
+    // the persisted turn proves the sequencer never sent it.
+    linkedinUnipileRequestService.makeUnipileRequest.mockImplementation(
+      async (endpoint: string) => {
+        if (endpoint.includes('/sync')) {
+          return { status: 'SYNC_DONE' };
+        }
+        if (endpoint.includes('/chats?')) {
+          return {
+            items: [{ id: 'chat-1', attendee_provider_id: VALID_PROVIDER_ID }],
+          };
+        }
+        if (endpoint.includes('/chats/') && endpoint.includes('/messages?')) {
+          return {
+            items: [
+              {
+                id: 'msg-agent',
+                text: 'Hi, quick question',
+                timestamp: '2026-08-01T00:00:00.000Z',
+                is_sender: 1,
+                sender_id: VALID_PROVIDER_ID,
+              },
+              {
+                id: 'msg-manual',
+                text: 'Actually, let me answer this myself',
+                timestamp: '2026-08-02T00:00:00.000Z',
+                is_sender: 1,
+                sender_id: VALID_PROVIDER_ID,
+              },
+            ],
+            cursor: null,
+          };
+        }
+        return {};
+      },
+    );
+    gtmOutreachMessagePersistService.readLinkedinTranscriptMessages.mockResolvedValue(
+      {
+        candidateId: 'cand-1',
+        chatId: 'chat-1',
+        messages: [
+          {
+            id: 'msg-agent',
+            text: 'Hi, quick question',
+            timestamp: '2026-08-01T00:00:00.000Z',
+            senderId: '',
+            isSender: true,
+            origin: 'agent',
+          },
+          {
+            id: 'msg-manual',
+            text: 'Actually, let me answer this myself',
+            timestamp: '2026-08-02T00:00:00.000Z',
+            senderId: '',
+            isSender: true,
+            origin: 'member',
+          },
+        ],
+      },
+    );
+
+    const result = await service.execute({
+      workspaceId: 'ws-1',
+      input: { linkedinProfileId: VALID_PROVIDER_ID, forceRefresh: true },
+    });
+
+    expect(result).toMatchObject({
+      hasInboundReply: false,
+      inboundCount: 0,
+      hasManualOutbound: true,
+      manualOutboundCount: 1,
+      memberSentLast: true,
+    });
+    expect(result.messages.map((message) => message.origin)).toEqual([
+      'agent',
+      'member',
+    ]);
+  });
+
+  it('does not defer when the sequencer sent the newest message', async () => {
+    globalWorkspaceOrmManager.executeInWorkspaceContext.mockResolvedValue({
+      accountId: 'acc-1',
+      identifier: VALID_PROVIDER_ID,
+    });
+    gtmOutreachMessagePersistService.readLinkedinTranscriptMessages.mockResolvedValue(
+      {
+        candidateId: 'cand-1',
+        chatId: 'chat-1',
+        messages: [
+          {
+            id: 'msg-1',
+            text: 'Hello',
+            timestamp: '2026-08-01T00:00:00.000Z',
+            senderId: '',
+            isSender: true,
+            origin: 'agent',
+          },
+        ],
+      },
+    );
+
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: { linkedinProfileId: VALID_PROVIDER_ID, forceRefresh: true },
+      }),
+    ).resolves.toMatchObject({
+      hasManualOutbound: false,
+      manualOutboundCount: 0,
+      memberSentLast: false,
+    });
   });
 
   it('rethrows LinkedIn account rate limit errors', async () => {

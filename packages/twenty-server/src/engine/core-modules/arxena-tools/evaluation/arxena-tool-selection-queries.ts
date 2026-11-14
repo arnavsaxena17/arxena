@@ -600,13 +600,10 @@ export const countToolsInContext = (
     catalogSize: toolCatalog.length,
     schemasInContext: learned.size,
     arxenaCount: toolCatalog.filter(
-      (entry) =>
-        entry.category === ToolCategory.ARXENA || entry.category === 'ARXENA',
+      (entry) => entry.category === ToolCategory.ARXENA,
     ).length,
     externalMcpCount: toolCatalog.filter(
-      (entry) =>
-        entry.category === ToolCategory.EXTERNAL_MCP ||
-        entry.category === 'EXTERNAL_MCP',
+      (entry) => entry.category === ToolCategory.EXTERNAL_MCP,
     ).length,
   };
 };

@@ -54,6 +54,8 @@ import { OutreachFakeProfileDetectorService } from 'src/engine/core-modules/outr
 import { OutreachFilterProfilesService } from 'src/engine/core-modules/outreach-command/services/outreach-filter-profiles.service';
 import { OutreachMessagePersistService } from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
 import { OutreachMemberAssignmentService } from 'src/engine/core-modules/outreach-command/services/outreach-member-assignment.service';
+import { OutreachSendWaveAdmissionService } from 'src/engine/core-modules/outreach-command/services/outreach-send-wave-admission.service';
+import { OutreachCompanyDedupeService } from 'src/engine/core-modules/outreach-command/services/outreach-company-dedupe.service';
 import { OutreachWarmOverlapService } from 'src/engine/core-modules/outreach-command/services/outreach-warm-overlap.service';
 import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
 import { QualifyProspectService } from 'src/engine/core-modules/outreach-command/services/qualify-prospect.service';
@@ -238,6 +240,8 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachMessagePersistService,
     OutreachLogicFunctionNativeExecutor,
     OutreachUnipilePacingService,
+    OutreachSendWaveAdmissionService,
+    OutreachCompanyDedupeService,
     OutreachProjectOutreachControlService,
     OutreachCandidateJourneyService,
     OutreachDeferredResumeService,

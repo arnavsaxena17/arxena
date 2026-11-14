@@ -1,0 +1,35 @@
+{
+  "note": "Sourcing-module type debt. A ratchet, not a target. Only decreases.",
+  "metrics": {
+    "src/engine/core-modules/candidate-sourcing": {
+      "errors": 162,
+      "suppressions": 0,
+      "explicitAny": 336
+    },
+    "src/engine/core-modules/candidate-search": {
+      "errors": 65,
+      "suppressions": 0,
+      "explicitAny": 145
+    },
+    "src/engine/core-modules/org-chart": {
+      "errors": 29,
+      "suppressions": 0,
+      "explicitAny": 54
+    },
+    "src/engine/core-modules/linkedin-search": {
+      "errors": 6,
+      "suppressions": 0,
+      "explicitAny": 32
+    },
+    "src/engine/core-modules/arxena-tools": {
+      "errors": 0,
+      "suppressions": 0,
+      "explicitAny": 0
+    }
+  },
+  "totals": {
+    "errors": 262,
+    "suppressions": 0,
+    "explicitAny": 567
+  }
+}

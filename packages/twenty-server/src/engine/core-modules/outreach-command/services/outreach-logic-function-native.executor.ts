@@ -31,6 +31,8 @@ import {
   OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME,
   OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
+  OUTREACH_SEND_WAVE_ADMISSION_LOGIC_FUNCTION_NAME,
+  OUTREACH_COMPANY_DEDUPE_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
 import { OUTREACH_CALENDAR_REFERENCE_TIMEZONE } from 'src/engine/core-modules/outreach-command/constants/outreach-calendar-reference-timezone.const';
 import {
@@ -38,6 +40,14 @@ import {
   type OutreachInboundSignalsInput,
 } from 'src/engine/core-modules/outreach-command/utils/validate-outreach-inbound-signals.util';
 import { OutreachMemberAssignmentService } from 'src/engine/core-modules/outreach-command/services/outreach-member-assignment.service';
+import {
+  OutreachSendWaveAdmissionService,
+  type OutreachSendWaveAdmissionInput,
+} from 'src/engine/core-modules/outreach-command/services/outreach-send-wave-admission.service';
+import {
+  OutreachCompanyDedupeService,
+  type OutreachCompanyDedupeInput,
+} from 'src/engine/core-modules/outreach-command/services/outreach-company-dedupe.service';
 import { FetchAndUpsertLocalBusinessesService } from 'src/engine/core-modules/outreach-command/services/fetch-and-upsert-local-businesses.service';
 import { ClassifyAndUpsertLocalPlacesService } from 'src/engine/core-modules/outreach-command/services/classify-and-upsert-local-places.service';
 import { FetchCompanyDetailsService } from 'src/engine/core-modules/outreach-command/services/fetch-company-details.service';
@@ -104,6 +114,8 @@ export class OutreachLogicFunctionNativeExecutor
     private readonly fetchAndUpsertLocalBusinessesService: FetchAndUpsertLocalBusinessesService,
     private readonly classifyAndUpsertLocalPlacesService: ClassifyAndUpsertLocalPlacesService,
     private readonly outreachMemberAssignmentService: OutreachMemberAssignmentService,
+    private readonly outreachSendWaveAdmissionService: OutreachSendWaveAdmissionService,
+    private readonly outreachCompanyDedupeService: OutreachCompanyDedupeService,
     private readonly nativeLogicFunctionRegistry: NativeLogicFunctionRegistry,
   ) {}
 
@@ -408,6 +420,20 @@ export class OutreachLogicFunctionNativeExecutor
         candidateId: String(
           (payload as { candidateId?: string }).candidateId ?? '',
         ),
+      });
+    }
+
+    if (name === OUTREACH_SEND_WAVE_ADMISSION_LOGIC_FUNCTION_NAME) {
+      return this.outreachSendWaveAdmissionService.execute({
+        workspaceId,
+        input: payload as OutreachSendWaveAdmissionInput,
+      });
+    }
+
+    if (name === OUTREACH_COMPANY_DEDUPE_LOGIC_FUNCTION_NAME) {
+      return this.outreachCompanyDedupeService.execute({
+        workspaceId,
+        input: payload as OutreachCompanyDedupeInput,
       });
     }
 

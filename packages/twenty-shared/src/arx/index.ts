@@ -36,6 +36,7 @@ export {
   getLinkedinAccountRateLimitUsageWindow,
   getWhatsappAccountRateLimitUsageWindow,
   sanitizeLinkedinAccountRateLimits,
+  getLinkedinEnrichmentEndpointPerDay,
   sanitizeWhatsappAccountRateLimits,
   parseLinkedinAccountRateLimitsMap,
   parseWhatsappAccountRateLimitsMap,

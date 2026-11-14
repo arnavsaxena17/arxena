@@ -293,99 +293,111 @@ describe('GTM outreach workflow graphs', () => {
     ).toEqual([byName('Send LinkedIn connection')?.id]);
   });
 
-  it('skips connection send when company dedupe is on and a sibling is already in outreach', () => {
+  it('collapses company dedupe into one code node and one branch', () => {
     const steps = buildCandidateSequencerGraph({
       checkDeduplicationPerCompany: true,
+    }).steps as GraphStep[];
+    const withoutDedupe = buildCandidateSequencerGraph({
+      checkDeduplicationPerCompany: false,
     }).steps as GraphStep[];
     const byName = (name: string) => steps.find((step) => step.name === name);
     const branchNext = (stepName: string, branchIndex: number) =>
       byName(stepName)?.settings?.input?.branches?.[branchIndex]?.nextStepIds ??
       [];
 
-    expect(byName('Has company name?')).toBeDefined();
-    expect(byName('Find contacted company sibling')).toBeDefined();
-    expect(byName('Company already contacted?')).toBeDefined();
-    expect(byName('Find earlier QUEUED sibling')).toBeDefined();
-    expect(byName('Earlier QUEUED sibling?')).toBeDefined();
-    expect(
-      byName('Mark DEFERRED — company already contacted')?.settings?.input
-        ?.fieldsToUpdate,
-    ).toEqual(['outreachSequenceStage']);
-    expect(
-      byName('Mark DEFERRED — earlier QUEUED sibling')?.settings?.input
-        ?.fieldsToUpdate,
-    ).toEqual(['outreachSequenceStage']);
+    const dedupe = byName('Company dedupe') as
+      | (GraphStep & {
+          settings?: {
+            input?: {
+              logicFunctionId?: string;
+              logicFunctionInput?: Record<string, string>;
+            };
+          };
+        })
+      | undefined;
+    const gate = byName('Company already reached?');
 
-    // IF_ELSE branches must not share join step ids (skip cascade bug).
-    expect(branchNext('Has company name?', 0)).toEqual([
-      byName('Find contacted company sibling')?.id,
-    ]);
-    expect(branchNext('Has company name?', 1)).toEqual([
-      byName('Draft connection note (no company)')?.id,
-    ]);
-    expect(branchNext('Company already contacted?', 0)).toEqual([
-      byName('Mark DEFERRED — company already contacted')?.id,
-    ]);
-    expect(branchNext('Earlier QUEUED sibling?', 0)).toEqual([
-      byName('Mark DEFERRED — earlier QUEUED sibling')?.id,
-    ]);
-    expect(branchNext('Earlier QUEUED sibling?', 1)).toEqual([
+    // One code node answers both questions and stamps DEFERRED itself.
+    expect(dedupe?.type).toBe('LOGIC_FUNCTION');
+    expect(dedupe?.settings?.input?.logicFunctionId).toBe(
+      '__LF_outreach-company-dedupe__',
+    );
+    expect(dedupe?.settings?.input?.logicFunctionInput).toEqual({
+      candidateId: expect.stringContaining('.first.id'),
+      companyName: expect.stringContaining('jobCompanyName'),
+    });
+    expect(dedupe?.nextStepIds).toEqual([gate?.id]);
+
+    // Deferred stops the run; everything else continues into one connection path.
+    expect(byName('Qualify go?')).toBeDefined();
+    expect(branchNext('Qualify go?', 0)).toEqual([dedupe?.id]);
+    expect(gate?.settings?.input?.stepFilters?.[0]?.type).toBe('BOOLEAN');
+    expect(gate?.settings?.input?.stepFilters?.[0]?.stepOutputKey).toBe(
+      `{{${OUTREACH_SEQUENCER_STEP_IDS.companyDedupe}.deferred}}`,
+    );
+    expect(branchNext('Company already reached?', 0)).toEqual([]);
+    expect(branchNext('Company already reached?', 1)).toEqual([
       byName('Draft connection note')?.id,
     ]);
-    expect(branchNext('Has company name?', 1)[0]).not.toEqual(
-      branchNext('Earlier QUEUED sibling?', 1)[0],
-    );
-    expect(branchNext('Company already contacted?', 0)[0]).not.toEqual(
-      branchNext('Earlier QUEUED sibling?', 0)[0],
-    );
 
-    const contactedFilters =
-      byName('Find contacted company sibling')?.settings?.input?.filter
-        ?.recordFilters ?? [];
+    // The parallel (no company) thread is gone and the connection path is single.
+    expect(
+      steps.filter((step) => step.type === 'SEND_LINKEDIN_CONNECTION_REQUEST'),
+    ).toHaveLength(1);
+    expect(
+      steps.filter((step) => (step.name ?? '').includes('(no company)')),
+    ).toEqual([]);
+    expect(byName('Connection not yet sent?')).toBeDefined();
+    expect(byName('Approve connection note')).toBeDefined();
 
-    expect(contactedFilters).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          type: 'TEXT',
-          operand: 'CONTAINS',
-          label: 'Job Company Name',
-        }),
-        expect.objectContaining({
-          type: 'UUID',
-          operand: 'IS',
-          label: 'Project',
-        }),
-        expect.objectContaining({
-          type: 'UUID',
-          operand: 'IS_NOT',
-          label: 'Id',
-        }),
-        expect.objectContaining({
-          type: 'SELECT',
-          operand: 'IS',
-          label: 'Outreach Sequence Stage',
-        }),
-      ]),
-    );
+    // Two nodes instead of the old eleven-node section.
+    expect(steps.length - withoutDedupe.length).toBe(2);
 
-    const earlierFilters =
-      byName('Find earlier QUEUED sibling')?.settings?.input?.filter
-        ?.recordFilters ?? [];
+    // None of the retired steps come back.
+    const stepIds = new Set(steps.map((step) => step.id));
 
-    expect(earlierFilters).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          type: 'DATE_TIME',
-          operand: 'IS_BEFORE',
-          label: 'Creation date',
-        }),
-        expect.objectContaining({
-          type: 'SELECT',
-          operand: 'IS',
-          label: 'Outreach Sequence Stage',
-        }),
-      ]),
-    );
+    for (const retiredStepId of [
+      'c7a10001-aaaa-4fcb-a7d8-17a7736ed045',
+      'c7a10002-aaaa-4fcb-a7d8-17a7736ed045',
+      'c7a10003-aaaa-4fcb-a7d8-17a7736ed045',
+      'c7a10004-aaaa-4fcb-a7d8-17a7736ed045',
+      'c7a10005-aaaa-4fcb-a7d8-17a7736ed045',
+      'c7a10006-aaaa-4fcb-a7d8-17a7736ed045',
+      'c7a10009-aaaa-4fcb-a7d8-17a7736ed045',
+      'c7a1000a-aaaa-4fcb-a7d8-17a7736ed045',
+      'c7a10012-aaaa-4fcb-a7d8-17a7736ed045',
+      'c7a10013-aaaa-4fcb-a7d8-17a7736ed045',
+      'c7a10015-aaaa-4fcb-a7d8-17a7736ed045',
+    ]) {
+      expect(stepIds.has(retiredStepId)).toBe(false);
+    }
+  });
+
+  it('never leaves a step pointing at an id the graph does not contain', () => {
+    const optionVariants = [
+      {},
+      { checkDeduplicationPerCompany: true },
+      { checkDeduplicationPerCompany: true, manualDraftTemplates: true },
+      { checkDeduplicationPerCompany: true, commentBeforeConnect: true },
+      { checkDeduplicationPerCompany: true, humanInTheLoop: false },
+      { whatsappEnabled: true, emailConnected: true, inmailEnabled: true },
+    ];
+
+    for (const options of optionVariants) {
+      const steps = buildCandidateSequencerGraph(options).steps as GraphStep[];
+      const stepIds = new Set(steps.map((step) => step.id));
+      const referencedIds = steps.flatMap((step) => [
+        ...(step.nextStepIds ?? []),
+        ...(step.settings?.input?.branches ?? []).flatMap(
+          (branch) => branch.nextStepIds ?? [],
+        ),
+      ]);
+
+      expect({
+        options,
+        dangling: referencedIds.filter((stepId) => !stepIds.has(stepId)),
+      }).toEqual({ options, dangling: [] });
+    }
   });
 
   it('merges QUEUED, CONNECTION_ACCEPTED and REPLIED into one candidate.upserted sequencer', () => {
@@ -476,8 +488,9 @@ describe('GTM outreach workflow graphs', () => {
     const branches = router?.settings?.input?.branches ?? [];
 
     expect(branches).toHaveLength(5);
+    // QUEUED enters through the send-wave gate before it loads anything.
     expect(branches[0]?.nextStepIds).toEqual([
-      OUTREACH_SEQUENCER_STEP_IDS.queuedFind,
+      OUTREACH_SEQUENCER_STEP_IDS.queuedSendWaveAdmission,
     ]);
     expect(branches[4]?.filterGroupId).toBeUndefined();
     expect(branches[4]?.nextStepIds).toEqual([]);
@@ -554,10 +567,10 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Draft first LinkedIn message')).toBeDefined();
     expect(
       byName('Draft first LinkedIn message')?.settings?.input?.prompt,
-    ).toContain('Goal: earn a reply');
+    ).toContain('One goal: get a reply');
     expect(
       byName('Draft first LinkedIn message')?.settings?.input?.prompt,
-    ).toContain('"tier": 1|2|3');
+    ).toContain('"tier": <1|2|3>');
     expect(
       byName('Draft first LinkedIn message')?.settings?.input?.prompt,
     ).toContain(
@@ -1062,17 +1075,14 @@ describe('GTM outreach workflow graphs', () => {
       byName(stepName)?.settings?.input?.branches?.[branchIndex]?.nextStepIds ??
       [];
 
-    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.hasCompanyIf)).toBe(true);
-    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.findContacted)).toBe(true);
-    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.sendConnectNoCompany)).toBe(
-      true,
-    );
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.companyDedupe)).toBe(true);
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.companyDedupeIf)).toBe(true);
     expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.draftConnectNote)).toBe(
       true,
     );
     expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.sendConnect)).toBe(true);
     expect(branchNext('Qualify go?', 0)).toEqual([
-      byName('Has company name?')?.id,
+      byName('Company dedupe')?.id,
     ]);
   });
 
@@ -1368,13 +1378,61 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Qualify prospect')).toBeUndefined();
     expect(byName('Stamp prospect enrichment')).toBeUndefined();
     expect(byName('Qualify go?')).toBeUndefined();
-    expect(byName('Fetch LinkedIn profile')?.nextStepIds).toEqual([
+    expect(byName('Fetch LinkedIn profile (qualify)')).toBeUndefined();
+    // Without qualify there is no reason to read the profile before sending:
+    // the candidate goes straight from Load Person to the connection gate, and
+    // the read rides right after Mark CONNECTION_SENT.
+    expect(byName('Load Person')?.nextStepIds).toEqual([
       OUTREACH_SEQUENCER_STEP_IDS.connectionNotSentIf,
+    ]);
+    expect(byName('Fetch LinkedIn profile (after connection)')?.nextStepIds).toEqual([
+      OUTREACH_SEQUENCER_STEP_IDS.waitAccept,
+    ]);
+    expect(byName('Mark CONNECTION_SENT')?.nextStepIds).toEqual([
+      OUTREACH_SEQUENCER_STEP_IDS.queuedFetchProfile,
     ]);
     expect(
       inferOutreachSequencerGraphOptionsFromSteps(steps, graph.trigger)
         .qualifyProspectEnabled,
     ).toBe(false);
+  });
+
+  it('gates the QUEUED branch on send capacity before any LinkedIn read', () => {
+    const graph = buildCandidateSequencerGraph({});
+    const steps = graph.steps as GraphStep[];
+    const byName = (name: string) => steps.find((step) => step.name === name);
+    const route = byName('Route by outreach stage') as
+      | (GraphStep & {
+          settings?: {
+            input?: {
+              branches?: Array<{
+                filterGroupId?: string;
+                nextStepIds: string[];
+              }>;
+            };
+          };
+        })
+      | undefined;
+    const queuedBranch = route?.settings?.input?.branches?.find(
+      (branch) =>
+        branch.filterGroupId ===
+        OUTREACH_SEQUENCER_STEP_IDS.stageGroupQueued,
+    );
+    const gate = byName('Wait for a send slot');
+
+    expect(queuedBranch?.nextStepIds).toEqual([
+      OUTREACH_SEQUENCER_STEP_IDS.queuedSendWaveAdmission,
+    ]);
+    expect(gate?.nextStepIds).toEqual([OUTREACH_SEQUENCER_STEP_IDS.queuedFind]);
+    expect(
+      (gate?.settings?.input as { logicFunctionInput?: unknown })
+        ?.logicFunctionInput,
+    ).toEqual({
+      workspaceMemberId: expect.stringContaining('.first.id'),
+      candidateId: expect.stringContaining('.first.id'),
+    });
+    // The gate itself must not spend a LinkedIn request.
+    expect(gate?.type).toBe('LOGIC_FUNCTION');
   });
 
   it('always builds automated candidate.upserted trigger gated by candidateFlags.startOutreach', () => {
@@ -1451,7 +1509,6 @@ describe('GTM outreach workflow graphs', () => {
       'Draft LinkedIn comment',
       'Draft second LinkedIn comment',
       'Draft connection note',
-      'Draft connection note (no company)',
       'Draft meeting reminder',
       'Draft no-show ping',
       'Draft reschedule offer',
@@ -1851,6 +1908,167 @@ describe('GTM outreach workflow graphs', () => {
       expect(JSON.stringify(sendStep?.settings?.input)).toContain(
         'outreachDraftAttachments.followUp1',
       );
+    });
+  });
+
+  describe('manual member takeover gates', () => {
+    const steps = () =>
+      buildCandidateSequencerGraph().steps as Array<
+        GraphStep & {
+          settings?: {
+            input?: {
+              logicFunctionId?: string;
+              logicFunctionInput?: { forceRefresh?: unknown };
+              stepOutputKey?: string;
+              stepFilters?: Array<{
+                value?: string;
+                stepOutputKey?: string;
+                type?: string;
+              }>;
+              objectRecord?: Record<string, unknown>;
+            };
+          };
+        }
+      >;
+
+    const byId = (id: string) => steps().find((step) => step.id === id);
+
+    const FETCH_STEPS = [
+      OUTREACH_SEQUENCER_STEP_IDS.fetchMessages,
+      OUTREACH_SEQUENCER_STEP_IDS.fetchFu1Messages,
+      OUTREACH_SEQUENCER_STEP_IDS.fetchFu2Messages,
+      OUTREACH_SEQUENCER_STEP_IDS.fetchFu3Messages,
+    ];
+
+    const GATES: Array<{
+      label: string;
+      fetchId: string;
+      gateId: string;
+      nextStepId: string;
+      // The opener's fetch feeds the existing inbound gate first; each follow-up
+      // feeds its own takeover gate directly.
+      fetchNextStepId: string;
+    }> = [
+      {
+        label: 'opener',
+        fetchId: OUTREACH_SEQUENCER_STEP_IDS.fetchMessages,
+        gateId: OUTREACH_SEQUENCER_STEP_IDS.acceptMemberRepliedIf,
+        nextStepId: OUTREACH_SEQUENCER_STEP_IDS.fetchProfile,
+        fetchNextStepId: OUTREACH_SEQUENCER_STEP_IDS.hasInboundIf,
+      },
+      {
+        label: 'follow-up 1',
+        fetchId: OUTREACH_SEQUENCER_STEP_IDS.fetchFu1Messages,
+        gateId: OUTREACH_SEQUENCER_STEP_IDS.memberRepliedFu1If,
+        nextStepId: OUTREACH_SEQUENCER_STEP_IDS.filterFu1,
+        fetchNextStepId: OUTREACH_SEQUENCER_STEP_IDS.memberRepliedFu1If,
+      },
+      {
+        label: 'follow-up 2',
+        fetchId: OUTREACH_SEQUENCER_STEP_IDS.fetchFu2Messages,
+        gateId: OUTREACH_SEQUENCER_STEP_IDS.memberRepliedFu2If,
+        nextStepId: OUTREACH_SEQUENCER_STEP_IDS.filterFu2,
+        fetchNextStepId: OUTREACH_SEQUENCER_STEP_IDS.memberRepliedFu2If,
+      },
+      {
+        label: 'follow-up 3',
+        fetchId: OUTREACH_SEQUENCER_STEP_IDS.fetchFu3Messages,
+        gateId: OUTREACH_SEQUENCER_STEP_IDS.memberRepliedFu3If,
+        nextStepId: OUTREACH_SEQUENCER_STEP_IDS.filterFu3,
+        fetchNextStepId: OUTREACH_SEQUENCER_STEP_IDS.memberRepliedFu3If,
+      },
+    ];
+
+    it('forces a provider pull on every accepted-branch fetch', () => {
+      // A cached transcript cannot prove the thread is untouched: Unipile only
+      // pushes inbound, so a manual member reply never lands in the cache.
+      for (const fetchId of FETCH_STEPS) {
+        expect(
+          byId(fetchId)?.settings?.input?.logicFunctionInput?.forceRefresh,
+        ).toBe(true);
+      }
+    });
+
+    it.each(GATES)(
+      'gates the $label on memberSentLast and defers instead of sending',
+      ({ fetchId, gateId, nextStepId, fetchNextStepId }) => {
+        const fetchStep = byId(fetchId);
+        const gate = byId(gateId);
+
+        expect(fetchStep?.settings?.input?.logicFunctionId).toBe(
+          '__LF_fetch-linkedin-messages__',
+        );
+        expect(fetchStep?.nextStepIds).toEqual([fetchNextStepId]);
+        expect(gate?.type).toBe('IF_ELSE');
+        expect(gate?.settings?.input?.stepFilters?.[0]).toMatchObject({
+          stepOutputKey: `{{${fetchId}.memberSentLast}}`,
+          value: 'true',
+          type: 'BOOLEAN',
+        });
+
+        const branches = gate?.settings?.input?.branches ?? [];
+        const deferredBranch = branches.find((branch) =>
+          branch.nextStepIds?.includes(
+            OUTREACH_SEQUENCER_STEP_IDS.stampMemberRepliedDeferred,
+          ),
+        );
+
+        expect(deferredBranch).toBeDefined();
+        expect(
+          branches.find((branch) =>
+            branch.nextStepIds?.includes(nextStepId),
+          ),
+        ).toBeDefined();
+      },
+    );
+
+    it('stamps DEFERRED so no new run starts and the stage filter stops', () => {
+      const stamp = byId(OUTREACH_SEQUENCER_STEP_IDS.stampMemberRepliedDeferred);
+
+      expect(stamp?.type).toBe('UPDATE_RECORD');
+      expect(stamp?.settings?.input?.objectRecord).toMatchObject({
+        outreachSequenceStage: 'DEFERRED',
+      });
+      // DEFERRED is not an entry stage, so the trigger filter never re-enters.
+      expect(OUTREACH_SEQUENCER_STEP_IDS.stampMemberRepliedDeferred).not.toBe(
+        undefined,
+      );
+    });
+
+    it('routes the accepted branch through the takeover gate first', () => {
+      expect(
+        byId(OUTREACH_SEQUENCER_STEP_IDS.hasInboundIf)?.settings?.input
+          ?.stepFilters?.[0]?.stepOutputKey,
+      ).toBe(`{{${OUTREACH_SEQUENCER_STEP_IDS.fetchMessages}.hasInboundReply}}`);
+
+      const branches =
+        byId(OUTREACH_SEQUENCER_STEP_IDS.hasInboundIf)?.settings?.input
+          ?.branches ?? [];
+
+      expect(
+        branches.find((branch) =>
+          branch.nextStepIds?.includes(
+            OUTREACH_SEQUENCER_STEP_IDS.acceptMemberRepliedIf,
+          ),
+        ),
+      ).toBeDefined();
+    });
+
+    it('keeps every nextStepIds reference inside the graph', () => {
+      const graphSteps = steps();
+      const ids = new Set(graphSteps.map((step) => step.id));
+
+      for (const step of graphSteps) {
+        for (const nextStepId of step.nextStepIds ?? []) {
+          expect(ids.has(nextStepId)).toBe(true);
+        }
+
+        for (const branch of step.settings?.input?.branches ?? []) {
+          for (const nextStepId of branch.nextStepIds ?? []) {
+            expect(ids.has(nextStepId)).toBe(true);
+          }
+        }
+      }
     });
   });
 });

@@ -39,11 +39,9 @@ export class ResultValidationService {
       };
     }
 
-    console.log("Search results : ", searchResults)
-    console.log("Requirement text : ", requirementText)
-    console.log("Required company name : ", requiredCompanyName)
-    console.log("Total profiles collected so far : ", totalProfilesCollectedSoFar)
-    console.log("Api token : ", apiToken)
+    this.logger.debug(
+      `X-ray pagination validation: ${searchResults.length} profiles for "${requiredCompanyName}" (${totalProfilesCollectedSoFar} collected so far)`,
+    );
 
     try {
       const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(
@@ -78,8 +76,6 @@ export class ResultValidationService {
           ),
         { sendEvent, maxRetries: 2 },
       );
-
-      console.log("Full content : ", fullContent)
       if (!fullContent) {
         return {
           isRelevant: true,

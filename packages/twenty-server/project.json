@@ -56,6 +56,14 @@
     "typecheck": {
       "dependsOn": ["^build"]
     },
+    "typecheck:sourcing": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "packages/twenty-server",
+        "command": "node scripts/typecheck-sourcing-ratchet.mjs"
+      }
+    },
     "start": {
       "executor": "nx:run-commands",
       "cache": false,

@@ -2,6 +2,8 @@
 
 > **Status:** agreed 2026-11-02. One global number, invite-only, zero new tables.
 > **Implementation:** [whatsapp-agent-implementation-plan.md](whatsapp-agent-implementation-plan.md).
+> **Session lifetime:** [whatsapp-long-running-session-design.md](whatsapp-long-running-session-design.md)
+> (supersedes T3.5's delivery port; closes the session-lifetime gap).
 >
 > This document is the *what and why*. Provider details, task breakdown, tests and rollout live in
 > the implementation plan.
