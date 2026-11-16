@@ -34,6 +34,7 @@ import {
   pickOutreachTabFields,
   sortOutreachTabRows,
 } from 'src/engine/core-modules/tool/tools/outreach-ai-column-tool/query-outreach-tab-rows.util';
+import { isRejectedRow } from 'src/engine/core-modules/outreach-command/utils/sourcing-pool.util';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
@@ -155,16 +156,23 @@ export class GetOutreachTabTool implements Tool {
       cursor,
       summarize,
       onlyViewMatches,
+      includeRejected,
       filter,
       fields,
       groupBy,
       sort,
     } = parsed.data;
-    const allRows = await this.outreachTabService.getAll({
+    const tabRows = await this.outreachTabService.getAll({
       workspaceId: context.workspaceId,
       projectId,
       tab,
     });
+    // Rejected rows stay in the pool with their reason; they are hidden unless
+    // asked for, like the tab's default view
+    const allRows =
+      includeRejected === true
+        ? tabRows
+        : tabRows.filter((row) => !isRejectedRow(row));
 
     if (allRows.length === 0 && tab === 'companies') {
       return {

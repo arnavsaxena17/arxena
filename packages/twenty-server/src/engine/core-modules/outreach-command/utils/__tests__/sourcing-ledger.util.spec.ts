@@ -51,6 +51,34 @@ describe('computeSourcingFunnel', () => {
     });
   });
 
+  it('should take qualified from the judge for the rows it judged', () => {
+    const funnel = computeSourcingFunnel([
+      // Judged on the snapshot: qualified without a profile fetch
+      row('a', 'u1', { judgeOutcome: 'qualified', sourcingStage: 'verified' }),
+      row('b', 'u2', { judgeOutcome: 'to_confirm' }),
+      // The judge's fail wins over an old fitment pass
+      row('c', 'u3', {
+        judgeOutcome: 'fail',
+        fitmentOutcome: 'pass',
+        profile: profile('harvest'),
+        sourcingStage: 'rejected',
+      }),
+      row('d', 'u4', { fitmentOutcome: 'pass', profile: profile('harvest') }),
+    ]);
+
+    expect(funnel).toMatchObject({
+      qualified: 2,
+      toConfirm: 1,
+      notScored: 0,
+      judged: { qualified: 1, unknown: 0, to_confirm: 1, fail: 1 },
+      stages: expect.objectContaining({
+        verified: 1,
+        rejected: 1,
+        unstaged: 2,
+      }),
+    });
+  });
+
   it('should count people who still need a profile fetch', () => {
     const funnel = computeSourcingFunnel([
       row('a', 'u1', { fitmentOutcome: 'pass' }),

@@ -1,3 +1,5 @@
+import { mergeSourcingPoolFields } from 'src/engine/core-modules/outreach-command/utils/sourcing-pool.util';
+
 // Merge row otherFields on re-attach: add and update source keys, never drop
 // keys already on the row. Values written by an AI column stay put — a fresh
 // search must not overwrite an answered storeCount / authenticity cell.
@@ -41,6 +43,13 @@ export const mergeOutreachOtherFields = (
   ) {
     merged.aiColumns = { ...previousAiColumns, ...incomingAiColumns };
   }
+
+  // Pool stage only moves forward and provenance merges per field, so a later
+  // snapshot of the same person cannot undo what the run already learned
+  Object.assign(
+    merged,
+    mergeSourcingPoolFields(previousFields, incomingFields),
+  );
 
   return Object.keys(merged).length > 0 ? merged : undefined;
 };
