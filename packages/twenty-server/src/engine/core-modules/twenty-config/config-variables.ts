@@ -2573,7 +2573,7 @@ export class ConfigVariables {
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,
     description:
-      'Include exa_web_search / app_exa_web_search in Ask AI tool catalog, search skill, and org-structure-insights skill (REST API and standalone MCP server are unaffected)',
+      'Include app_exa_web_search in Ask AI tool catalog, search skill, and org-structure-insights skill (REST API and standalone MCP server are unaffected)',
     type: ConfigVariableType.BOOLEAN,
   })
   @IsOptional()

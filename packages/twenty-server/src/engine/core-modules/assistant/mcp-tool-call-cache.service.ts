@@ -8,10 +8,7 @@ const CACHE_TTL_MS = 30_000;
 const MCP_DURABLE_TOOL_CACHE_PREFIX = 'mcp-durable-tool:v1';
 
 // Read-only paid/web search tools that are safe to reuse across sessions
-const DURABLE_SEARCH_TOOL_NAMES = new Set([
-  'exa_web_search',
-  'app_exa_web_search',
-]);
+const DURABLE_SEARCH_TOOL_NAMES = new Set(['app_exa_web_search']);
 
 @Injectable()
 export class McpToolCallCacheService {

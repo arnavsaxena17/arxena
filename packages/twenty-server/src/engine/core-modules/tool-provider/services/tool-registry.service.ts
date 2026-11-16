@@ -67,6 +67,7 @@ export class ToolRegistryService {
     return sourceRefusalFor(
       toolName,
       brief?.kind === 'brief' ? brief.sources : undefined,
+      args,
     );
   }
 

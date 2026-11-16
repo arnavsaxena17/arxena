@@ -1,4 +1,5 @@
 import { ARXENA_TOOL_CATALOG } from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
+import { SEARCH_EXA_APP_TOOL_NAME } from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-names.const';
 import {
   ALL_SEARCH_TOOLS_ENABLED,
   filterSearchSkillContent,
@@ -131,11 +132,11 @@ describe('sourcing source registry', () => {
   });
 
   it('should only learn tools that exist', () => {
-    // Resolved to app_exa_web_search by the tool name resolver
+    // Logic-function tools come from installed apps, not a static list
     const knownTools = new Set([
       ...ARXENA_TOOL_CATALOG.map((entry) => entry.name),
       ...ACTION_TOOL_IDS,
-      'exa_web_search',
+      SEARCH_EXA_APP_TOOL_NAME,
     ]);
     const learned = [
       ...Object.values(SOURCING_ALWAYS_LEARNED_TOOLS).flat(),

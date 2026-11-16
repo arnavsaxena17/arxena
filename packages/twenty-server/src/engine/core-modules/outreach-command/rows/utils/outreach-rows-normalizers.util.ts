@@ -368,7 +368,7 @@ export const buildEmptyTabShape = (
   }
 
   const shape =
-    toolName === 'exa_web_search' || toolName === 'app_exa_web_search'
+    toolName === 'app_exa_web_search'
       ? {
           source: 'exa' as const,
           entity:
@@ -398,7 +398,6 @@ export const OUTREACH_TAB_SOURCE_TOOLS = [
   'search_linkedin_continue',
   'search_harvest_leads',
   'search_harvest_accounts',
-  'exa_web_search',
   'app_exa_web_search',
   'search_people_index',
   'search_companies_index',
@@ -527,7 +526,7 @@ export const normalizeToolOutputToTabRows = (
       : null;
   }
 
-  if (toolName === 'exa_web_search' || toolName === 'app_exa_web_search') {
+  if (toolName === 'app_exa_web_search') {
     const results = isRecord(root) ? arrayAt(root, ['results']) : [];
     const entity: OutreachEntity =
       args.category === 'people' ? 'people' : 'company';

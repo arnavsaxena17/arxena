@@ -28,7 +28,7 @@ const SOURCE_TOOLS = new Set([
   'search_harvest_accounts',
   'search_apollo_people',
   'search_apollo_companies',
-  'exa_web_search',
+  'app_exa_web_search',
   'find_people_by_company',
 ]);
 

@@ -1,7 +1,7 @@
 ## Source: Exa
 
 <!-- search-exa-people-source-section:start -->
-### Source — Exa (`exa_web_search`)
+### Source — Exa (`app_exa_web_search`)
 
 Web/AI search for niche or public-profile people (speakers, authors, founders).
 
@@ -9,7 +9,7 @@ Web/AI search for niche or public-profile people (speakers, authors, founders).
 - Requires `EXA_API_KEY` (tell the user if missing).
 
 ```
-exa_web_search({
+app_exa_web_search({
   "query": "backend engineers at fintech startups in Mumbai who speak at conferences",
   "category": "people",
   "numResults": 15
@@ -20,11 +20,11 @@ exa_web_search({
 <!-- search-exa-people-source-section:end -->
 
 <!-- search-exa-companies-source-section:start -->
-### Source — Exa (`app_exa_web_search` / `exa_web_search`)
+### Source — Exa (`app_exa_web_search`)
 
 Web/AI search for new, niche, or poorly-covered companies.
 
-- Prefer `app_exa_web_search` when preloaded; otherwise `exa_web_search`.
+- Comes from the Exa app; when it is not installed the tool is not in the catalog.
 - Requires `EXA_API_KEY` (tell the user if missing).
 - `category`: `"company"`. Returns title/url/snippet only — extract **name** from title and **domain** from URL host.
 - Exa results go to a list like every other provider (see **Result lists**).
