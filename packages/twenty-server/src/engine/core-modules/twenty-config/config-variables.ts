@@ -2582,6 +2582,15 @@ export class ConfigVariables {
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,
     description:
+      'Offer sourcing_start / sourcing_next in Ask AI: the server-owned people search loop. Off until it beats the current agent on the sourcing eval scenarios',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  IS_SOURCING_LOOP_ENABLED = false;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
       'Include google_serp_search in Ask AI tool catalog and org-structure-insights skill (REST API and standalone MCP server are unaffected)',
     type: ConfigVariableType.BOOLEAN,
   })

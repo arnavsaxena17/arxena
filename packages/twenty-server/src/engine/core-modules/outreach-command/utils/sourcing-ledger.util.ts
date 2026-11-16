@@ -7,6 +7,10 @@ import {
   readPairStates,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
 import {
+  type SourcingRunPhase,
+  type SourcingRunState,
+} from 'src/engine/core-modules/candidate-sourcing/run/sourcing-run.types';
+import {
   JUDGE_OUTCOME_KEY,
   type JudgeOutcome,
 } from 'src/engine/core-modules/candidate-sourcing/run/judge.util';
@@ -481,6 +485,16 @@ export type SourcingLedgerEvent =
       stage: 'pilot' | 'halfway' | 'complete';
       runId?: string;
       pairs: SourcingPairFunnel;
+    }
+  | {
+      // One round of a server-owned sourcing run (sourcing_start /
+      // sourcing_next): the run's whole state after the round, so the latest
+      // row for a runId is the run
+      kind: 'run';
+      at: string;
+      runId: string;
+      round: SourcingRunPhase;
+      state: SourcingRunState;
     };
 
 export type SourcingFunnel = {
