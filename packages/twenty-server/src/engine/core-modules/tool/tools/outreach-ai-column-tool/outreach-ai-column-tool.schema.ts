@@ -85,9 +85,7 @@ export const predicateToCondition = (
 const flexibleFilterSchema = z
   .union([z.array(tableFilterSchema), z.record(z.string(), z.unknown())])
   .transform((value) =>
-    Array.isArray(value)
-      ? value
-      : (predicateToCondition(value) ?? []),
+    Array.isArray(value) ? value : (predicateToCondition(value) ?? []),
   );
 
 const sortEntrySchema = z
@@ -101,9 +99,12 @@ const sortEntrySchema = z
     columnId: (entry.columnId ?? entry.field) as string,
     direction: entry.direction ?? entry.order ?? ('desc' as const),
   }))
-  .refine((entry) => typeof entry.columnId === 'string' && entry.columnId.length > 0, {
-    message: 'each sort needs columnId (or field)',
-  });
+  .refine(
+    (entry) => typeof entry.columnId === 'string' && entry.columnId.length > 0,
+    {
+      message: 'each sort needs columnId (or field)',
+    },
+  );
 
 const flexibleSortSchema = z
   .union([z.array(sortEntrySchema), sortEntrySchema])
@@ -137,6 +138,12 @@ export const GetOutreachTabInputZodSchema = z.object({
     .optional()
     .describe(
       'Only rows that match the filters of the view currently applied to the table. Applies to rows, filter, groupBy and summarize.',
+    ),
+  includeRejected: z
+    .boolean()
+    .optional()
+    .describe(
+      'Include rows a sourcing run rejected (otherFields.sourcingStage "rejected", with the reason in sourcingRejectedBy). Default false.',
     ),
   filter: flexibleFilterSchema
     .optional()

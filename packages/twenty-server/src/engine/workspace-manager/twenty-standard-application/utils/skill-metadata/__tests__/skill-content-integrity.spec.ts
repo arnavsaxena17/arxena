@@ -2,6 +2,7 @@ import {
   ARXENA_INTERNAL_TOOL_NAMES,
   ARXENA_TOOL_CATALOG,
 } from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
+import { SEARCH_EXA_APP_TOOL_NAME } from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-names.const';
 import { ACTION_TOOL_IDS } from 'src/engine/core-modules/tool-provider/constants/action-tool-label.constant';
 import {
   getSkillContent,
@@ -91,9 +92,12 @@ const OTHER_KNOWN_TOOLS = [
 const GENERATED_TOOL_PATTERN =
   /^(find_many|find_one|create_one|create_many|update_one|update_many|delete_one|delete_many|destroy_one|restore_one|group_by)_|workflow|dashboard|logic_function|_view$|object_metadata/;
 
+// Logic-function tools of installable apps (app_ + function name); a skill
+// may name one, and it is catalogued only where the app is installed
+const APP_TOOL_NAMES = [SEARCH_EXA_APP_TOOL_NAME];
+
 // Backticked names that look like tools but are not tool names
 const NON_TOOL_NAMES: Record<string, string> = {
-  exa_web_search: 'resolved to app_exa_web_search by the tool name resolver',
   linkedin_followers: 'a Bright Data field name',
 };
 
@@ -101,7 +105,7 @@ const TOOL_LIKE_NAME = /`([a-z][a-z0-9]*(?:_[a-z0-9]+)+)`/g;
 
 // Only names that read like a tool call are checked
 const TOOL_CALL_PREFIX =
-  /^(search|find|get|list|upsert|run|apply|generate|fetch|linkedin|outreach|start|preview|cancel|inspect|import|check|google|visit|send|draft|resolve|activate)_/;
+  /^(app|exa|search|find|get|list|upsert|run|apply|generate|fetch|linkedin|outreach|start|preview|cancel|inspect|import|check|google|visit|send|draft|resolve|activate)_/;
 
 describe('standard skill content', () => {
   const skills = loadAllSkills();
@@ -111,6 +115,7 @@ describe('standard skill content', () => {
       ...ARXENA_TOOL_CATALOG.map((entry) => entry.name),
       ...ACTION_TOOL_IDS,
       ...OTHER_KNOWN_TOOLS,
+      ...APP_TOOL_NAMES,
       // Hidden from the catalog; a skill may mention them to say not to call them
       ...ARXENA_INTERNAL_TOOL_NAMES,
     ]);

@@ -5,9 +5,13 @@ import { type ToolProgressStreamEmitter } from 'src/engine/core-modules/tool-pro
 
 export type ToolExecutionContext = {
   workspaceId: string;
+  // The member's role, for a tool that calls other tools on their behalf
+  // (the sourcing loop's rounds)
+  roleId?: string;
   userId?: string;
   userWorkspaceId?: string;
   threadId?: string;
+  turnId?: string;
   // The Outreach project the user is looking at, from the browsing context
   projectId?: string;
   onCodeExecutionUpdate?: CodeExecutionStreamEmitter;

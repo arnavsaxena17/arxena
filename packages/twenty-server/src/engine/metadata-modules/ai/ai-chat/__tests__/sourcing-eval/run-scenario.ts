@@ -74,8 +74,7 @@ const SCHEMA_HINTS: Record<string, string> = {
     '{ searchType?, searchParameters, projectId?, limit?, account_id? }',
   search_linkedin_companies:
     '{ searchType?, searchParameters, projectId?, limit?, account_id? }',
-  search_linkedin_continue:
-    '{ cursor?, maxPages?, limit?, projectId? }',
+  search_linkedin_continue: '{ cursor?, maxPages?, limit?, projectId? }',
   search_linkedin_parameters: '{ parameterType, query }',
   generate_linkedin_query_set:
     '{ rawRequirement, category?, provider?, searchType?, account_id? }',
@@ -83,7 +82,7 @@ const SCHEMA_HINTS: Record<string, string> = {
   search_harvest_accounts: '{ searchParameters, page?, limit?, projectId? }',
   search_apollo_people: '{ keywords?, personTitles?, projectId?, ... }',
   search_apollo_companies: '{ organizationName?, domains?, projectId?, ... }',
-  exa_web_search: '{ query, category?, projectId? }',
+  app_exa_web_search: '{ query, category?, projectId? }',
 };
 
 const tabSearchStub = (
@@ -187,7 +186,7 @@ const stubResult = (
     case 'search_linkedin_companies':
     case 'search_apollo_people':
     case 'search_apollo_companies':
-    case 'exa_web_search':
+    case 'app_exa_web_search':
     case 'search_people_index':
     case 'search_companies_index':
     case 'search_wikidata_companies':

@@ -7,7 +7,8 @@ export const SEARCH_APOLLO_COMPANIES_TOOL_NAME = 'search_apollo_companies';
 export const SEARCH_PEOPLE_INDEX_TOOL_NAME = 'search_people_index';
 export const SEARCH_FIND_CANDIDATE_INTERNAL_TOOL_NAME =
   'find_candidate_in_arxena_internal';
-export const SEARCH_EXA_TOOL_NAME = 'exa_web_search';
+// Served by the twenty-exa app's logic function, so it is catalogued only in
+// workspaces that installed that app
 export const SEARCH_EXA_APP_TOOL_NAME = 'app_exa_web_search';
 export const SEARCH_SERP_TOOL_NAME = 'google_serp_search';
 export const SEARCH_COMPANIES_INDEX_TOOL_NAME = 'search_companies_index';

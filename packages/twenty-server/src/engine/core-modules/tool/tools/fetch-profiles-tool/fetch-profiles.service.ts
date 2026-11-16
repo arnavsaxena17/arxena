@@ -62,6 +62,9 @@ export type FetchProfilesInput = {
   // Default: Bright Data then Harvest. Pass ["bright_data"] to skip Harvest.
   sources?: FetchProfilesSource[];
   timeBudgetMs?: number;
+  // Only these rows, whatever their fitment outcome: the sourcing loop
+  // enriches exactly the rows its judge left open
+  rowIds?: string[];
 };
 
 export type FetchProfilesResult = {
@@ -153,11 +156,16 @@ export class FetchProfilesService {
     const startedAt = Date.now();
     const deadline = startedAt + (input.timeBudgetMs ?? DEFAULT_TIME_BUDGET_MS);
     const outcomes = input.outcomes ?? ['pass', 'unknown'];
-    const rows = await this.outreachTabService.getAll({
+    const tabRows = await this.outreachTabService.getAll({
       workspaceId: input.workspaceId,
       projectId: input.projectId,
       tab: 'people',
     });
+    const wantedIds = isDefined(input.rowIds) ? new Set(input.rowIds) : null;
+    const rows =
+      wantedIds === null
+        ? tabRows
+        : tabRows.filter((row) => wantedIds.has(row.id));
     const skipped = {
       noLinkedinUrl: 0,
       alreadyFetched: 0,
@@ -180,6 +188,7 @@ export class FetchProfilesService {
         row.otherFields.fitmentOutcome ?? row.otherFields.fitment_outcome;
 
       if (
+        wantedIds === null &&
         typeof outcome === 'string' &&
         !outcomes.includes(outcome as FitmentVerdict)
       ) {

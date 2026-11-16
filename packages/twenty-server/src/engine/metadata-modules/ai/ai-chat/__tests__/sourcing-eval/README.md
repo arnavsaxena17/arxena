@@ -72,6 +72,31 @@ Inspect: `adhoc.path.md` (behavior) and `adhoc.quality.md` (tab enrichment + ran
 The scenario files are checked on every normal test run (they parse, ids are
 unique). The model runs only with `SOURCING_LIVE_EVAL=1`.
 
+## Replay (recorded provider data)
+
+Live data changes daily and costs money, so a scenario can be replayed on the
+provider responses of one recorded run. Every provider request already goes
+through the provider query cache or `ProviderCallLogService.track`, and both
+answer from the recording when `PROVIDER_CALL_REPLAY_FILE` is set; a request
+the recording does not hold throws instead of reaching the provider. The
+variable is refused when `NODE_ENV=production`.
+
+Record (spends money, writes the project tabs):
+
+1. Run the scenario once in live backend mode (`SOURCING_EVAL_LIVE_BACKEND=1`,
+   `SOURCING_EVAL_ONLY=<id>`) against a server with `PROVIDER_CALL_LOG_ENABLED`
+   on (the default).
+2. Export the thread's provider calls:
+   `npx nx run twenty-server:command provider-call:export-recording --thread <threadId> --scenario <id> --out <scenarios>/recordings/<id>.json`
+3. Add `recording: recordings/<id>.json` to the scenario front matter. The
+   normal test run then checks that the file parses and names the scenario.
+
+Replay: start the server with `PROVIDER_CALL_REPLAY_FILE=<that file>`, then run
+the scenario with `SOURCING_EVAL_REPLAY=1 SOURCING_EVAL_LIVE_BACKEND=1
+SOURCING_EVAL_ONLY=<id>`. One recording per server process, so one scenario
+per replayed run. Re-record every few weeks, and whenever an adapter changes
+what it asks a provider (the replay then misses and says so).
+
 ## What is graded
 
 Deterministic (fails the test):

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 
+import { BRIGHT_DATA_MAPS_COST_PER_RECORD_USD } from 'src/engine/core-modules/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
 import { BrightDataGoogleMapsPlacesService } from 'src/engine/core-modules/bright-data/services/bright-data-google-maps-places.service';
 import type {
   BrightDataGoogleMapsDiscoverByLocationInput,
@@ -13,7 +14,8 @@ import {
   resolveCityBoundingBox,
 } from 'src/engine/core-modules/bright-data/utils/build-lat-lng-grid.util';
 
-export const BRIGHT_DATA_MAPS_PAYG_USD_PER_RECORD = 0.0015;
+export const BRIGHT_DATA_MAPS_PAYG_USD_PER_RECORD =
+  BRIGHT_DATA_MAPS_COST_PER_RECORD_USD;
 export const DEFAULT_EXPECTED_HITS_PER_CELL = 20;
 export const DEFAULT_SAMPLE_CELL_COUNT = 5;
 

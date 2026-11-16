@@ -15,9 +15,11 @@
 //   SOURCING_EVAL_LIVE_BACKEND=1                         # real tools via MCP
 //   SOURCING_EVAL_BASE_URL=http://localhost:3000
 //   SOURCING_EVAL_API_TOKEN=... SOURCING_EVAL_PROJECT_ID=...
-import { mkdirSync, writeFileSync } from 'fs';
+//   SOURCING_EVAL_REPLAY=1                               # provider replay (see README)
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
+import { parseProviderCallRecording } from 'src/engine/core-modules/provider-call-log/replay/provider-call-replay.store';
 import {
   gradeDeterministic,
   judgeWithModel,
@@ -50,6 +52,9 @@ const OUTPUT_DIRECTORY =
   process.env.SOURCING_EVAL_OUT ?? join(process.cwd(), 'tmp', 'sourcing-eval');
 const REPEAT = Number(process.env.SOURCING_EVAL_REPEAT ?? 1);
 const ONLY = process.env.SOURCING_EVAL_ONLY;
+// The server replays one recording per process, so a replayed run is one
+// scenario against a server started with PROVIDER_CALL_REPLAY_FILE
+const REPLAY = process.env.SOURCING_EVAL_REPLAY === '1';
 // Jest must outlive generateText's AbortSignal.timeout.
 const JEST_TIMEOUT_MS = REPEAT * (TIMEOUT_MS + 60_000);
 
@@ -72,6 +77,19 @@ describe('sourcing eval scenarios', () => {
     const ids = scenarios.map((scenario) => scenario.id);
 
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('should point every recording at a replay file for its own scenario', () => {
+    for (const scenario of scenarios.filter(
+      (item) => item.recording !== undefined,
+    )) {
+      const path = join(SCENARIOS_DIRECTORY, scenario.recording ?? '');
+
+      expect(existsSync(path)).toBe(true);
+      expect(
+        parseProviderCallRecording(readFileSync(path, 'utf-8')).scenarioId,
+      ).toBe(scenario.id);
+    }
   });
 });
 
@@ -181,6 +199,25 @@ describeLive('sourcing eval (live)', () => {
   const scenarios = loadScenarios(SCENARIOS_DIRECTORY).filter(
     (scenario) => ONLY === undefined || scenario.id === ONLY,
   );
+
+  if (REPLAY) {
+    const [scenario] = scenarios;
+
+    if (
+      !LIVE_BACKEND ||
+      scenarios.length !== 1 ||
+      scenario?.recording === undefined
+    ) {
+      throw new Error(
+        'SOURCING_EVAL_REPLAY=1 needs SOURCING_EVAL_LIVE_BACKEND=1 and SOURCING_EVAL_ONLY naming a scenario with a recording',
+      );
+    }
+
+    // eslint-disable-next-line no-console
+    console.log(
+      `[sourcing-eval] replay: the server must run with PROVIDER_CALL_REPLAY_FILE=${join(SCENARIOS_DIRECTORY, scenario.recording)}`,
+    );
+  }
 
   it.each(scenarios.map((scenario) => [scenario.id, scenario] as const))(
     '%s',

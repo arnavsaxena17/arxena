@@ -6,6 +6,23 @@ import {
   type FindPeopleTerminalState,
   readPairStates,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
+import {
+  type SourcingRunPhase,
+  type SourcingRunState,
+} from 'src/engine/core-modules/candidate-sourcing/run/sourcing-run.types';
+import {
+  JUDGE_OUTCOME_KEY,
+  type JudgeOutcome,
+} from 'src/engine/core-modules/candidate-sourcing/run/judge.util';
+import {
+  countSourcingStages,
+  type SourcingStageCounts,
+} from 'src/engine/core-modules/outreach-command/utils/sourcing-pool.util';
+import {
+  mergeSourcingSpec,
+  normalizeSourcingSpecDraft,
+  type SourcingSpecDraft,
+} from 'src/engine/core-modules/outreach-command/utils/sourcing-spec.util';
 
 // What happened in a sourcing run, kept so a shortfall can be explained from
 // data and not from what the conversation still remembers
@@ -87,6 +104,9 @@ export type SourcingBrief = {
   sources?: string[];
   // A confidential project neither reads nor writes the workspace cache
   confidential?: boolean;
+  // The typed requirement (hard, soft, exclusions, target, budget) the loop
+  // plans, judges and stops against; read it through resolveSourcingSpec
+  spec?: SourcingSpecDraft;
   version?: number;
 };
 
@@ -360,6 +380,10 @@ export const normalizeSourcingBriefDraft = (
     draft.universe = universe;
   }
 
+  if (draft.spec !== undefined) {
+    draft.spec = normalizeSourcingSpecDraft(draft.spec);
+  }
+
   return draft as Partial<SourcingBrief>;
 };
 
@@ -399,6 +423,9 @@ export const mergeSourcingBrief = (
     ...((previous?.thresholds !== undefined ||
       defined.thresholds !== undefined) && {
       thresholds: { ...previous?.thresholds, ...defined.thresholds },
+    }),
+    ...((previous?.spec !== undefined || defined.spec !== undefined) && {
+      spec: mergeSourcingSpec(previous?.spec, defined.spec),
     }),
     version: (previous?.version ?? 0) + 1,
   };
@@ -458,6 +485,16 @@ export type SourcingLedgerEvent =
       stage: 'pilot' | 'halfway' | 'complete';
       runId?: string;
       pairs: SourcingPairFunnel;
+    }
+  | {
+      // One round of a server-owned sourcing run (sourcing_start /
+      // sourcing_next): the run's whole state after the round, so the latest
+      // row for a runId is the run
+      kind: 'run';
+      at: string;
+      runId: string;
+      round: SourcingRunPhase;
+      state: SourcingRunState;
     };
 
 export type SourcingFunnel = {
@@ -467,10 +504,32 @@ export type SourcingFunnel = {
   withProfile: { brightData: number; harvest: number };
   notScored: number;
   outcomes: { pass: number; unknown: number; fail: number };
-  // Passed on the full profile: these count toward the target
+  // Count toward the target: the judge's qualified rows, or for a row the
+  // judge has not seen, a pass on the full profile
   qualified: number;
+  // The judge's to_confirm rows: every open flag needs the candidate. The stop
+  // rules count them with qualified; the report shows them apart.
+  toConfirm: number;
   // Passed or unknown on the snapshot and still without a profile
   awaitingProfile: number;
+  // Rows by judge outcome, for rows a sourcing run judged
+  judged: Record<JudgeOutcome, number>;
+  stages: SourcingStageCounts;
+};
+
+const JUDGE_OUTCOMES: readonly JudgeOutcome[] = [
+  'qualified',
+  'unknown',
+  'to_confirm',
+  'fail',
+];
+
+const judgeOutcomeOf = (row: OutreachTabRow): JudgeOutcome | undefined => {
+  const value = row.otherFields[JUDGE_OUTCOME_KEY];
+
+  return JUDGE_OUTCOMES.includes(value as JudgeOutcome)
+    ? (value as JudgeOutcome)
+    : undefined;
 };
 
 const outcomeOf = (
@@ -495,13 +554,21 @@ export const computeSourcingFunnel = (
     notScored: 0,
     outcomes: { pass: 0, unknown: 0, fail: 0 },
     qualified: 0,
+    toConfirm: 0,
     awaitingProfile: 0,
+    judged: { qualified: 0, unknown: 0, to_confirm: 0, fail: 0 },
+    stages: countSourcingStages(rows),
   };
 
   for (const row of rows) {
     const hasUrl = (row.linkedinUrl ?? '').trim() !== '';
     const profile = readRowProfile(row.otherFields);
     const outcome = outcomeOf(row);
+    const judgeOutcome = judgeOutcomeOf(row);
+
+    if (judgeOutcome !== undefined) {
+      funnel.judged[judgeOutcome] += 1;
+    }
 
     if (hasUrl) {
       funnel.withLinkedinUrl += 1;
@@ -515,14 +582,28 @@ export const computeSourcingFunnel = (
       funnel.withProfile.harvest += 1;
     }
 
+    // The judge is the one definition of qualified for the rows it saw
+    if (judgeOutcome === 'qualified') {
+      funnel.qualified += 1;
+    } else if (judgeOutcome === 'to_confirm') {
+      funnel.toConfirm += 1;
+    }
+
     if (outcome === undefined) {
-      funnel.notScored += 1;
+      if (judgeOutcome === undefined) {
+        funnel.notScored += 1;
+      }
+
       continue;
     }
 
     funnel.outcomes[outcome] += 1;
 
-    if (outcome === 'pass' && profile !== undefined) {
+    if (
+      judgeOutcome === undefined &&
+      outcome === 'pass' &&
+      profile !== undefined
+    ) {
       funnel.qualified += 1;
     }
 

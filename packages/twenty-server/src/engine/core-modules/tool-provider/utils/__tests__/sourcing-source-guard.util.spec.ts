@@ -1,7 +1,14 @@
+import { ARXENA_TOOL_CATALOG } from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
 import {
+  SOURCE_GUARD_EXEMPT_TOOLS,
   sourceKeyOfTool,
+  sourceKeysOfCall,
   sourceRefusalFor,
 } from 'src/engine/core-modules/tool-provider/utils/sourcing-source-guard.util';
+
+// Names that read as a call to an outside data source
+const SPENDING_TOOL_NAME =
+  /^(search_|google_serp_|fetch_contacts|fetch_email|fetch_phone|list_linkedin_relations)/;
 
 describe('sourcing source guard', () => {
   it('should map each search tool to its source', () => {
@@ -33,5 +40,50 @@ describe('sourcing source guard', () => {
     expect(
       sourceRefusalFor('search_bright_data_business', ['bright-data']),
     ).toBeUndefined();
+  });
+
+  it('should guard the LinkedIn seat tools', () => {
+    for (const toolName of [
+      'search_linkedin_from_url',
+      'search_linkedin_jobs',
+      'search_linkedin_posts',
+      'list_linkedin_relations',
+    ]) {
+      expect(sourceRefusalFor(toolName, ['bright-data'])).toMatch(
+        /LinkedIn \/ Unipile was not picked/,
+      );
+    }
+  });
+
+  it('should guard the People API by its dataSource', () => {
+    expect(
+      sourceRefusalFor('search_people_api', ['harvest'], {
+        dataSource: 'harvest',
+      }),
+    ).toBeUndefined();
+    expect(
+      sourceRefusalFor('search_people_api', ['harvest'], {
+        dataSource: 'apollo',
+      }),
+    ).toMatch(/Apollo was not picked/);
+    expect(
+      sourceRefusalFor('search_people_by_job_title', ['internal-index'], {}),
+    ).toMatch(/without dataSource/);
+    expect(
+      sourceRefusalFor('search_people_api', ['linkedin', 'internal-index'], {
+        dataSource: 'auto',
+      }),
+    ).toBeUndefined();
+  });
+
+  it('should guard or deliberately exempt every source-spending tool', () => {
+    const unguarded = ARXENA_TOOL_CATALOG.map((entry) => entry.name).filter(
+      (toolName) =>
+        SPENDING_TOOL_NAME.test(toolName) &&
+        !(toolName in SOURCE_GUARD_EXEMPT_TOOLS) &&
+        sourceKeysOfCall(toolName, { dataSource: 'apollo' }).length === 0,
+    );
+
+    expect(unguarded).toEqual([]);
   });
 });

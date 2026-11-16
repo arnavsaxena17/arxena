@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 
 import { stableStringifyProviderQueryCacheValue } from 'src/engine/core-modules/cache-storage/utils/provider-query-cache-key.util';
 import { ProviderCallEntity } from 'src/engine/core-modules/provider-call-log/provider-call.entity';
+import { providerCallSignatureOf } from 'src/engine/core-modules/provider-call-log/utils/provider-call-signature.util';
 
 type TraceOptions = {
   thread?: string;
@@ -31,13 +32,6 @@ const describeRequest = (call: ProviderCallEntity): string => {
 
   return request.length > 200 ? `${request.slice(0, 200)}…` : request;
 };
-
-// The same request asked twice has the same signature, whichever cache
-// layer answered it
-const signatureOf = (call: ProviderCallEntity): string =>
-  `${call.provider}|${call.operation}|${
-    call.cacheKey ?? stableStringifyProviderQueryCacheValue(call.request ?? {})
-  }`;
 
 @Command({
   name: 'provider-call:trace',
@@ -218,7 +212,7 @@ export class ProviderCallTraceCommand extends CommandRunner {
       >();
 
       for (const call of turn.calls) {
-        const signature = signatureOf(call);
+        const signature = providerCallSignatureOf(call);
         const seen = distinct.get(signature);
 
         if (seen !== undefined) {
@@ -306,10 +300,10 @@ export class ProviderCallTraceCommand extends CommandRunner {
     const previous = withCalls[withCalls.length - 2];
     const latest = withCalls[withCalls.length - 1];
     const previousBySignature = new Map(
-      previous.calls.map((call) => [signatureOf(call), call]),
+      previous.calls.map((call) => [providerCallSignatureOf(call), call]),
     );
     const latestBySignature = new Map(
-      latest.calls.map((call) => [signatureOf(call), call]),
+      latest.calls.map((call) => [providerCallSignatureOf(call), call]),
     );
     const added = [...latestBySignature.entries()].filter(
       ([signature]) => !previousBySignature.has(signature),

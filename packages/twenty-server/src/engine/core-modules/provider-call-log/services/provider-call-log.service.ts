@@ -8,15 +8,13 @@ import { Repository } from 'typeorm';
 import pricingCatalog from 'src/engine/core-modules/billing/constants/pricing-catalog.json';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 import { ProviderCallEntity } from 'src/engine/core-modules/provider-call-log/provider-call.entity';
+import { getActiveProviderCallReplayStore } from 'src/engine/core-modules/provider-call-log/replay/provider-call-replay.store';
 import { getProviderCallContext } from 'src/engine/core-modules/provider-call-log/storage/provider-call-context.storage';
 import { type ProviderCallCacheStatus } from 'src/engine/core-modules/provider-call-log/types/provider-call-cache-status.type';
+import { normalizeProviderCallRequest } from 'src/engine/core-modules/provider-call-log/utils/provider-call-signature.util';
 import { summarizeProviderResponse } from 'src/engine/core-modules/provider-call-log/utils/summarize-provider-response.util';
 
 export const PROVIDER_CALL_LOG_S3_FOLDER = 'provider-call-log';
-
-// Requests are stored whole so a run can be replayed; only pathological
-// payloads (a pasted company list) are cut
-const MAX_REQUEST_BYTES = 64 * 1024;
 
 export type ProviderCallRecord = {
   provider: string;
@@ -197,7 +195,7 @@ export class ProviderCallLogService {
         stage: context.stage ?? null,
         provider: entry.provider,
         operation: entry.operation,
-        request: this.boundRequest(entry.request),
+        request: normalizeProviderCallRequest(entry.request),
         cacheKey: entry.cacheKey ?? null,
         cacheStatus: entry.cacheStatus,
         success: entry.cacheStatus !== 'error',
@@ -222,6 +220,12 @@ export class ProviderCallLogService {
     options: ProviderCallTrackOptions,
     fetcher: () => Promise<TResult>,
   ): Promise<TResult> {
+    const replayStore = getActiveProviderCallReplayStore();
+
+    if (replayStore !== undefined) {
+      return replayStore.replay(options) as TResult;
+    }
+
     if (!this.enabled) {
       return fetcher();
     }
@@ -468,35 +472,6 @@ export class ProviderCallLogService {
       );
 
       return undefined;
-    }
-  }
-
-  private boundRequest(request: unknown): Record<string, unknown> | null {
-    if (request === undefined || request === null) {
-      return null;
-    }
-
-    try {
-      const serialized = JSON.stringify(request);
-
-      if (serialized === undefined) {
-        return null;
-      }
-
-      if (Buffer.byteLength(serialized) > MAX_REQUEST_BYTES) {
-        return {
-          truncated: true,
-          preview: serialized.slice(0, MAX_REQUEST_BYTES),
-        };
-      }
-
-      // Cache key parts are usually objects; a bare string or list is
-      // wrapped so the column always holds an object
-      return typeof request === 'object' && !Array.isArray(request)
-        ? (request as Record<string, unknown>)
-        : { value: request };
-    } catch {
-      return { unserializable: true };
     }
   }
 

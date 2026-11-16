@@ -413,12 +413,6 @@ export class ChatExecutionService {
         `providerOptions=${JSON.stringify(providerOptions)}`,
     );
 
-    const systemMessage: SystemModelMessage = {
-      role: 'system',
-      content: systemPrompt,
-      providerOptions,
-    };
-
     const sanitizedMessages = this.sanitizeMessagePartsForModel(
       processedMessages,
       new Set(Object.keys(activeTools)),
@@ -456,7 +450,8 @@ export class ChatExecutionService {
         `messagesBefore=${rawModelMessages.length} ` +
         `messagesAfter=${pruningResult.messages.length} ` +
         `contextWindowTokens=${modelConfig.contextWindowTokens} ` +
-        `conversationSizeTokens=${conversationSizeTokens}`,
+        `conversationSizeTokens=${conversationSizeTokens} ` +
+        `restoredSkills=${isDefined(pruningResult.restoredSkillsSection)}`,
     );
 
     if (pruningResult.isStillOverLimit) {
@@ -471,6 +466,16 @@ export class ChatExecutionService {
     }
 
     const modelMessages = pruningResult.messages;
+
+    // Until the sourcing loop owns the procedure, a long run must not lose the
+    // skill text it loaded earlier
+    const systemMessage: SystemModelMessage = {
+      role: 'system',
+      content: isDefined(pruningResult.restoredSkillsSection)
+        ? `${systemPrompt}\n\n${pruningResult.restoredSkillsSection}`
+        : systemPrompt,
+      providerOptions,
+    };
 
     let hasNoMoreAvailableCredits = false;
     const streamStartedAt = performance.now();

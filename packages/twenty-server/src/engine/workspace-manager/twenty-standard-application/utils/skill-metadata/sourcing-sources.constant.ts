@@ -11,7 +11,6 @@ import {
   SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME,
   SEARCH_COMPANIES_INDEX_TOOL_NAME,
   SEARCH_EXA_APP_TOOL_NAME,
-  SEARCH_EXA_TOOL_NAME,
   SEARCH_HARVEST_ACCOUNTS_TOOL_NAME,
   SEARCH_HARVEST_LEADS_TOOL_NAME,
   SEARCH_LINKEDIN_COMPANIES_TOOL_NAME,
@@ -72,7 +71,11 @@ export const SOURCING_ALWAYS_LEARNED_TOOLS: Readonly<
   Record<SourcingEntity, readonly string[]>
 > = {
   people: ['get_outreach_tab', 'get_source_capabilities', 'get_scoring_plan'],
-  companies: ['get_outreach_tab', 'get_source_capabilities', 'get_scoring_plan'],
+  companies: [
+    'get_outreach_tab',
+    'get_source_capabilities',
+    'get_scoring_plan',
+  ],
 };
 
 export const SOURCING_SOURCES: readonly SourcingSource[] = [
@@ -243,18 +246,18 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
     key: 'exa',
     label: 'Exa',
     people: {
-      tools: `\`${SEARCH_EXA_TOOL_NAME}\``,
+      tools: `\`${SEARCH_EXA_APP_TOOL_NAME}\``,
       bestFor: 'Web/AI search for hard-to-find people; `category: "people"`',
       requires: '`EXA_API_KEY` set',
-      learnTools: [SEARCH_EXA_TOOL_NAME],
+      learnTools: [SEARCH_EXA_APP_TOOL_NAME],
       markerPrefix: 'search-exa-people',
     },
     companies: {
-      tools: `\`${SEARCH_EXA_APP_TOOL_NAME}\` (preloaded) or \`${SEARCH_EXA_TOOL_NAME}\``,
+      tools: `\`${SEARCH_EXA_APP_TOOL_NAME}\` (preloaded)`,
       bestFor:
         'Web/AI search for hard-to-find or new companies; `category: "company"`',
       requires: '`EXA_API_KEY` set',
-      learnTools: [SEARCH_EXA_TOOL_NAME],
+      learnTools: [SEARCH_EXA_APP_TOOL_NAME],
       markerPrefix: 'search-exa-companies',
     },
     profile: {
