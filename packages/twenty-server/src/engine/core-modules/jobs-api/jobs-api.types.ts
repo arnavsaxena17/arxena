@@ -1,4 +1,4 @@
-import type { JobDataSourceAlias } from '../constants/job-data-source-aliases';
+import type { JobDataSourceAlias } from './constants/job-data-source-aliases';
 
 export type JobSearchHit = {
   id: string;

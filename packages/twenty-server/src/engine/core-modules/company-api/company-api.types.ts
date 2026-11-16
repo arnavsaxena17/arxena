@@ -1,4 +1,4 @@
-import type { CompanyDataSourceAlias } from '../constants/company-data-source-aliases';
+import type { CompanyDataSourceAlias } from './constants/company-data-source-aliases';
 import type { UnipileLinkedinProduct } from 'src/engine/core-modules/linkedin-search/utils/unipile-linkedin-product.util';
 
 export type CompanySearchHit = {

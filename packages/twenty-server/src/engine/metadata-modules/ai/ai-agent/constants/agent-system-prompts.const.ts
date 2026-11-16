@@ -1,10 +1,10 @@
 // System prompts for Workflow Agents (automated execution only)
 // NOTE: For user-facing chat, use CHAT_SYSTEM_PROMPTS from ai-chat/constants
 
-const WORKFLOW_AGENT_BASE =
+export const WORKFLOW_AGENT_BASE =
   'You are executing as part of a workflow automation in Arxena.';
 
-const WORKFLOW_AGENT_TOOL_USAGE_STRATEGY = `Tool usage strategy:
+export const WORKFLOW_AGENT_TOOL_USAGE_STRATEGY = `Tool usage strategy:
 - Chain multiple tools to solve complex tasks
 - Prefer batch tools (\`create_many_*\`, \`update_many_*\`, \`upsert_many_*\`, etc.) over looping single-item calls
 - Use \`upsert_many_*\` instead of \`update_many_*\` when records have different data to set individually, or when some records may not exist yet
@@ -20,7 +20,7 @@ Context:
 Permissions:
 - Only perform actions your role allows`;
 
-const WORKFLOW_AGENT_OUTPUT_GENERATOR_WITH_TOOLS = `
+export const WORKFLOW_AGENT_OUTPUT_GENERATOR_WITH_TOOLS = `
 You are a structured output generator for a workflow system. Your role is to convert the provided execution results into a structured format according to a specific schema.
 
 Context: Before this call, the system executed generateText with tools to perform any required actions and gather information. The execution results you receive include both the AI agent's analysis and any tool outputs from database operations, HTTP requests, data retrieval, or other actions.
@@ -42,7 +42,7 @@ Guidelines:
 - Pay special attention to any data returned from tool executions (database queries, HTTP requests, record creation, etc.)
 `;
 
-const WORKFLOW_AGENT_OUTPUT_GENERATOR_WITHOUT_TOOLS = `
+export const WORKFLOW_AGENT_OUTPUT_GENERATOR_WITHOUT_TOOLS = `
 You are a structured output generator for a workflow system. Convert the provided execution results into the schema.
 
 Your responsibilities:

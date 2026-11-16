@@ -21,9 +21,7 @@ import { Test } from '@nestjs/testing';
 
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
-import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { FileStorageModule } from 'src/engine/core-modules/file-storage/file-storage.module';
-import { fileStorageModuleFactory } from 'src/engine/core-modules/file-storage/file-storage.module-factory';
 import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services/orgchart-cache.service';
 import { OrgChartS3Service } from 'src/engine/core-modules/org-chart/services/orgchart-s3.service';
 import { PythonOrgChartService } from 'src/engine/core-modules/org-chart/services/python-org-chart.service';
@@ -74,11 +72,7 @@ describeLive('org-chart search live E2E (Unipile + cache + S3)', () => {
     const s3Module = await Test.createTestingModule({
       imports: [
         EnvironmentModule,
-        FileStorageModule.forRootAsync({
-          imports: [EnvironmentModule],
-          useFactory: fileStorageModuleFactory,
-          inject: [EnvironmentService],
-        }),
+        FileStorageModule.forRoot(),
       ],
       providers: [OrgChartS3Service],
     }).compile();

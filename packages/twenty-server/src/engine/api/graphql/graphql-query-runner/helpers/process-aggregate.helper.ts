@@ -5,6 +5,7 @@ import { type AggregationField } from 'src/engine/api/graphql/workspace-schema-b
 import { type WorkspaceSelectQueryBuilder } from 'src/engine/twenty-orm/repository/workspace-select-query-builder';
 import { formatColumnNamesFromCompositeFieldAndSubfields } from 'src/engine/twenty-orm/utils/format-column-names-from-composite-field-and-subfield.util';
 import {
+  formatRawJsonPathColumnExpression,
   formatRawJsonPathNotEmptyExpression,
   formatRawJsonPathNumericColumnExpression,
 } from 'src/engine/twenty-orm/utils/format-raw-json-path-column.util';

@@ -13,6 +13,16 @@ import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.ent
 
 import { GraphQLExecutionService } from './graphql-execution.service';
 
+/**
+ * Body of a dynamically executed GraphQL operation.
+ *
+ * Queries are plain strings, so the response shape cannot be inferred here;
+ * call sites narrow it with their own casts. Kept loose on purpose: the
+ * alternative is an `unknown` that no caller can use without a cast.
+ */
+// oxlint-disable-next-line typescript/no-explicit-any
+type GraphQLExecutionBody = any;
+
 type WorkspaceScopedTokenPayload = {
   sub?: string;
   userId?: string;
@@ -33,11 +43,18 @@ export class StaticGraphQLService {
     private readonly userWorkspaceRepository: Repository<UserWorkspaceEntity>,
   ) {}
 
+  /**
+   * Runs a GraphQL operation for a workspace member and returns its JSON body.
+   *
+   * The body is untyped because the queries are plain strings: call sites read
+   * it and cast/narrow what they need. Do not tighten this to `unknown` without
+   * updating the ~300 call sites that chain `.data?.data?...` off it.
+   */
   async executeGraphQL(
     query: string,
     variables: unknown,
     apiToken: string,
-  ): Promise<unknown> {
+  ): Promise<GraphQLExecutionBody> {
     const contextId = ContextIdFactory.create();
 
     const graphQLExecutionService = await this.moduleRef.resolve(

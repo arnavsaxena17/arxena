@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import ffmpeg from 'fluent-ffmpeg';
+import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as multer from 'multer';
 import * as path from 'path';
@@ -28,6 +29,7 @@ import {
   updateOneVideoInterviewMutation,
   workspaceMemberFilterById,
 } from 'twenty-shared';
+import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { TranscriptionService } from './transcription.service';
@@ -740,16 +742,6 @@ export class VideoInterviewController {
           throw new Error('No question IDs found');
         }
 
-        const questionsAttachmentDataQueries = allQuestionIds.map((id) =>
-          JSON.stringify({
-            query: findManyAttachmentsQuery,
-            variables: {
-              filter: { videoInterviewQuestionId: { eq: id } },
-              orderBy: { createdAt: 'DescNullsFirst' },
-            },
-          }),
-        );
-
         try {
           console.log(
             'Going to get video interview introduction attachment data',
@@ -773,7 +765,7 @@ export class VideoInterviewController {
 
         try {
           responseForVideoInterviewQuestionAttachments = await Promise.all(
-            questionsAttachmentDataQueries.map((query) =>
+            allQuestionIds.map((id) =>
               this.staticGraphQLService.executeGraphQL(
                 findManyAttachmentsQuery,
                 {

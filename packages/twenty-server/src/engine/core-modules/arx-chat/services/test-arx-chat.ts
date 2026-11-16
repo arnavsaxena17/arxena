@@ -36,11 +36,11 @@ export class TestArxChat {
       );
       
       const projects = responseFromGetAllJobs?.data?.data?.projects?.edges;
-      if (!jobs || jobs.length === 0) {
+      if (!projects || projects.length === 0) {
         throw new Error('No jobs found');
       }
       
-      const firstJob = jobs[0].node;
+      const firstJob = projects[0].node;
       console.log('Selected job:', firstJob.name);
 
       // Step 2: Get candidates for this project(same logic as CandidateSourcingController.getCandidatesByProjectId)
