@@ -19,6 +19,15 @@
       "vendorUrl": "https://www.anthropic.com"
     },
     {
+      "name": "Azure",
+      "services": [
+        "Microsoft Azure provides Azure Foundry model hosting and inference for Twenty's optional AI features. Processing may include prompts, model responses, and CRM content supplied as context. The provider and processing geography depend on the model and deployment used; a European resource location does not guarantee EU-only processing for Global deployments."
+      ],
+      "processingLocations": ["EU"],
+      "processesPii": false,
+      "vendorUrl": "https://azure.microsoft.com"
+    },
+    {
       "name": "ClickHouse",
       "services": [
         "ClickHouse provides the analytical database Twenty uses to store audit logs and power in-product analytics and reporting."
@@ -67,9 +76,18 @@
       "services": [
         "Sentry provides application error and performance monitoring, helping Twenty detect, diagnose, and resolve issues in the service."
       ],
-      "processingLocations": ["US", "EU"],
+      "processingLocations": ["DE"],
       "processesPii": true,
       "vendorUrl": "https://sentry.io"
+    },
+    {
+      "name": "TypeSafe",
+      "services": [
+        "TypeSafe AI provides evaluation and monitoring of Twenty AI features. Processing may include AI interaction content, such as prompts, responses, and contextual CRM data included in the interactions submitted for evaluation."
+      ],
+      "processingLocations": ["US"],
+      "processesPii": false,
+      "vendorUrl": "https://typesafe.ai"
     }
   ]
 }
