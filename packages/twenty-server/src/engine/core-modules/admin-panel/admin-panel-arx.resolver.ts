@@ -57,9 +57,9 @@ import { OrgChartClientIpService } from 'src/engine/core-modules/org-chart/servi
 import { OrgChartGrantAdminService } from 'src/engine/core-modules/org-chart/services/org-chart-grant-admin.service';
 import { OrgChartPublishedAdminService } from 'src/engine/core-modules/org-chart/services/org-chart-published-admin.service';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
-import { WhatsAppHealthStatus } from 'src/engine/core-modules/whiskeysocket-baileys/dtos/whatsapp-health-status.dto';
-import { WhatsAppSessionStats } from 'src/engine/core-modules/whiskeysocket-baileys/dtos/whatsapp-session-stats.dto';
-import { WhatsAppSessions } from 'src/engine/core-modules/whiskeysocket-baileys/dtos/whatsapp-sessions.dto';
+import { WhatsAppHealthStatus } from 'src/engine/core-modules/arx-chat/dtos/whatsapp-monitoring/whatsapp-health-status.dto';
+import { WhatsAppSessionStats } from 'src/engine/core-modules/arx-chat/dtos/whatsapp-monitoring/whatsapp-session-stats.dto';
+import { WhatsAppSessions } from 'src/engine/core-modules/arx-chat/dtos/whatsapp-monitoring/whatsapp-sessions.dto';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { type AuthContextUser } from 'src/engine/core-modules/auth/types/auth-context.type';

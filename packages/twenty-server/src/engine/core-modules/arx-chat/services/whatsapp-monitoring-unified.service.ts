@@ -2,9 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 
 import { WhatsappUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile-request.service';
-import { WhatsAppHealthStatus } from 'src/engine/core-modules/whiskeysocket-baileys/dtos/whatsapp-health-status.dto';
-import { WhatsAppSessionStats } from 'src/engine/core-modules/whiskeysocket-baileys/dtos/whatsapp-session-stats.dto';
-import { WhatsAppSessions } from 'src/engine/core-modules/whiskeysocket-baileys/dtos/whatsapp-sessions.dto';
+import { WhatsAppHealthStatus } from 'src/engine/core-modules/arx-chat/dtos/whatsapp-monitoring/whatsapp-health-status.dto';
+import { WhatsAppSessionStats } from 'src/engine/core-modules/arx-chat/dtos/whatsapp-monitoring/whatsapp-session-stats.dto';
+import { WhatsAppSessions } from 'src/engine/core-modules/arx-chat/dtos/whatsapp-monitoring/whatsapp-sessions.dto';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
