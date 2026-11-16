@@ -6,6 +6,11 @@ import {
   type FindPeopleTerminalState,
   readPairStates,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
+import {
+  mergeSourcingSpec,
+  normalizeSourcingSpecDraft,
+  type SourcingSpecDraft,
+} from 'src/engine/core-modules/outreach-command/utils/sourcing-spec.util';
 
 // What happened in a sourcing run, kept so a shortfall can be explained from
 // data and not from what the conversation still remembers
@@ -87,6 +92,9 @@ export type SourcingBrief = {
   sources?: string[];
   // A confidential project neither reads nor writes the workspace cache
   confidential?: boolean;
+  // The typed requirement (hard, soft, exclusions, target, budget) the loop
+  // plans, judges and stops against; read it through resolveSourcingSpec
+  spec?: SourcingSpecDraft;
   version?: number;
 };
 
@@ -360,6 +368,10 @@ export const normalizeSourcingBriefDraft = (
     draft.universe = universe;
   }
 
+  if (draft.spec !== undefined) {
+    draft.spec = normalizeSourcingSpecDraft(draft.spec);
+  }
+
   return draft as Partial<SourcingBrief>;
 };
 
@@ -399,6 +411,9 @@ export const mergeSourcingBrief = (
     ...((previous?.thresholds !== undefined ||
       defined.thresholds !== undefined) && {
       thresholds: { ...previous?.thresholds, ...defined.thresholds },
+    }),
+    ...((previous?.spec !== undefined || defined.spec !== undefined) && {
+      spec: mergeSourcingSpec(previous?.spec, defined.spec),
     }),
     version: (previous?.version ?? 0) + 1,
   };
