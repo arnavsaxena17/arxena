@@ -7,6 +7,7 @@ import { CacheStorageService } from 'src/engine/core-modules/cache-storage/servi
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { buildProviderQueryCacheKey } from 'src/engine/core-modules/cache-storage/utils/provider-query-cache-key.util';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
+import { getActiveProviderCallReplayStore } from 'src/engine/core-modules/provider-call-log/replay/provider-call-replay.store';
 import { ProviderCallLogService } from 'src/engine/core-modules/provider-call-log/services/provider-call-log.service';
 
 export const PROVIDER_QUERY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -74,6 +75,12 @@ export class ProviderQueryCacheService {
     prefix: string,
     parts: unknown,
   ): Promise<TValue | undefined> {
+    const replayed = this.replay<TValue>(prefix, parts);
+
+    if (replayed !== undefined) {
+      return replayed.value;
+    }
+
     if (this.ttlMs <= 0) {
       return undefined;
     }
@@ -95,7 +102,7 @@ export class ProviderQueryCacheService {
     parts: unknown,
     value: TValue,
   ): Promise<void> {
-    if (this.ttlMs <= 0) {
+    if (this.ttlMs <= 0 || getActiveProviderCallReplayStore() !== undefined) {
       return;
     }
 
@@ -111,6 +118,12 @@ export class ProviderQueryCacheService {
     fetcher: () => Promise<TValue>,
     options: ProviderQueryCacheOptions = {},
   ): Promise<TValue> {
+    const replayed = this.replay<TValue>(prefix, parts, options.keyParts);
+
+    if (replayed !== undefined) {
+      return replayed.value;
+    }
+
     if (this.ttlMs <= 0) {
       return this.providerCallLog
         ? this.providerCallLog.track(
@@ -264,6 +277,29 @@ export class ProviderQueryCacheService {
         cacheStatus === 'error' ? undefined : `${folder}/${filename}`,
       ...extra,
     });
+  }
+
+  // Replay serves the recorded answer and skips Redis and S3, which hold live
+  // data; a request the recording lacks throws rather than reaching a provider
+  private replay<TValue>(
+    prefix: string,
+    parts: unknown,
+    keyParts?: unknown,
+  ): { value: TValue } | undefined {
+    const replayStore = getActiveProviderCallReplayStore();
+
+    if (replayStore === undefined) {
+      return undefined;
+    }
+
+    return {
+      value: replayStore.replay({
+        provider: this.providerOf(prefix),
+        operation: prefix,
+        cacheKey: buildProviderQueryCacheKey(prefix, keyParts ?? parts),
+        request: parts,
+      }) as TValue,
+    };
   }
 
   // 'bright-data-search:v1' -> 'bright-data-search'

@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { ProviderCallExportRecordingCommand } from 'src/engine/core-modules/provider-call-log/commands/provider-call-export-recording.command';
 import { ProviderCallTraceCommand } from 'src/engine/core-modules/provider-call-log/commands/provider-call-trace.command';
 import { ProviderCallEntity } from 'src/engine/core-modules/provider-call-log/provider-call.entity';
 import { ProviderCallLogService } from 'src/engine/core-modules/provider-call-log/services/provider-call-log.service';
@@ -10,7 +11,11 @@ import { ProviderCallLogService } from 'src/engine/core-modules/provider-call-lo
 @Global()
 @Module({
   imports: [TypeOrmModule.forFeature([ProviderCallEntity])],
-  providers: [ProviderCallLogService, ProviderCallTraceCommand],
+  providers: [
+    ProviderCallLogService,
+    ProviderCallTraceCommand,
+    ProviderCallExportRecordingCommand,
+  ],
   exports: [ProviderCallLogService],
 })
 export class ProviderCallLogModule {}

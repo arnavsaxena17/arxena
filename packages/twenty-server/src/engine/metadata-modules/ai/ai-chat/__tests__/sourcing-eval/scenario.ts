@@ -17,6 +17,9 @@ export type SourcingScenario = {
   setup: string;
   userSays: string;
   scriptedReplies: string;
+  // Provider recording to replay, relative to the scenarios folder
+  // (provider-call:export-recording writes one)
+  recording?: string;
 };
 
 const FRONT_MATTER = /^---\n([\s\S]*?)\n---\n/;
@@ -58,6 +61,9 @@ export const parseScenario = (text: string): SourcingScenario => {
     setup: readSection(body, 'Setup'),
     userSays: userLine ? userLine.slice(2) : '',
     scriptedReplies: readSection(body, 'Scripted replies'),
+    ...(typeof frontMatter.recording === 'string' && {
+      recording: frontMatter.recording,
+    }),
   };
 };
 
@@ -87,7 +93,7 @@ export const adHocScenario = (
   scriptedReplies,
 });
 
-export const loadScenarios =(directory: string): SourcingScenario[] =>
+export const loadScenarios = (directory: string): SourcingScenario[] =>
   readdirSync(directory)
     .filter((fileName) => fileName.endsWith('.scenario.md'))
     .sort()
