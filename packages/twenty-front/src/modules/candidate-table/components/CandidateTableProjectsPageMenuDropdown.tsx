@@ -1,4 +1,5 @@
-import { ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7kqSource';
+// SIMPLIFIED_SEARCH: only used by the Directory option, which is commented out
+// import { ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7kqSource';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { orgChartLinkedInSearchTypeState } from '@/orgchart/states/orgChartLinkedInSearchTypeState';
 import { RootStackingContextZIndices } from '@/ui/layout/constants/RootStackingContextZIndices';
@@ -20,7 +21,8 @@ import { createPortal } from 'react-dom';
 import { ARXENA_CHROME_WEBSTORE_URL } from 'twenty-shared/constants';
 import type { LinkedInSearchType } from 'twenty-shared/types';
 import {
-    IconApi,
+    // SIMPLIFIED_SEARCH: only used by the Harvest/Directory options, now commented out
+    // IconApi,
     IconBrandLinkedin,
     IconBrowserMaximize,
     IconChevronDown,
@@ -468,6 +470,9 @@ export const CandidateTableProjectsPageMenuDropdown = ({
                             LinkedIn
                           </StyledSegmentedOptionLabel>
                         </StyledSegmentedOption>
+                        {/* SIMPLIFIED_SEARCH: Harvest and the public Directory are switched
+                            off, so the org chart source picker offers LinkedIn only. Restore these
+                            two options together with the flag that re-enables their providers.
                         <StyledSegmentedOption
                           type="button"
                           data-testid="org-chart-source-harvest"
@@ -511,6 +516,7 @@ export const CandidateTableProjectsPageMenuDropdown = ({
                             Directory
                           </StyledSegmentedOptionLabel>
                         </StyledSegmentedOption>
+                        */}
                       </StyledSegmentedTrack>
                       {orgChartLinkedinCandidateSource === 'unipile' && (
                         <>
