@@ -1,5 +1,6 @@
 const MAX_LOGGED_CHARS = 1_500;
-const SENSITIVE_KEY_PATTERN = /token|password|secret|api[-_]?key|authorization/i;
+const SENSITIVE_KEY_PATTERN =
+  /token|password|secret|api[-_]?key|authorization/i;
 
 // Set TOOL_IO_LOG=false to silence the per-call input/output blocks
 export const isToolIoLoggingEnabled = (): boolean =>

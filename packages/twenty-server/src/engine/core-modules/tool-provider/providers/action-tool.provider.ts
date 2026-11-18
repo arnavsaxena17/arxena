@@ -43,10 +43,6 @@ import {
 import { PreviewSampleMessageColumnTool } from 'src/engine/core-modules/tool/tools/outreach-sample-message-tool/preview-sample-message-column-tool';
 import { SaveOutreachTargetsToCrmTool } from 'src/engine/core-modules/tool/tools/outreach-save-to-crm-tool/save-outreach-targets-to-crm-tool';
 import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
-import {
-  SourcingNextTool,
-  SourcingStartTool,
-} from 'src/engine/core-modules/tool/tools/sourcing-run-tool/sourcing-run-tools';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { GetProjectCostsTool } from 'src/engine/core-modules/tool/tools/project-costs-tool/get-project-costs-tool';
 import { GetSourcingLedgerTool } from 'src/engine/core-modules/tool/tools/sourcing-ledger-tool/get-sourcing-ledger-tool';
@@ -87,8 +83,6 @@ export class ActionToolProvider implements ToolProvider {
     private readonly saveOutreachTargetsToCrmTool: SaveOutreachTargetsToCrmTool,
     private readonly startOutreachTool: StartOutreachTool,
     private readonly findPeopleByCompanyTool: FindPeopleByCompanyTool,
-    private readonly sourcingStartTool: SourcingStartTool,
-    private readonly sourcingNextTool: SourcingNextTool,
     private readonly twentyConfigService: TwentyConfigService,
     private readonly fetchProfilesTool: FetchProfilesTool,
     private readonly resolveLinkedinUrlTool: ResolveLinkedinUrlTool,
@@ -127,8 +121,6 @@ export class ActionToolProvider implements ToolProvider {
       ['save_outreach_targets_to_crm', this.saveOutreachTargetsToCrmTool],
       ['start_outreach', this.startOutreachTool],
       ['find_people_by_company', this.findPeopleByCompanyTool],
-      ['sourcing_start', this.sourcingStartTool],
-      ['sourcing_next', this.sourcingNextTool],
       ['fetch_profiles', this.fetchProfilesTool],
       ['resolve_linkedin_url', this.resolveLinkedinUrlTool],
       ['write_linkedin_url', this.writeLinkedinUrlTool],
@@ -292,24 +284,6 @@ export class ActionToolProvider implements ToolProvider {
         context.locale,
       ),
     );
-
-    // The server-owned loop stays off until it beats the agent on the evals
-    if (this.twentyConfigService.get('IS_SOURCING_LOOP_ENABLED') === true) {
-      descriptors.push(
-        this.buildDescriptor(
-          'sourcing_start',
-          this.sourcingStartTool,
-          includeSchemas,
-          context.locale,
-        ),
-        this.buildDescriptor(
-          'sourcing_next',
-          this.sourcingNextTool,
-          includeSchemas,
-          context.locale,
-        ),
-      );
-    }
 
     descriptors.push(
       this.buildDescriptor(

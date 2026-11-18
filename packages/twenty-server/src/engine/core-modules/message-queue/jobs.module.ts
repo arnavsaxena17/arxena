@@ -5,7 +5,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { ArxChatAgentModule } from 'src/engine/core-modules/arx-chat/arx-chat-agent.module';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
-import { AutonomousRecruiterModule } from 'src/engine/core-modules/autonomous-recruiter/autonomous-recruiter.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
 import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
@@ -78,7 +77,6 @@ import { WorkflowModule } from 'src/modules/workflow/workflow.module';
     TheOrgModule,
     CandidateSearchModule,
     forwardRef(() => CandidateSourcingModule),
-    AutonomousRecruiterModule,
     ArxChatAgentModule,
     LinkedinXrayModule,
     UserWorkspaceModule,

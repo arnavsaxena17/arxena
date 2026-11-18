@@ -19,8 +19,6 @@ export const ACTION_TOOL_IDS = [
   'start_outreach',
   'get_outreach_tab',
   'find_people_by_company',
-  'sourcing_start',
-  'sourcing_next',
   'fetch_profiles',
   'get_project_costs',
   'get_sourcing_ledger',
@@ -80,12 +78,6 @@ export const ACTION_TOOL_LABELS: Record<ActionToolId, ActionToolLabel> = {
   },
   find_people_by_company: {
     label: i18nLabel(msg`Find People By Company`),
-  },
-  sourcing_start: {
-    label: i18nLabel(msg`Start People Search`),
-  },
-  sourcing_next: {
-    label: i18nLabel(msg`People Search Progress`),
   },
   get_outreach_tab: {
     label: i18nLabel(msg`Get Outreach Tab`),

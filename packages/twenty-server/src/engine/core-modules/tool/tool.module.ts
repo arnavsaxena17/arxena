@@ -42,12 +42,6 @@ import { TitleTaxonomyModule } from 'src/engine/core-modules/title-taxonomy/titl
 import { TheOfficialBoardModule } from 'src/engine/core-modules/theofficialboard/theofficialboard.module';
 import { TheOrgModule } from 'src/engine/core-modules/theorg/theorg.module';
 import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
-import { SourcingRunModule } from 'src/engine/core-modules/candidate-sourcing/run/sourcing-run.module';
-import { SourcingRoundJob } from 'src/engine/core-modules/tool/tools/sourcing-run-tool/sourcing-round.job';
-import {
-  SourcingNextTool,
-  SourcingStartTool,
-} from 'src/engine/core-modules/tool/tools/sourcing-run-tool/sourcing-run-tools';
 import { CandidateJudgeService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/candidate-judge.service';
 import { FindPeopleCascadeService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-cascade.service';
 import { UnipileCompanyUrlResolverService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/unipile-company-url-resolver.service';
@@ -134,7 +128,6 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     forwardRef(() => TheOfficialBoardModule),
     // WorkflowRunner → executor actions → ToolModule → OutreachCommand (cycle)
     forwardRef(() => OutreachCommandModule),
-    forwardRef(() => SourcingRunModule),
   ],
   providers: [
     HttpTool,
@@ -171,9 +164,6 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     SaveOutreachTargetsToCrmTool,
     StartOutreachTool,
     FindPeopleByCompanyTool,
-    SourcingStartTool,
-    SourcingNextTool,
-    SourcingRoundJob,
     FetchProfilesService,
     FetchProfilesTool,
     ResolveLinkedinUrlTool,
@@ -246,8 +236,6 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     SaveOutreachTargetsToCrmTool,
     StartOutreachTool,
     FindPeopleByCompanyTool,
-    SourcingStartTool,
-    SourcingNextTool,
     FetchProfilesTool,
     ResolveLinkedinUrlTool,
     WriteLinkedinUrlTool,

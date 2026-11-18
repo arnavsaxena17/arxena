@@ -21,7 +21,7 @@ import { OrgChartProfileDataSourceMapperService } from '../org-chart/services/or
 import { PythonOrgChartService } from '../org-chart/services/python-org-chart.service';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 import { ApolloSearchController } from './controllers/apollo-search.controller';
-import { CandidateSearchPipelineController } from './controllers/candidate-search-pipeline.controller';
+// import { CandidateSearchPipelineController } from './controllers/candidate-search-pipeline.controller';
 import { CandidateSearchController } from './controllers/candidate-search.controller';
 import { OrgchartApifyBuildProcessor } from './jobs/orgchart-apify-build.processor';
 import { OrgchartApolloBuildProcessor } from './jobs/orgchart-apollo-build.processor';
@@ -74,16 +74,11 @@ import { OrgchartUnipileShardPlannerService } from './services/orgchart-unipile-
     forwardRef(() => CandidateSourcingModule),
     GraphQLExecutionModule,
     forwardRef(() => OrgChartModule),
-    forwardRef(() => {
-      // Lazy require avoids circular import: AssistantModule imports CandidateSearchModule.
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      return require('../assistant/assistant.module').AssistantModule;
-    }),
   ],
   controllers: [
     CandidateSearchController,
     CandidateSearchChatController,
-    CandidateSearchPipelineController,
+    // CandidateSearchPipelineController,
     ApolloSearchController,
   ],
   providers: [

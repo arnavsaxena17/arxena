@@ -10,7 +10,6 @@ export const UNLISTED_LIBRARY_TOOLS = new Set([
   'generate_linkedin_query_agent2',
   'generate_linkedin_query_agent3',
   'generate_linkedin_query_agent4',
-  'generate_unresolved_search_parameters',
   'resolve_parameters',
   'linkedin_unipile_checkpoint',
   'linkedin_unipile_connect_cookie',
@@ -49,6 +48,5 @@ export const ARXENA_INTERNAL_TOOL_NAMES = new Set([
   'generate_linkedin_query_agent2',
   'generate_linkedin_query_agent3',
   'generate_linkedin_query_agent4',
-  'generate_unresolved_search_parameters',
   'resolve_parameters',
 ]);

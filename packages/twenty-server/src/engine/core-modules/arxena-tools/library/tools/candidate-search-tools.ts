@@ -6,7 +6,6 @@ import {
 import {
   EXPAND_COMPANIES_INPUT_DESCRIPTOR,
   EXPAND_JOB_TITLES_INPUT_DESCRIPTOR,
-  JOB_BRIEF_UNDERSTANDING_INPUT_DESCRIPTOR,
   PARSE_JOB_DESCRIPTION_INPUT_DESCRIPTOR,
   SEARCH_APOLLO_COMPANIES_INPUT_DESCRIPTOR,
   SEARCH_APOLLO_PEOPLE_INPUT_DESCRIPTOR,
@@ -151,26 +150,26 @@ export const candidateSearchTools: McpTool[] = [
     },
   },
 
-  {
-    definition: {
-      name: 'job_brief_understanding',
-      description:
-        'Understand the requirement and generate a detailed job brief understanding.',
-      inputSchema: descriptorToInputSchema(
-        JOB_BRIEF_UNDERSTANDING_INPUT_DESCRIPTOR,
-      ),
-    },
-    handler: async (args, config) => {
-      const body = args as Record<string, unknown>;
-      return callRestAPI(
-        config.baseUrl,
-        config.apiToken,
-        'candidate-search/pipeline',
-        'job-brief-understanding',
-        body,
-      );
-    },
-  },
+  // {
+  //   definition: {
+  //     name: 'job_brief_understanding',
+  //     description:
+  //       'Understand the requirement and generate a detailed job brief understanding.',
+  //     inputSchema: descriptorToInputSchema(
+  //       JOB_BRIEF_UNDERSTANDING_INPUT_DESCRIPTOR,
+  //     ),
+  //   },
+  //   handler: async (args, config) => {
+  //     const body = args as Record<string, unknown>;
+  //     return callRestAPI(
+  //       config.baseUrl,
+  //       config.apiToken,
+  //       'candidate-search/pipeline',
+  //       'job-brief-understanding',
+  //       body,
+  //     );
+  //   },
+  // },
 
   // {
   //   definition: {

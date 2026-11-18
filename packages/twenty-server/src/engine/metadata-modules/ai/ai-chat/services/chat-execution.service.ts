@@ -289,11 +289,26 @@ export class ChatExecutionService {
       ...nativeTools,
     };
 
+    this.logger.log(
+      `[AI_CHAT] preloadedTools count=${Object.keys(preloadedTools).length} ` +
+        `names=[${Object.keys(preloadedTools).join(', ')}]`,
+    );
+
+    this.logger.log(
+      `[AI_CHAT] nativeTools count=${Object.keys(nativeTools).length} ` +
+        `names=[${Object.keys(nativeTools).join(', ')}]`,
+    );
+
     const preloadedToolNames = [
       ...Object.keys(preloadedTools),
       ...Object.keys(nativeTools),
       ASK_QUESTIONS_TOOL_NAME,
     ];
+
+    this.logger.log(
+      `[AI_CHAT] directTools count=${Object.keys(directTools).length} ` +
+        `names=[${Object.keys(directTools).join(', ')}]`,
+    );
 
     // ToolSet is constant for the entire conversation — no mutation.
     // learn_tools returns schemas as text; execute_tool dispatches via the registry.
@@ -318,6 +333,11 @@ export class ChatExecutionService {
       outputOptions: { compactOutput: true, spillLargeOutput: true },
     });
 
+    this.logger.log(
+      `[AI_CHAT] coreTools count=${Object.keys(coreTools).length} ` +
+        `names=[${Object.keys(coreTools).join(', ')}]`,
+    );
+
     const activeTools: ToolSet = {
       ...directTools,
       [ASK_QUESTIONS_TOOL_NAME]: createAskQuestionsTool(),
@@ -340,6 +360,8 @@ export class ChatExecutionService {
       `[AI_CHAT] activeTools count=${Object.keys(activeTools).length} ` +
         `names=[${Object.keys(activeTools).join(', ')}]`,
     );
+
+    this.logger.log(`[AI_CHAT] activeTools=${JSON.stringify(activeTools)} `);
 
     const isCodeInterpreterEnabled = this.codeInterpreterService.isEnabled();
 
@@ -747,6 +769,9 @@ export class ChatExecutionService {
         }
         const stepLatencyMs = Math.round(performance.now() - stepStartedAt);
         const toolNames = step.toolCalls.map((toolCall) => toolCall.toolName);
+        this.logger.log(
+          `[AI_CHAT_STEP] toolCalls=${JSON.stringify(step.toolCalls, null, 2)}`,
+        );
         const cacheCreationTokens = extractCacheCreationTokens(
           step.providerMetadata,
         );
@@ -762,6 +787,7 @@ export class ChatExecutionService {
         this.logger.log(
           `[AI_CHAT_STEP] #${currentStepIndex} finishReason=${step.finishReason} ` +
             `latencyMs=${stepLatencyMs} toolNames=[${toolNames.join(', ')}] ` +
+            `toolCalls=${JSON.stringify(toolNames, null, 2)} ` +
             `toolCallIds=[${step.toolCalls.map((toolCall) => toolCall.toolCallId).join(', ')}] ` +
             `contentPartTypes=[${step.content.map((part) => part.type).join(', ')}]`,
         );

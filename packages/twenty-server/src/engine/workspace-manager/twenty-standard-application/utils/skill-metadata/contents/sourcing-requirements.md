@@ -33,7 +33,6 @@ Ask once, at the start, in the same `ask_questions` batch: "Which data sources s
 
 | Option | Key | Companies | People | Cost / speed |
 | --- | --- | --- | --- | --- |
-| Arxena index | `internal-index` | Yes | No | Free, instant, shallow |
 | Bright Data | `bright-data` | Yes | Yes | $0.002 per record |
 | Google search (also reads company sites) | `serp` | LinkedIn URLs | LinkedIn URLs | Per query, fast |
 | Harvest (Sales Navigator filters, not the user's account) | `harvest` | Yes | Yes | Paid per call |

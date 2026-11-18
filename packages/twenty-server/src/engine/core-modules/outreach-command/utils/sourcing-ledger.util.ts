@@ -7,14 +7,6 @@ import {
   readPairStates,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
 import {
-  type SourcingRunPhase,
-  type SourcingRunState,
-} from 'src/engine/core-modules/candidate-sourcing/run/sourcing-run.types';
-import {
-  JUDGE_OUTCOME_KEY,
-  type JudgeOutcome,
-} from 'src/engine/core-modules/candidate-sourcing/run/judge.util';
-import {
   countSourcingStages,
   type SourcingStageCounts,
 } from 'src/engine/core-modules/outreach-command/utils/sourcing-pool.util';
@@ -485,17 +477,17 @@ export type SourcingLedgerEvent =
       stage: 'pilot' | 'halfway' | 'complete';
       runId?: string;
       pairs: SourcingPairFunnel;
-    }
-  | {
-      // One round of a server-owned sourcing run (sourcing_start /
-      // sourcing_next): the run's whole state after the round, so the latest
-      // row for a runId is the run
-      kind: 'run';
-      at: string;
-      runId: string;
-      round: SourcingRunPhase;
-      state: SourcingRunState;
     };
+
+export type SourcingJudgeOutcome =
+  | 'qualified'
+  | 'unknown'
+  | 'to_confirm'
+  | 'fail';
+
+// Rows a sourcing run judged carry this key in otherFields. Read-only here, so
+// an older judged row still reports; the judgment itself is not this module's
+const JUDGE_OUTCOME_KEY = 'judgeOutcome';
 
 export type SourcingFunnel = {
   rows: number;
@@ -513,22 +505,24 @@ export type SourcingFunnel = {
   // Passed or unknown on the snapshot and still without a profile
   awaitingProfile: number;
   // Rows by judge outcome, for rows a sourcing run judged
-  judged: Record<JudgeOutcome, number>;
+  judged: Record<SourcingJudgeOutcome, number>;
   stages: SourcingStageCounts;
 };
 
-const JUDGE_OUTCOMES: readonly JudgeOutcome[] = [
+const JUDGE_OUTCOMES: readonly SourcingJudgeOutcome[] = [
   'qualified',
   'unknown',
   'to_confirm',
   'fail',
 ];
 
-const judgeOutcomeOf = (row: OutreachTabRow): JudgeOutcome | undefined => {
+const judgeOutcomeOf = (
+  row: OutreachTabRow,
+): SourcingJudgeOutcome | undefined => {
   const value = row.otherFields[JUDGE_OUTCOME_KEY];
 
-  return JUDGE_OUTCOMES.includes(value as JudgeOutcome)
-    ? (value as JudgeOutcome)
+  return JUDGE_OUTCOMES.includes(value as SourcingJudgeOutcome)
+    ? (value as SourcingJudgeOutcome)
     : undefined;
 };
 

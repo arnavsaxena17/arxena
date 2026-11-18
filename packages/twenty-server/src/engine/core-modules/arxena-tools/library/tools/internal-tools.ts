@@ -1,7 +1,4 @@
-import {
-  GENERATE_SEARCH_PARAMETERS_INPUT_DESCRIPTOR,
-  RESOLVE_PARAMETERS_INPUT_DESCRIPTOR
-} from '../utils/McpToolSchemas';
+import { RESOLVE_PARAMETERS_INPUT_DESCRIPTOR } from '../utils/McpToolSchemas';
 
 import { callRestAPI } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';
@@ -46,24 +43,6 @@ export const internalTools: McpTool[] = [
   // },
 
 
-  {
-    definition: {
-      name: 'generate_unresolved_search_parameters',
-      description:
-        'Generate unresolved search parameters from a query. IMPORTANT: Do not call this tool multiple times with the same query parameters - results are cached and duplicate calls will be skipped. Only call once per unique query.',
-      inputSchema: descriptorToInputSchema(GENERATE_SEARCH_PARAMETERS_INPUT_DESCRIPTOR),
-    },
-    handler: async (args, config) => {
-      const body = args as Record<string, unknown>;
-      return callRestAPI(
-        config.baseUrl,
-        config.apiToken,
-        'candidate-search/pipeline',
-        'generate-unresolved-search-parameters',
-        body,
-      );
-    },
-  },
   {
     definition: {
       name: 'resolve_parameters',

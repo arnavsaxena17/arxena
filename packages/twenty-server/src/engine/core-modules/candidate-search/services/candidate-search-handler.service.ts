@@ -52,8 +52,23 @@ import { SearchParameterGenerationService } from './search-parameter-generation.
 import { SearchResponseBuilderService } from './search-response-builder.service';
 import { StrategyExecutionService } from './strategy-execution.service';
 
-import { buildIterativeRequirement } from 'src/engine/core-modules/assistant/utils/assistant-iterative-query.utils';
 import { OrgChartIntentService } from 'src/engine/core-modules/candidate-search/services/org-chart-intent.service';
+
+const buildIterativeRequirement = (
+  baseRequirement: string,
+  steeringHistory: Array<Record<string, unknown>>,
+): string =>
+  [
+    `Base requirement: ${baseRequirement}`,
+    steeringHistory.length > 0
+      ? `User steering updates:\n${steeringHistory
+          .map((entry, index) => `${index + 1}. ${String(entry.message ?? '')}`)
+          .join('\n')}`
+      : null,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join('\n\n');
+
 export type HandlerMessageStreamSendEvent = (
   event: string,
   data: Record<string, unknown>,

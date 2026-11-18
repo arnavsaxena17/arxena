@@ -8,7 +8,7 @@ import {
 
 // What one constraint is about. The judge reads it to pick the evidence a flag
 // needs, the compiler reads it to pick a filter, and a constraint no source
-// can filter becomes a post-filter (see candidate-sourcing/sources/adapter.ts)
+// can filter becomes a post-filter
 export type SourcingConstraintField =
   | 'title'
   | 'seniority'

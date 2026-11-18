@@ -16,9 +16,7 @@ import { ApplicationModule } from 'src/engine/core-modules/application/applicati
 import { PreInstalledAppsModule } from 'src/engine/core-modules/application/pre-installed-apps/pre-installed-apps.module';
 import { ApprovedAccessDomainModule } from 'src/engine/core-modules/approved-access-domain/approved-access-domain.module';
 import { ArxChatAgentModule } from 'src/engine/core-modules/arx-chat/arx-chat-agent.module';
-import { AssistantModule } from 'src/engine/core-modules/assistant/assistant.module';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
-import { AutonomousRecruiterModule } from 'src/engine/core-modules/autonomous-recruiter/autonomous-recruiter.module';
 import { BillingWebhookModule } from 'src/engine/core-modules/billing-webhook/billing-webhook.module';
 import { AppBillingModule } from 'src/engine/core-modules/billing/app-billing/app-billing.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
@@ -220,9 +218,7 @@ import { FileModule } from './file/file.module';
     CandidateSourcingModule,
     ContactEnrichmentModule,
     CandidateAvatarModule,
-    AssistantModule,
     McpFederationModule,
-    AutonomousRecruiterModule,
     ExtensionBridgeModule,
     SearchModelsModule,
     TheOrgModule,
@@ -285,7 +281,6 @@ import { FileModule } from './file/file.module';
     ArxChatAgentModule,
     CandidateSearchModule,
     CandidateSourcingModule,
-    AssistantModule,
     OrgChartModule,
     OrgChartEmbedModule,
     VideoInterviewModule,

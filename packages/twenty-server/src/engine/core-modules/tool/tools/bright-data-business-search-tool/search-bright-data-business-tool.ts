@@ -4,8 +4,6 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 
 import { OUTREACH_TAB_MAX_ROWS } from 'src/engine/core-modules/outreach-command/constants/outreach-tab.constants';
-import { SourcingBudgetService } from 'src/engine/core-modules/outreach-command/services/sourcing-budget.service';
-import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
 import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
 import {
   type BrightDataLudicrousPlan,
@@ -117,10 +115,6 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
     private readonly upsertOutreachTargetPeopleTool: UpsertOutreachTargetPeopleTool,
     @Optional()
     private readonly personFitFilterService?: BrightDataPersonFitFilterService,
-    @Optional()
-    private readonly sourcingBudgetService?: SourcingBudgetService,
-    @Optional()
-    private readonly sourcingLedgerService?: SourcingLedgerService,
   ) {}
 
   async execute(

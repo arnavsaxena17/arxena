@@ -630,17 +630,6 @@ export const GENERATE_SEARCH_PARAMETERS_INPUT_DESCRIPTOR: readonly McpInputField
     ...ASSISTANT_THREAD_ID_OPTIONAL_DESCRIPTOR,
   ] as const;
 
-export const JOB_BRIEF_UNDERSTANDING_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
-  [
-    {
-      key: 'jobBrief',
-      type: 'string',
-      description: 'Project brief to understand from the user',
-      required: true,
-    },
-    ...ASSISTANT_THREAD_ID_OPTIONAL_DESCRIPTOR,
-  ] as const;
-
 // ==================== Org Chart Tools ====================
 
 /** Descriptor for get_org_chart tool input. */
