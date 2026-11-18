@@ -83,23 +83,26 @@ import {
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-cascade.service';
 
 // The lookup's own source names against the keys the brief stores
-const SOURCE_KEY_BY_LOOKUP_SOURCE: Record<
-  'bright_data' | 'google' | 'harvest',
-  string
-> = {
-  bright_data: 'bright-data',
-  google: 'serp',
-  harvest: 'harvest',
-};
+// SIMPLIFIED_SEARCH: the brief's source pick is no longer read by this tool, so
+// both maps are commented out with the merge that used them. Restore them
+// together with the `sources` filtering block in applyPlan.
+// const SOURCE_KEY_BY_LOOKUP_SOURCE: Record<
+//   'bright_data' | 'google' | 'harvest',
+//   string
+// > = {
+//   bright_data: 'bright-data',
+//   google: 'serp',
+//   harvest: 'harvest',
+// };
 
-const LOOKUP_SOURCE_BY_KEY: Record<
-  string,
-  'bright_data' | 'google' | 'harvest'
-> = {
-  'bright-data': 'bright_data',
-  serp: 'google',
-  harvest: 'harvest',
-};
+// const LOOKUP_SOURCE_BY_KEY: Record<
+//   string,
+//   'bright_data' | 'google' | 'harvest'
+// > = {
+//   'bright-data': 'bright_data',
+//   serp: 'google',
+//   harvest: 'harvest',
+// };
 
 // Without a brief the lookup keeps related roles, as it always has
 const DEFAULT_MAX_RUNG = 3;
@@ -459,27 +462,33 @@ export class FindPeopleByCompanyTool implements Tool {
 
     // The source choice is the user's, at the start of a run: the agent skips
     // the question when it is only skill text, so a project lookup waits for it
-    if (isNonEmptyString(input.projectId) && !isDefined(allowedByBrief)) {
-      return 'The user has not picked the data sources for this run. Ask once with ask_questions (requirements: Data sources), record the answer with get_sourcing_ledger({ projectId, brief: { sources } }), then call again.';
-    }
+    // SIMPLIFIED_SEARCH: Bright Data is the only source, so there is no choice
+    // to ask for and the run no longer waits on a data-source question.
+    // if (isNonEmptyString(input.projectId) && !isDefined(allowedByBrief)) {
+    //   return 'The user has not picked the data sources for this run. Ask once with ask_questions (requirements: Data sources), record the answer with get_sourcing_ledger({ projectId, brief: { sources } }), then call again.';
+    // }
 
     // The brief is the user's choice, so a source they picked runs even when
     // the model leaves `sources` at its Bright Data + Google default. Passing
     // `sources` explicitly still narrows the set.
-    const briefLookupSources = (allowedByBrief ?? [])
-      .map((key) => LOOKUP_SOURCE_BY_KEY[key])
-      .filter(
-        (source): source is 'bright_data' | 'google' | 'harvest' =>
-          source !== undefined,
-      );
-    const requestedSources = [
-      ...new Set([...input.sources, ...briefLookupSources]),
-    ];
-    const sources = isDefined(allowedByBrief)
-      ? requestedSources.filter((source) =>
-          allowedByBrief.includes(SOURCE_KEY_BY_LOOKUP_SOURCE[source]),
-        )
-      : requestedSources;
+    // SIMPLIFIED_SEARCH: the brief's pick is not read here. It can only narrow
+    // the set, and the set is already Bright Data alone, so a stale project
+    // brief that still lists harvest or apollo cannot bring them back.
+    // const briefLookupSources = (allowedByBrief ?? [])
+    //   .map((key) => LOOKUP_SOURCE_BY_KEY[key])
+    //   .filter(
+    //     (source): source is 'bright_data' | 'google' | 'harvest' =>
+    //       source !== undefined,
+    //   );
+    // const requestedSources = [
+    //   ...new Set([...input.sources, ...briefLookupSources]),
+    // ];
+    // const sources = isDefined(allowedByBrief)
+    //   ? requestedSources.filter((source) =>
+    //       allowedByBrief.includes(SOURCE_KEY_BY_LOOKUP_SOURCE[source]),
+    //     )
+    //   : requestedSources;
+    const sources: FindPeopleByCompanyInput['sources'] = ['bright_data'];
 
     if (sources.length === 0) {
       return `The user did not pick a people source this lookup can use (picked: ${(allowedByBrief ?? []).join(', ')}). Ask whether to add Bright Data, Google search or Harvest.`;

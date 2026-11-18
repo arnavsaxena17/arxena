@@ -105,22 +105,29 @@ export const FindPeopleByCompanyInputZodSchema = z.object({
     .describe(
       'Where the people should be based: city, state/region, or country, e.g. "Mumbai", "Maharashtra", or "India".',
     ),
+  // SIMPLIFIED_SEARCH: Bright Data is the only people source for this build.
+  // The other values stay in the enum below (commented) so re-enabling a
+  // source is one line, not a code change.
   sources: z
-    .array(z.enum(['bright_data', 'google', 'harvest']))
-    .default(['bright_data', 'google'])
+    // .array(z.enum(['bright_data', 'google', 'harvest']))
+    .array(z.enum(['bright_data']))
+    .default(['bright_data'])
     .describe(
-      'bright_data = Bright Data people database, google = Google search of LinkedIn profiles, harvest = Harvest Sales Navigator lead search (paid, $0.004 a record). Results are merged. Harvest runs only after Bright Data and Google found no one at the plan confidence.',
+      // 'bright_data = Bright Data people database, google = Google search of LinkedIn profiles, harvest = Harvest Sales Navigator lead search (paid, $0.004 a record). Results are merged. Harvest runs only after Bright Data and Google found no one at the plan confidence.',
+      'bright_data = Bright Data people database. This build searches no other source: google (LinkedIn profiles via Google) and harvest (Sales Navigator leads) are switched off.',
     ),
   queries: z
     .array(
       z.object({
-        source: z.enum(['google', 'bright_data', 'harvest']),
+        // SIMPLIFIED_SEARCH: a caller's direct query can only target Bright Data
+        // .source: z.enum(['google', 'bright_data', 'harvest']),
+        source: z.enum(['bright_data']),
         query: z
           .string()
           .min(1)
           .max(500)
           .describe(
-            'The query to send as written. For google and bright_data this may be a plain string or a boolean with quotes, AND, OR, NOT and brackets; for harvest it is the Sales Navigator keyword/boolean field.',
+            'The query to send as written. A plain string or a boolean with quotes, AND, OR, NOT and brackets.',
           ),
         company: z
           .string()
