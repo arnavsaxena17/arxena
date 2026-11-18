@@ -83,26 +83,23 @@ import {
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-cascade.service';
 
 // The lookup's own source names against the keys the brief stores
-// SIMPLIFIED_SEARCH: the brief's source pick is no longer read by this tool, so
-// both maps are commented out with the merge that used them. Restore them
-// together with the `sources` filtering block in applyPlan.
-// const SOURCE_KEY_BY_LOOKUP_SOURCE: Record<
-//   'bright_data' | 'google' | 'harvest',
-//   string
-// > = {
-//   bright_data: 'bright-data',
-//   google: 'serp',
-//   harvest: 'harvest',
-// };
+const SOURCE_KEY_BY_LOOKUP_SOURCE: Record<
+  'bright_data' | 'google' | 'harvest',
+  string
+> = {
+  bright_data: 'bright-data',
+  google: 'serp',
+  harvest: 'harvest',
+};
 
-// const LOOKUP_SOURCE_BY_KEY: Record<
-//   string,
-//   'bright_data' | 'google' | 'harvest'
-// > = {
-//   'bright-data': 'bright_data',
-//   serp: 'google',
-//   harvest: 'harvest',
-// };
+const LOOKUP_SOURCE_BY_KEY: Record<
+  string,
+  'bright_data' | 'google' | 'harvest'
+> = {
+  'bright-data': 'bright_data',
+  serp: 'google',
+  harvest: 'harvest',
+};
 
 // Without a brief the lookup keeps related roles, as it always has
 const DEFAULT_MAX_RUNG = 3;
@@ -471,24 +468,23 @@ export class FindPeopleByCompanyTool implements Tool {
     // The brief is the user's choice, so a source they picked runs even when
     // the model leaves `sources` at its Bright Data + Google default. Passing
     // `sources` explicitly still narrows the set.
-    // SIMPLIFIED_SEARCH: the brief's pick is not read here. It can only narrow
-    // the set, and the set is already Bright Data alone, so a stale project
-    // brief that still lists harvest or apollo cannot bring them back.
-    // const briefLookupSources = (allowedByBrief ?? [])
-    //   .map((key) => LOOKUP_SOURCE_BY_KEY[key])
-    //   .filter(
-    //     (source): source is 'bright_data' | 'google' | 'harvest' =>
-    //       source !== undefined,
-    //   );
-    // const requestedSources = [
-    //   ...new Set([...input.sources, ...briefLookupSources]),
-    // ];
-    // const sources = isDefined(allowedByBrief)
-    //   ? requestedSources.filter((source) =>
-    //       allowedByBrief.includes(SOURCE_KEY_BY_LOOKUP_SOURCE[source]),
-    //     )
-    //   : requestedSources;
-    const sources: FindPeopleByCompanyInput['sources'] = ['bright_data'];
+    // The brief's pick still narrows the set. It can only ever remove sources,
+    // and the schema default is Bright Data alone, so a run that does not state
+    // a source looks at Bright Data and nothing else.
+    const briefLookupSources = (allowedByBrief ?? [])
+      .map((key) => LOOKUP_SOURCE_BY_KEY[key])
+      .filter(
+        (source): source is 'bright_data' | 'google' | 'harvest' =>
+          source !== undefined,
+      );
+    const requestedSources = [
+      ...new Set([...input.sources, ...briefLookupSources]),
+    ];
+    const sources = isDefined(allowedByBrief)
+      ? requestedSources.filter((source) =>
+          allowedByBrief.includes(SOURCE_KEY_BY_LOOKUP_SOURCE[source]),
+        )
+      : requestedSources;
 
     if (sources.length === 0) {
       return `The user did not pick a people source this lookup can use (picked: ${(allowedByBrief ?? []).join(', ')}). Ask whether to add Bright Data, Google search or Harvest.`;

@@ -105,23 +105,21 @@ export const FindPeopleByCompanyInputZodSchema = z.object({
     .describe(
       'Where the people should be based: city, state/region, or country, e.g. "Mumbai", "Maharashtra", or "India".',
     ),
-  // SIMPLIFIED_SEARCH: Bright Data is the only people source for this build.
-  // The other values stay in the enum below (commented) so re-enabling a
-  // source is one line, not a code change.
+  // SIMPLIFIED_SEARCH: the enum keeps all three values so the cascade's
+  // per-source branches still type-check, but the default is Bright Data only
+  // and applyPlan pins the set, so no caller can widen it.
   sources: z
-    // .array(z.enum(['bright_data', 'google', 'harvest']))
-    .array(z.enum(['bright_data']))
+    .array(z.enum(['bright_data', 'google', 'harvest']))
     .default(['bright_data'])
     .describe(
-      // 'bright_data = Bright Data people database, google = Google search of LinkedIn profiles, harvest = Harvest Sales Navigator lead search (paid, $0.004 a record). Results are merged. Harvest runs only after Bright Data and Google found no one at the plan confidence.',
       'bright_data = Bright Data people database. This build searches no other source: google (LinkedIn profiles via Google) and harvest (Sales Navigator leads) are switched off.',
     ),
   queries: z
     .array(
       z.object({
-        // SIMPLIFIED_SEARCH: a caller's direct query can only target Bright Data
-        // .source: z.enum(['google', 'bright_data', 'harvest']),
-        source: z.enum(['bright_data']),
+        // SIMPLIFIED_SEARCH: the direct-query source is fixed to Bright Data by
+        // applyPlan, so the enum stays wide enough for the cascade to compile
+        source: z.enum(['google', 'bright_data', 'harvest']),
         query: z
           .string()
           .min(1)
