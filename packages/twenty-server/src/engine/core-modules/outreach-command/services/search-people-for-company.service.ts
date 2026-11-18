@@ -271,7 +271,10 @@ export class SearchPeopleForCompanyService {
           jobTitle: targetTitle,
           locations,
           limit,
-          dataSource: 'auto',
+          // SIMPLIFIED_SEARCH: Bright Data is the only people source. 'auto'
+          // resolved to the member's Unipile seat, else the internal index.
+          // dataSource: 'auto',
+          dataSource: 'bright_data',
           accountId: defaultAccount?.accountId,
         },
         apiKeyToken ?? undefined,

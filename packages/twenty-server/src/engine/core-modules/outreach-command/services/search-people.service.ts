@@ -39,8 +39,13 @@ export class SearchPeopleService {
     workspaceId: string;
     input: SearchPeopleInput;
   }): Promise<object> {
-    let dataSource: 'unipile' | 'harvest' | 'bright_data' =
-      input.dataSource === 'bright_data' ? 'bright_data' : 'harvest';
+    // SIMPLIFIED_SEARCH: Bright Data is the only people source for this build.
+    // The Unipile/Harvest choice below is kept wired but can no longer change
+    // the source: the unipile fallback is commented out and the initial value
+    // is Bright Data whatever the caller asked for.
+    // let dataSource: 'unipile' | 'harvest' | 'bright_data' =
+    //   input.dataSource === 'bright_data' ? 'bright_data' : 'harvest';
+    let dataSource: 'unipile' | 'harvest' | 'bright_data' = 'bright_data';
 
     try {
       const apiToken =
@@ -53,9 +58,10 @@ export class SearchPeopleService {
             );
 
       const accountId = defaultAccount?.accountId;
-      if (input.dataSource !== 'bright_data') {
-        dataSource = accountId ? 'unipile' : 'harvest';
-      }
+      // SIMPLIFIED_SEARCH: no Unipile/Harvest escalation; Bright Data only.
+      // if (input.dataSource !== 'bright_data') {
+      //   dataSource = accountId ? 'unipile' : 'harvest';
+      // }
       const limit = Math.min(
         Math.max(1, input.limit ?? 10),
         PEOPLE_SEARCH_MAX_LIMIT,

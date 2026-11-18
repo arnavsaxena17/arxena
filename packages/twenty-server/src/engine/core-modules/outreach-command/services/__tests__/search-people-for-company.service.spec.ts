@@ -112,7 +112,8 @@ describe('SearchPeopleForCompanyService', () => {
         jobTitle: 'Head of Talent',
         locations: ['United States', 'United Kingdom'],
         accountId: 'acct-1',
-        dataSource: 'auto',
+        // SIMPLIFIED_SEARCH: Bright Data is the only people source
+        dataSource: 'bright_data',
         limit: 10,
       }),
       'tok',

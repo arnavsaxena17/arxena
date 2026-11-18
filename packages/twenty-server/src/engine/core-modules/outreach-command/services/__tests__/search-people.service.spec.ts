@@ -47,7 +47,8 @@ describe('SearchPeopleService', () => {
       expect.objectContaining({
         naturalLanguage: 'CEO at Acme',
         accountId: 'member-unipile',
-        dataSource: 'unipile',
+        // SIMPLIFIED_SEARCH: Bright Data is the only people source
+        dataSource: 'bright_data',
         limit: 10,
       }),
       undefined,
@@ -149,7 +150,7 @@ describe('SearchPeopleService', () => {
     expect(peopleApiService.searchPeople).toHaveBeenCalledWith(
       expect.objectContaining({
         searchUrl,
-        dataSource: 'unipile',
+        dataSource: 'bright_data',
         accountId: 'member-unipile',
         limit: 10,
       }),
@@ -294,7 +295,9 @@ describe('SearchPeopleService', () => {
     });
   });
 
-  it('falls back to harvest when no LinkedIn Unipile account is on the workspace', async () => {
+  // SIMPLIFIED_SEARCH: the harvest/unipile fallback is switched off, so this
+  // test now pins the opposite: no account on the workspace changes nothing.
+  it('does not fall back to harvest when no LinkedIn Unipile account is on the workspace', async () => {
     gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue(null);
     unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
       null,
@@ -318,7 +321,7 @@ describe('SearchPeopleService', () => {
     expect(peopleApiService.searchPeople).toHaveBeenCalledWith(
       expect.objectContaining({
         naturalLanguage: 'CEO at Acme',
-        dataSource: 'harvest',
+        dataSource: 'bright_data',
         accountId: undefined,
       }),
       undefined,
