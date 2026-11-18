@@ -29,18 +29,9 @@ Ask coverage and its run cap as one question; they replace the target count on a
 
 ### Data sources
 
-Ask once, at the start, in the same `ask_questions` batch: "Which data sources should I use for this search?" Multi-select, with cost and speed on each option. Offer only sources whose tool is in the catalog (the workspace's provider flags switch the rest off), and a LinkedIn account only when one is connected. Two or three options are enough; never list a source you cannot call. Pre-select the last run's choice (`brief.sources` from `get_sourcing_ledger`); the first time, pre-select the Arxena index, Bright Data and Google search.
+Bright Data is the only source in this build. Do not ask which data sources to use and do not offer a choice: every other provider's search tool is switched off, so there is nothing to pick between.
 
-| Option | Key | Companies | People | Cost / speed |
-| --- | --- | --- | --- | --- |
-| Arxena index | `internal-index` | Yes | No | Free, instant, shallow |
-| Bright Data | `bright-data` | Yes | Yes | $0.002 per record |
-| Google search (also reads company sites) | `serp` | LinkedIn URLs | LinkedIn URLs | Per query, fast |
-| Harvest (Sales Navigator filters, not the user's account) | `harvest` | Yes | Yes | Paid per call |
-| My LinkedIn (Sales Navigator / Classic / Recruiter) | `linkedin` | Yes | Yes | Free, slow, uses the account's daily limits |
-| Apollo, Exa, Wikidata (when on) | `apollo`, `exa`, `wikidata` | Varies | Varies | Per source |
-
-Record the answer as `brief.sources` with the keys. It binds the run: a search tool for a source not picked refuses, and `find_people_by_company` skips it. Harvest, when picked, runs last in the cascade (after Bright Data and Google found nobody at the plan confidence). Ask again only when the brief changes or the picked sources clearly cannot cover it; say what is missing.
+Record the pick once, with the brief: `get_sourcing_ledger({ brief: { sources: ["bright-data"] } })`. It still binds the run (a search tool for any other source is refused) and `find_people_by_company` searches Bright Data only.
 
 ### Match the words to a filter
 
@@ -51,7 +42,7 @@ Before writing the plan questions, call `get_source_capabilities({ sources, enti
 | Kind | Example | Defaults | Ask only |
 | --- | --- | --- | --- |
 | Role plus a company attribute | "VP Engineering at fintech startups in Bangalore" | Company-first: build the companies, confirm them, then one `find_people_by_company` run. Prospects unless the request says hiring | The company criteria that are not in the words: stage, size, revenue, sub-segments, geography (country-wide vs a state/cluster; local HQ only or foreign companies with local operations), and coverage all vs top N when the set is a universe; the budget once. Never a row count |
-| Role plus an industry and country | "MD/CEO/heads of operations and manufacturing of glass manufacturing companies in India" | Company-first, with an exhaustive-or-top-N scope question: a named industry in a named country is a universe | Sub-segments, size band, geography and coverage first; then sources and the budget. Do not recommend ~100 companies without an "all" option |
+| Role plus an industry and country | "MD/CEO/heads of operations and manufacturing of glass manufacturing companies in India" | Company-first, with an exhaustive-or-top-N scope question: a named industry in a named country is a universe | Sub-segments, size band, geography and coverage first; then the budget. Do not recommend ~100 companies without an "all" option |
 | Population | "React engineers in Mumbai" | Current roles; the workspace HQ country when none is given | The count; the seniority band if the title spans levels |
 | Named role at named companies | "the CEO of each company" | Every role named and no others; up to three per company; the company's HQ country | Which roles, only for "leaders" or similar. Never which companies when the project has them |
 | Company list | "QSR restaurants in India" | Headquartered in the country; skip those already in the project's unexpired lists or the CRM | The unit and the count |

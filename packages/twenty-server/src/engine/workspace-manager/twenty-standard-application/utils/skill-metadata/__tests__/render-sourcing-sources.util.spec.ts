@@ -5,6 +5,13 @@ import {
   filterSearchSkillContent,
   type SearchToolsConfig,
 } from 'src/engine/core-modules/arxena-tools/utils/search-tools-config';
+import { esIndexSearchTools } from 'src/engine/core-modules/arxena-tools/library/tools/es-index-search-tools';
+import { harvestSearchTools } from 'src/engine/core-modules/arxena-tools/library/tools/harvest-search-tools';
+import { linkedinSearchTools } from 'src/engine/core-modules/arxena-tools/library/tools/linkedin-search-tools';
+import { orgChartTools } from 'src/engine/core-modules/arxena-tools/library/tools/org-chart-tools';
+import { peopleApiTools } from 'src/engine/core-modules/arxena-tools/library/tools/people-api-tools';
+import { unipileControllersTools } from 'src/engine/core-modules/arxena-tools/library/tools/unipile-controllers-tools';
+import { wikidataTools } from 'src/engine/core-modules/arxena-tools/library/tools/wikidata-tools';
 import { ACTION_TOOL_IDS } from 'src/engine/core-modules/tool-provider/constants/action-tool-label.constant';
 import {
   renderSourcingFacts,
@@ -132,9 +139,26 @@ describe('sourcing source registry', () => {
   });
 
   it('should only learn tools that exist', () => {
+
+// SIMPLIFIED_SEARCH: the provider tool families are commented out of
+// arxena-tools/library/tools/index.ts, so they are no longer in
+// ARXENA_TOOL_CATALOG. The skill sections that name them stay in the shipped
+// text until the IS_SEARCH_* provider flags strip those sections at runtime,
+// so their names are still "known" to a skill for this check.
+const SWITCHED_OFF_PROVIDER_TOOL_NAMES: string[] = [
+  ...linkedinSearchTools,
+  ...harvestSearchTools,
+  ...peopleApiTools,
+  ...orgChartTools,
+  ...esIndexSearchTools,
+  ...wikidataTools,
+  ...unipileControllersTools,
+].map((tool) => tool.definition.name);
+
     // Logic-function tools come from installed apps, not a static list
     const knownTools = new Set([
       ...ARXENA_TOOL_CATALOG.map((entry) => entry.name),
+      ...SWITCHED_OFF_PROVIDER_TOOL_NAMES,
       ...ACTION_TOOL_IDS,
       SEARCH_EXA_APP_TOOL_NAME,
     ]);

@@ -37,4 +37,4 @@ Search, then the steps above, for about N rows that must clear a rubric. Approve
 
 {{include: evidence-ladder}}
 
-**When to fetch.** Only when the snapshot cannot decide: a must-have is unknown, or the snapshot is thin (no connection count, as on Sales Navigator; no dates; one role). To spot fakes, `fetch_profiles` with `sources: ["bright_data"]` first (connections, followers); then omit `sources` for Harvest.
+**When to fetch.** Only when the snapshot cannot decide: a must-have is unknown, or the snapshot is thin (no connection count, as on Sales Navigator; no dates; one role). To spot fakes, `fetch_profiles` (connections, followers). Harvest is not available in this build, so there is no second provider to fall back to.
