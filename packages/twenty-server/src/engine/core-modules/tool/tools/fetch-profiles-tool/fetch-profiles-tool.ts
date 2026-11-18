@@ -34,18 +34,20 @@ export const FetchProfilesInputZodSchema = z.object({
     .boolean()
     .optional()
     .describe('true fetches again people who already have a profile'),
-  sources: z
-    .array(z.enum(['bright_data', 'harvest']))
-    .min(1)
-    .optional()
-    .describe(
-      'Which providers to use. Default ["bright_data", "harvest"]. Pass ["bright_data"] to skip Harvest (validate-profiles).',
-    ),
+  // SIMPLIFIED_SEARCH: Bright Data is the only profile source, so the caller
+  // cannot ask for Harvest; FetchProfilesService defaults to ["bright_data"].
+  // sources: z
+  //   .array(z.enum(['bright_data', 'harvest']))
+  //   .min(1)
+  //   .optional()
+  //   .describe(
+  //     'Which providers to use. Default ["bright_data", "harvest"]. Pass ["bright_data"] to skip Harvest (validate-profiles).',
+  //   ),
 });
 
 @Injectable()
 export class FetchProfilesTool implements Tool {
-  description = `Profile fetch for the whole People tab in one call: takes the LinkedIn URL of each person and stores the full profile (headline, about, experience, education, followers, connections, photo) on the row, in the "profile" column with its source and the parts the source returned. Bright Data Business Search by LinkedIn URL first (about 2 seconds for many profiles in parallel), then the slower Bright Data profile scrape for the people Business Search does not know. People with no LinkedIn URL are searched by name and company in Business Search, then in Google for the ones it misses, and a URL Google finds goes back through Business Search (resolvedLinkedinUrls counts both); Harvest for the ones Bright Data does not return (omit Harvest with sources: ["bright_data"]). Paid per profile, so pass rowLimit and fetch only people who passed or are unknown at the snapshot stage (the default). Takes up to about a minute and is resumable: people who already have a profile are skipped, so when remaining is above 0 call again. People without a LinkedIn URL are counted in skipped.noLinkedinUrl. Afterwards score again with preview_ai_column fitment stage "profile".`;
+  description = `Profile fetch for the whole People tab in one call: takes the LinkedIn URL of each person and stores the full profile (headline, about, experience, education, followers, connections, photo) on the row, in the "profile" column with its source and the parts the source returned. Bright Data Business Search by LinkedIn URL first (about 2 seconds for many profiles in parallel), then the slower Bright Data profile scrape for the people Business Search does not know. People with no LinkedIn URL are searched by name and company in Business Search, then in Google for the ones it misses, and a URL Google finds goes back through Business Search (resolvedLinkedinUrls counts both). Harvest is disabled in this build: Bright Data is the only profile source. Paid per profile, so pass rowLimit and fetch only people who passed or are unknown at the snapshot stage (the default). Takes up to about a minute and is resumable: people who already have a profile are skipped, so when remaining is above 0 call again. People without a LinkedIn URL are counted in skipped.noLinkedinUrl. Afterwards score again with preview_ai_column fitment stage "profile".`;
 
   inputSchema = FetchProfilesInputZodSchema;
 

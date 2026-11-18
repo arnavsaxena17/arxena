@@ -245,7 +245,10 @@ export class FetchProfilesService {
       notify?: () => void;
     } = { count: 0 };
     let currentPhase = 'Starting';
-    const sources = input.sources ?? ['bright_data', 'harvest'];
+    // SIMPLIFIED_SEARCH: Bright Data is the only profile source. Harvest stays
+    // reachable through FetchProfilesSource for a caller that names it, but no
+    // default path asks for it any more.
+    const sources = input.sources ?? ['bright_data'];
     const useBrightData = sources.includes('bright_data');
     const useHarvest = sources.includes('harvest');
     const reportProgress = (phase: string) => {
