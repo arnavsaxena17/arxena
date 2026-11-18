@@ -1022,26 +1022,3 @@ export const materializeCandidateEventWithGraphQL = async ({
     companyId,
   });
 };
-
-export const materializeEventByLinkedinUrlWithGraphQL = async ({
-  staticGraphQLService,
-  linkedinUrl,
-  event,
-  apiToken,
-  messagingChannel,
-}: {
-  staticGraphQLService: StaticGraphQLService;
-  linkedinUrl: string;
-  event: OutreachCandidateEventKind;
-  apiToken: string;
-  messagingChannel?: string | null;
-}): Promise<void> => {
-  const service = new OutreachCommandMaterializeService(staticGraphQLService);
-
-  await service.applyEventByLinkedinUrl({
-    linkedinUrl,
-    event,
-    apiToken,
-    messagingChannel,
-  });
-};

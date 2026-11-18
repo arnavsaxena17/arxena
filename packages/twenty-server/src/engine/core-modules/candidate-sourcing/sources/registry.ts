@@ -9,10 +9,6 @@ import {
   type SourcingSourceError,
 } from 'src/engine/core-modules/candidate-sourcing/sources/adapter';
 import { HARVEST_COST_PER_RECORD_USD } from 'src/engine/core-modules/org-chart/utils/harvest-search-params.util';
-import {
-  findCapability,
-  type SourceCapability,
-} from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/sourcing-source-capabilities.constant';
 
 // The one source enum. The values are the SOURCING_SOURCES keys the skill text,
 // the source pick (brief.sources) and the capability matrix already use; the
@@ -240,15 +236,6 @@ export const sourcingSourceKeyOf = (
     ? normalized
     : SOURCE_KEY_BY_ALIAS[normalized];
 };
-
-export const getSourcingSource = (
-  key: SourcingSourceKey,
-): SourcingSourceManifest => SOURCING_SOURCE_REGISTRY[key];
-
-export const getSourcingSourceCapability = (
-  key: SourcingSourceKey,
-  entity: 'company' | 'person',
-): SourceCapability | undefined => findCapability(key, entity);
 
 export const countReliabilityOf = (
   key: SourcingSourceKey,

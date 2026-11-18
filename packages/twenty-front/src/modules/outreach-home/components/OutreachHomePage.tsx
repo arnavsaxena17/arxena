@@ -35,11 +35,7 @@ import {
   isSameOutreachContext,
   outreachContextState,
 } from '@/outreach-home/states/outreachContextState';
-import {
-  buildFindCompaniesSendPrompt,
-  buildFindPeopleSendPrompt,
-  type OutreachSendMode,
-} from '@/outreach-home/types/outreach-home.types';
+import { type OutreachSendMode } from '@/outreach-home/types/outreach-home.types';
 import { useGetResourceCreditUsage } from '@/settings/billing/hooks/useGetResourceCreditUsage';
 import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/components/SpreadsheetImportProvider';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -524,30 +520,8 @@ const OutreachHomePageContent = () => {
     void updateOutreachStatus('resume');
   };
 
-  const handleFindCompanies = () => {
-    openAskAiPageWithPreprompt({
-      mode: 'SEND',
-      text: buildFindCompaniesSendPrompt({
-        projectId: projectSettings.projectId,
-        icpSpecSummary: projectSettings.icpSpec,
-      }),
-    });
-    setActiveTab('companies');
-  };
-
   const handleViewCompanyPeople = (companyId: string) => {
     setSelectedCompanyId(companyId);
-    setActiveTab('people');
-  };
-
-  const handleFindPeople = () => {
-    openAskAiPageWithPreprompt({
-      mode: 'SEND',
-      text: buildFindPeopleSendPrompt({
-        projectId: projectSettings.projectId,
-        icpSpecSummary: projectSettings.icpSpec,
-      }),
-    });
     setActiveTab('people');
   };
 
@@ -677,8 +651,6 @@ const OutreachHomePageContent = () => {
                       )}
                       isSavingPersonaGuidance={isSavingPersonaGuidance}
                       onSavePersonaGuidance={handleSavePersonaGuidance}
-                      onFindCompanies={handleFindCompanies}
-                      onFindPeople={handleFindPeople}
                     />
                   </StyledSetupWrap>
                 )}

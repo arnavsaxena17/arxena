@@ -39,14 +39,6 @@ export type OutreachSequenceStage =
   | 'FAILED_ENRICH'
   | 'FAILED_NO_REPLY';
 
-export type OutreachConnectionStatus = 'NONE' | 'SENT' | 'ACCEPTED' | 'IGNORED';
-
-export type OutreachEnrichStatus =
-  | 'NOT_STARTED'
-  | 'RUNNING'
-  | 'FOUND'
-  | 'FAILED';
-
 export type OutreachChannel =
   | 'LINKEDIN_CONNECT'
   | 'INMAIL'
@@ -64,23 +56,6 @@ export type OutreachAttentionReason =
   | 'NEEDS_CONNECTION';
 
 export type OutreachSendMode = 'AUTO' | 'APPROVAL';
-
-export const OUTREACH_ACTIVE_OUTREACH_STAGES: OutreachSequenceStage[] = [
-  'QUEUED',
-  'NEEDS_CONNECTION',
-  'CONNECTION_SENT',
-  'CONNECTION_ACCEPTED',
-  'PROFILE_CHECKED',
-  'WARM_PATH',
-  'COMMENTED',
-  'EMAIL_ENRICHING',
-  'EMAIL_SENT',
-  'INMAIL_SENT',
-  'WHATSAPP_SENT',
-  'REPLIED',
-  'WAITING_REPLY',
-  'NEGOTIATING',
-];
 
 export const isCandidatePastQueued = (
   stage: string | null | undefined,
@@ -153,13 +128,6 @@ export type OutreachCandidateEventKind =
   | 'meeting_held'
   | 'opportunity_created';
 
-// Backward-compatible touch kinds used by existing call sites
-export type OutreachTouchKind =
-  | 'outbound'
-  | 'inbound'
-  | 'meeting_booked'
-  | 'meeting_held';
-
 export const computeCoverageBucket = (
   peopleReached: number,
 ): OutreachCoverageBucket => {
@@ -193,10 +161,6 @@ export const mapCandidateEventToOutreachActionTimestampsEvent = (
       return null;
   }
 };
-
-/** @deprecated Use mapCandidateEventToOutreachActionTimestampsEvent */
-export const mapCandidateEventToOutreachSpeedEvent =
-  mapCandidateEventToOutreachActionTimestampsEvent;
 
 export const mapMessagingChannelToOutreachChannel = (
   messagingChannel: string | null | undefined,
@@ -402,33 +366,6 @@ export const buildCandidateEventUpdate = ({
     default:
       return {};
   }
-};
-
-// Legacy helper kept for existing call sites
-export const buildCandidateTouchUpdate = ({
-  touch,
-  nowIso = new Date().toISOString(),
-  existingFirstOutboundAt,
-  messagingChannel,
-}: {
-  touch: OutreachTouchKind;
-  nowIso?: string;
-  existingFirstOutboundAt?: string | null;
-  messagingChannel?: string | null;
-}): Record<string, unknown> => {
-  const eventByTouch: Record<OutreachTouchKind, OutreachCandidateEventKind> = {
-    outbound: 'outbound_message',
-    inbound: 'inbound_reply',
-    meeting_booked: 'meeting_booked',
-    meeting_held: 'meeting_held',
-  };
-
-  return buildCandidateEventUpdate({
-    event: eventByTouch[touch],
-    nowIso,
-    existingFirstOutboundAt,
-    messagingChannel,
-  });
 };
 
 export const resolveCompanyIdFromCandidate = (candidate: {

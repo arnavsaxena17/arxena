@@ -180,6 +180,3 @@ export const normalizeOutreachStage = (
       return 'QUEUED';
   }
 };
-
-// Kept name for existing call sites; no longer downcases to UI ids.
-export const mapCrmStageToOutreachStage = normalizeOutreachStage;

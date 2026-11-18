@@ -309,38 +309,6 @@ export const saveOutreachSenderProfile = async (input: {
   };
 };
 
-export const extractOutreachSenderCollateral = async (input: {
-  accessToken: string | undefined;
-  fileName: string;
-  fileBase64: string;
-}): Promise<{ collateralText: string }> => {
-  const accessToken = requireAccessToken(input.accessToken);
-  const baseUrl = requireBaseUrl();
-
-  const response = await fetch(
-    `${baseUrl}/outreach-command/sender-profile/extract-collateral`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        fileName: input.fileName,
-        fileBase64: input.fileBase64,
-      }),
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      await readErrorMessage(response, 'Failed to extract collateral text.'),
-    );
-  }
-
-  return (await response.json()) as { collateralText: string };
-};
-
 export const appendOutreachSenderCollateralFile = async (input: {
   accessToken: string | undefined;
   fileId: string;
@@ -408,5 +376,3 @@ export const removeOutreachSenderCollateralFile = async (input: {
     outreachSenderProfile: Record<string, unknown>;
   };
 };
-
-export { summarizeSenderProfileDraft as summarizeOutreachSenderProfile } from '@/outreach-home/utils/outreach-sender-profile-draft.util';

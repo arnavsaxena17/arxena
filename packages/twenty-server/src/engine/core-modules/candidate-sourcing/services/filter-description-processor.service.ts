@@ -191,7 +191,6 @@ export type OutreachTableViewColumnInfo = {
 
 export type OutreachTableViewDesign = z.infer<typeof TableViewDesignSchema>;
 
-export type FilterField = z.infer<typeof FilterFieldSchema>;
 export type AIFilterModel = z.infer<typeof AIFilterModelSchema>;
 
 @Injectable()

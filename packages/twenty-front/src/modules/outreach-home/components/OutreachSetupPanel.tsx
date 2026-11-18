@@ -286,8 +286,6 @@ type OutreachSetupPanelProps = {
   personaGuidance: string;
   isSavingPersonaGuidance: boolean;
   onSavePersonaGuidance: (personaGuidance: string) => Promise<void>;
-  onFindCompanies: () => void;
-  onFindPeople: () => void;
 };
 
 export const OutreachSetupPanel = ({
@@ -308,8 +306,6 @@ export const OutreachSetupPanel = ({
   personaGuidance,
   isSavingPersonaGuidance,
   onSavePersonaGuidance,
-  onFindCompanies,
-  onFindPeople,
 }: OutreachSetupPanelProps) => {
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [timezoneDraft, setTimezoneDraft] = useState(sendTimezone);
@@ -686,25 +682,6 @@ export const OutreachSetupPanel = ({
               void handleSaveSetup();
             }}
             disabled={!canSaveSetup || isSavingSetup}
-          />
-        </StyledFooterActions>
-        <StyledFooterActions>
-          <Button
-            Icon={IconSearch}
-            title="Find companies"
-            variant="primary"
-            accent="blue"
-            size="small"
-            onClick={onFindCompanies}
-            disabled={!hasProject}
-          />
-          <Button
-            Icon={IconSearch}
-            title="Find people"
-            variant="secondary"
-            size="small"
-            onClick={onFindPeople}
-            disabled={!hasProject}
           />
         </StyledFooterActions>
         {!hasProject && (

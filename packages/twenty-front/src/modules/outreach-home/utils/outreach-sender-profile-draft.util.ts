@@ -1,11 +1,20 @@
 import { isNonEmptyString } from '@sniptt/guards';
 
-import { toStringList } from '@/outreach-home/utils/outreach-icp-chip-fields.util';
-
 export type OutreachSenderProfileDraft = {
   targetTitles: string[];
   locations: string[];
   brief: string;
+};
+
+const toStringList = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
 };
 
 export const EMPTY_SENDER_PROFILE_DRAFT: OutreachSenderProfileDraft = {

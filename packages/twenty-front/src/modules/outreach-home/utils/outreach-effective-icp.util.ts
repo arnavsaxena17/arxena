@@ -3,7 +3,7 @@ import { resolveOutreachConfigIcpSpecString } from 'twenty-shared/arx';
 
 import { type IcpSpec } from '@/outreach-home/types/outreach-home.types';
 
-export type IcpProfileSource = {
+type IcpProfileSource = {
   icpSpec?: string | null;
   outreachConfig?: unknown;
 };

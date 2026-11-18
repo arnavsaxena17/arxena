@@ -6,18 +6,6 @@ import { useObjectMetadataItemById } from '@/object-metadata/hooks/useObjectMeta
 import { type ChartFilters } from '@/side-panel/pages/page-layout/types/ChartFilters';
 import { isDefined } from 'twenty-shared/utils';
 
-export const useOutreachDashboardScopeContext = () => {
-  const context = useContext(OutreachDashboardScopeContext);
-
-  if (!context) {
-    throw new Error(
-      'useOutreachDashboardScopeContext must be used within OutreachDashboardScopeProvider',
-    );
-  }
-
-  return context;
-};
-
 export const useOutreachDashboardScopeContextOptional = () =>
   useContext(OutreachDashboardScopeContext);
 
@@ -41,8 +29,7 @@ export const useOutreachDashboardScopedChartConfiguration = <
     }
 
     const hasProject =
-      isDefined(scope.selectedProjectId) &&
-      scope.selectedProjectId.length > 0;
+      isDefined(scope.selectedProjectId) && scope.selectedProjectId.length > 0;
     const hasVariant = scope.experimentVariant !== 'ALL';
 
     if (!hasProject && !hasVariant) {

@@ -18,12 +18,12 @@ import {
   generateOutreachSenderProfile,
   removeOutreachSenderCollateralFile,
   saveOutreachSenderProfile,
-  summarizeOutreachSenderProfile,
   updateOutreachSenderLinkedinUrl,
 } from '@/outreach-home/utils/outreach-sender-profile-api';
 import {
   normalizeSenderProfileDraft,
   stringifySenderProfileDraft,
+  summarizeSenderProfileDraft,
 } from '@/outreach-home/utils/outreach-sender-profile-draft.util';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextArea } from '@/ui/input/components/TextArea';
@@ -180,7 +180,7 @@ export const OutreachSetupSenderProfileSection = () => {
         });
 
         setSavedSummary(
-          summarizeOutreachSenderProfile(saved.outreachSenderProfile),
+          summarizeSenderProfileDraft(saved.outreachSenderProfile),
         );
         setCollateralFiles(
           readCollateralFilesFromProfile(saved.outreachSenderProfile),
@@ -220,7 +220,7 @@ export const OutreachSetupSenderProfileSection = () => {
         setLinkedinUnipileAccountId(seed.linkedinUnipileAccountId);
         setLinkedinProfileText(seed.linkedinProfileText);
         setSavedSummary(
-          summarizeOutreachSenderProfile(seed.existingSenderProfile),
+          summarizeSenderProfileDraft(seed.existingSenderProfile),
         );
         setCollateralFiles(
           readCollateralFilesFromProfile(seed.existingSenderProfile),
@@ -310,7 +310,7 @@ export const OutreachSetupSenderProfileSection = () => {
         stringifySenderProfileDraft(normalizeSenderProfileDraft(result.draft)),
       );
       setLinkedinProfileText(result.linkedinProfileText);
-      setSavedSummary(summarizeOutreachSenderProfile(result.draft));
+      setSavedSummary(summarizeSenderProfileDraft(result.draft));
       setIsJsonOpen(false);
       enqueueSuccessSnackBar({
         message: 'Sender profile generated and saved to your seat.',
@@ -356,9 +356,7 @@ export const OutreachSetupSenderProfileSection = () => {
         collateralText,
         linkedinProfileText,
       });
-      setSavedSummary(
-        summarizeOutreachSenderProfile(saved.outreachSenderProfile),
-      );
+      setSavedSummary(summarizeSenderProfileDraft(saved.outreachSenderProfile));
       setCollateralFiles(
         readCollateralFilesFromProfile(saved.outreachSenderProfile),
       );

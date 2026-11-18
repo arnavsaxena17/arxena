@@ -6,8 +6,6 @@ import {
   type OutreachInboundIntent,
 } from 'twenty-shared/arx';
 
-export const OUTREACH_INBOUND_INTENTS_LIST = OUTREACH_INBOUND_INTENTS;
-
 export type { OutreachInboundIntent };
 
 export type OutreachClassifiedSequenceStage = 'STOPPED' | 'REPLIED';

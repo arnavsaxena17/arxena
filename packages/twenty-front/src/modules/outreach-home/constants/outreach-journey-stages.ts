@@ -32,11 +32,6 @@ export const OUTREACH_JOURNEY_INMAIL_SENT_TIMELINE_STAGE = {
   label: 'InMail sent',
 } as const;
 
-// Default export keeps connect-first order; use getOutreachJourneyTimelineStages
-// when the active sequencer may include comment-before-connect / InMail.
-export const OUTREACH_JOURNEY_TIMELINE_STAGES =
-  OUTREACH_JOURNEY_TIMELINE_BASE_STAGES;
-
 export type OutreachJourneyTimelineStageId =
   | (typeof OUTREACH_JOURNEY_TIMELINE_BASE_STAGES)[number]['id']
   | typeof OUTREACH_JOURNEY_COMMENTED_TIMELINE_STAGE.id

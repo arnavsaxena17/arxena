@@ -1,7 +1,4 @@
-import {
-  type OutreachContext,
-  buildOutreachContextPrompt,
-} from '@/outreach-home/types/outreach-home.types';
+import { type OutreachContext } from '@/outreach-home/types/outreach-home.types';
 import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
 export const DEFAULT_OUTREACH_CONTEXT: OutreachContext = {
@@ -52,5 +49,3 @@ export const outreachContextState = createAtomState<OutreachContext>({
   key: 'outreachContextState',
   defaultValue: DEFAULT_OUTREACH_CONTEXT,
 });
-
-export { buildOutreachContextPrompt };

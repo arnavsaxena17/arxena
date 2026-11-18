@@ -13,7 +13,6 @@ The upgrade system uses two types of commands instead of raw TypeORM migrations:
 - **Instance commands** — schema and data migrations that run once at the instance level.
 - **Workspace commands** — commands that iterate over all active/suspended workspaces.
 
-See `packages/twenty-server/docs/UPGRADE_COMMANDS.md` for full documentation.
 
 ### Instance Commands
 

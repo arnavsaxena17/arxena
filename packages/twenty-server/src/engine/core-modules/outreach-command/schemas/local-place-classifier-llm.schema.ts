@@ -27,37 +27,3 @@ export const localPlaceClassifierLlmResultSchema = z.object({
 export type LocalPlaceClassifierLlmResult = z.infer<
   typeof localPlaceClassifierLlmResultSchema
 >;
-
-export const LOCAL_PLACE_CLASSIFIER_JSON_SCHEMA = {
-  type: 'object' as const,
-  properties: {
-    companyName: {
-      type: 'string' as const,
-      description: 'Canonical brand / company name',
-    },
-    isMultiOutlet: {
-      type: 'boolean' as const,
-      description: 'True if multi-outlet brand / chain',
-    },
-    numberOutlets: {
-      type: 'integer' as const,
-      description: 'Estimated outlet count; 0 if unknown or not a chain',
-    },
-    confidence: {
-      type: 'number' as const,
-      description: 'Confidence 0–1',
-    },
-    reasoning: {
-      type: 'string' as const,
-      description: 'One short sentence',
-    },
-  },
-  required: [
-    'companyName',
-    'isMultiOutlet',
-    'numberOutlets',
-    'confidence',
-    'reasoning',
-  ],
-  additionalProperties: false as const,
-};

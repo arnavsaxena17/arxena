@@ -42,16 +42,6 @@ export type IcpSpec = {
   locations: string[];
 };
 
-export type WorkspaceCompanyFields = {
-  companyName?: string | null;
-  companyDomain?: string | null;
-  industry?: string | null;
-  summary?: string | null;
-  employeeRange?: string | null;
-  hq?: string | null;
-  icpSpec?: string | null;
-};
-
 export type OutreachCompanyRow = {
   id: string;
   name: string;
@@ -182,79 +172,4 @@ export type OutreachContext = {
   // The tab the user is looking at (people, companies or setup)
   activeTab: string | null;
   phase: string | null;
-};
-
-export const buildOutreachContextPrompt = (
-  context: OutreachContext,
-): string => {
-  return [
-    'You are helping with Outreach for this Project.',
-    `projectId: ${context.projectId ?? 'none'}`,
-    `projectName: ${context.projectName ?? 'none'}`,
-    `outreachWorkflowId: ${context.outreachWorkflowId ?? 'none'}`,
-    `sendMode: ${context.outreachSendMode}`,
-    `phase: ${context.phase ?? 'live'}`,
-    `selectedCompanyId: ${context.selectedCompanyId ?? 'none'}`,
-    `selectedPersonId: ${context.selectedPersonId ?? 'none'}`,
-    `selectedPersonIds: ${JSON.stringify(context.selectedPersonIds)}`,
-    `selectedCandidateIds: ${JSON.stringify(context.selectedCandidateIds)}`,
-    `selectedCandidateStage: ${context.selectedCandidateStage ?? 'none'}`,
-    `icp: ${context.icpName ?? 'none'}`,
-    `icpSpec: ${context.icpSpecSummary ?? 'none'}`,
-    `channels: LinkedIn=${context.linkedinConnected} Gmail=${context.gmailConnected} WhatsApp=${context.whatsappConnected}`,
-    'Target companies on /outreach-home are ephemeral (Find destination per projectId), not CRM membership.',
-    'When the user asks to find/fetch/add/build target companies: load_skills(["sourcing"]), search, then upsert_outreach_target_companies({ projectId, mode: "merge", companies }) before ending the turn. Do not stop at a chat-only list.',
-    'Do NOT create CRM Company records for the Companies tab unless the user confirms Save to CRM (save_outreach_targets_to_crm, no enrollment) or enrolls people.',
-    'Target people on the People tab are ephemeral (Find destination) until the user selects rows and confirms Enroll (upload-profiles → Person + Candidate).',
-    'When the user asks to find/fetch/search people (target titles, MD/CEO, etc.) for this campaign: load_skills(["sourcing"]), search, then upsert_outreach_target_people({ projectId, mode: "merge", people }) before ending the turn.',
-    'Do NOT create_candidate / create_one_person / create_one_candidate for the People tab. Enrollment writes happen only after explicit user confirmation (Enroll).',
-    'When the user confirms Save to CRM on the Companies tab: save_outreach_targets_to_crm({ projectId, target: "companies", companyIds? }). People tab has no Save to CRM — use Enroll.',
-    'When enrolling people (user confirmed), upsert shared CRM Person + Candidate with projectId = this projectId (upload-profiles). Assign owner on discovery rows enrolls first, then pins outreachWorkspaceMemberId.',
-    'Prefer Candidate+Project execution; Person holds stop/compliance memory.',
-    'When the user says "start outreach" for enrolled people: learn_tools({toolNames:["start_outreach"]}) then start_outreach({ projectId, candidateIds: selectedCandidateIds }); whole table with nothing selected: startAllQueuedInProject=true.',
-    'Respect send windows, daily caps, stop-on-reply, and approval gates when editing steps.',
-  ].join('\n');
-};
-
-export type FindCompaniesSendPromptInput = {
-  projectId: string | null;
-  icpSpecSummary: string | null;
-};
-
-export const buildFindCompaniesSendPrompt = (
-  input: FindCompaniesSendPromptInput,
-): string => {
-  return [
-    `Find target companies for this project (projectId=${input.projectId ?? 'none'}).`,
-    input.icpSpecSummary
-      ? `Effective ICP JSON: ${input.icpSpecSummary}`
-      : 'Use the workspace ICP target titles and locations if present.',
-    'load_skills(["sourcing"]), search, then upsert_outreach_target_companies({ projectId, mode: "merge", companies }) before ending.',
-    'Do not create CRM Company records for the Companies tab.',
-  ]
-    .filter(Boolean)
-    .join('\n');
-};
-
-export type FindPeopleSendPromptInput = {
-  projectId: string | null;
-  icpSpecSummary: string | null;
-};
-
-export const buildFindPeopleSendPrompt = (
-  input: FindPeopleSendPromptInput,
-): string => {
-  return [
-    `Find target people for this project (projectId=${input.projectId ?? 'none'}).`,
-    input.icpSpecSummary
-      ? `Effective ICP JSON: ${input.icpSpecSummary}`
-      : 'Use workspace ICP target titles and locations.',
-    // The server-owned loop plans, probes, judges and writes the People tab
-    // itself, so the request is one tool call and a budget, not a search plan
-    'Prefer the server-driven run: learn_tools({ toolNames: ["sourcing_start"] }), ask me for a budget cap if I have not given one, then call sourcing_start({ request, budgetUsd }) and follow its question with sourcing_next. Do not call search tools one by one.',
-    'If sourcing_start is not in the catalog, fall back: load_skills(["sourcing"]), search the companies already on the Companies tab, then upsert_outreach_target_people({ projectId, mode: "merge", people }) before ending.',
-    'Do not create enrollment records until I confirm Enroll.',
-  ]
-    .filter(Boolean)
-    .join('\n');
 };

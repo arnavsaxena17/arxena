@@ -132,12 +132,6 @@ export const mergeSourcingPoolFields = (
   return fields;
 };
 
-export const buildSourcingProvenance = (
-  fieldNames: string[],
-  provenance: SourcingFieldProvenance,
-): SourcingProvenance =>
-  Object.fromEntries(fieldNames.map((fieldName) => [fieldName, provenance]));
-
 export type SourcingStageCounts = Record<SourcingStage, number> & {
   unstaged: number;
 };

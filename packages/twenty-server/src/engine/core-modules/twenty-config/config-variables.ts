@@ -2586,7 +2586,7 @@ export class ConfigVariables {
     type: ConfigVariableType.BOOLEAN,
   })
   @IsOptional()
-  IS_SOURCING_LOOP_ENABLED = false;
+  IS_SOURCING_LOOP_ENABLED = true;
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,

@@ -38,7 +38,7 @@ import {
   OUTREACH_PROJECT_ID_QUERY_PARAM,
   OUTREACH_WORKFLOW_SEQUENCER_NAME,
 } from '@/outreach-home/constants/outreach-command.constants';
-import { mapCrmStageToOutreachStage } from '@/outreach-home/constants/outreach-stages';
+import { normalizeOutreachStage } from '@/outreach-home/constants/outreach-stages';
 import {
   type OutreachAiColumnRunProgress,
   type OutreachTableView,
@@ -160,7 +160,7 @@ const normalizeCachedOutreachPerson = (
   person: OutreachPersonRow,
 ): OutreachPersonRow => ({
   ...person,
-  stage: mapCrmStageToOutreachStage(person.stage),
+  stage: normalizeOutreachStage(person.stage),
   warmPath: person.warmPath || '—',
   email: person.email || '',
   companyId: person.companyId || '',
@@ -1074,7 +1074,7 @@ export const useOutreachLiveTab = () => {
           locationName: candidate.people?.locationName ?? '',
           linkedinUrl: candidate.people?.linkedinLink?.primaryLinkUrl ?? '',
           warmPath: '—',
-          stage: mapCrmStageToOutreachStage(displayStageId),
+          stage: normalizeOutreachStage(displayStageId),
           recruiterStatus: candidate.status ?? undefined,
           candConversationStatus: candidate.candConversationStatus ?? undefined,
           workflowRunStatus: runSummary?.status ?? null,

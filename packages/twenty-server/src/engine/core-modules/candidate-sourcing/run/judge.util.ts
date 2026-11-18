@@ -63,8 +63,6 @@ export const JUDGE_ANSWER_VALUES = [
   'unknown_candidate',
 ] as const;
 
-export type JudgeAnswer = (typeof JUDGE_ANSWER_VALUES)[number];
-
 export const JUDGE_OUTCOME_KEY = 'judgeOutcome';
 export const JUDGE_SCORE_KEY = 'judgeScore';
 export const JUDGE_LEVEL_KEY = 'judgeLevel';

@@ -118,19 +118,6 @@ export const readPairStates = (
     : {};
 };
 
-// The pair state plus the "People found" columns, merged over the pairs the
-// row already holds for other roles
-export const buildPairStateValues = (
-  otherFields: Record<string, unknown> | null | undefined,
-  pair: FindPeoplePairState,
-): Record<string, unknown> => ({
-  ...buildPeopleFoundValues(peopleFoundLabelOf(pair), pair.personKeys.length),
-  findPeoplePairs: {
-    ...readPairStates(otherFields),
-    [pairKeyOf(pair.roles)]: pair,
-  },
-});
-
 // The company-level "People found" label, rolled up from its role pairs. A
 // company where only the CEO was found says "Found" on the row, but the pairs
 // show the manufacturing head as none_found; the report reads the pairs.

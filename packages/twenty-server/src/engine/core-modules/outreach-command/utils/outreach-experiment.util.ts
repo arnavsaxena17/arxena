@@ -55,10 +55,6 @@ export const parseOutreachExperimentConfig = (
   }
 };
 
-export const stringifyOutreachExperimentConfig = (
-  config: OutreachExperimentConfig,
-): string => JSON.stringify(config);
-
 /**
  * Deterministic A/B assignment. Same profile id always lands in the same bucket
  * for a given split (default 50/50).
@@ -77,7 +73,9 @@ export const readProjectExperimentConfig = (project: {
 export const buildProjectExperimentConfigUpdate = (
   project: { outreachConfig?: unknown },
   config: OutreachExperimentConfig,
-): { outreachConfig: ReturnType<typeof buildProjectConfigUpdate>['outreachConfig'] } =>
+): {
+  outreachConfig: ReturnType<typeof buildProjectConfigUpdate>['outreachConfig'];
+} =>
   buildProjectConfigUpdate({
     existingConfig: project.outreachConfig,
     patch: {
