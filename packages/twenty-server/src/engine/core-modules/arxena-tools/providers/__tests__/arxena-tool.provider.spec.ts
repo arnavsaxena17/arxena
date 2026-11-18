@@ -6,12 +6,16 @@ const buildProvider = () => {
     callTool: jest.fn().mockResolvedValue({
       content: [{ type: 'text', text: '{"ok":true}' }],
     }),
+    // SIMPLIFIED_SEARCH: a kept tool, so the schema mapping is checked on a
+    // tool that is actually in the catalog
     listTools: jest.fn().mockResolvedValue([
       {
-        name: 'linkedin_unipile_get_own_profile',
+        // A tool the catalog always serves; Bright Data is filtered out when
+        // BRIGHT_DATA_API_KEY is not a configured string, which it is not here
+        name: 'parse_job_description',
         inputSchema: {
           type: 'object',
-          properties: { accountId: { type: 'string' } },
+          properties: { mockMarker: { type: 'string' } },
         },
       },
     ]),
@@ -91,10 +95,10 @@ describe('ArxenaToolProvider token resolution', () => {
 
     const descriptors = await provider.generateDescriptors(apiKeyContext);
     const own = descriptors.find(
-      (descriptor) => descriptor.name === 'linkedin_unipile_get_own_profile',
+      (descriptor) => descriptor.name === 'parse_job_description',
     ) as { inputSchema?: { properties?: Record<string, unknown> } };
 
-    expect(own.inputSchema?.properties).toHaveProperty('accountId');
+    expect(own.inputSchema?.properties).toHaveProperty('mockMarker');
   });
 
   it('should use a user access token for user sessions', async () => {

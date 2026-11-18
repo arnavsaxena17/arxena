@@ -131,6 +131,10 @@ const SWITCHED_OFF_PROVIDER_TOOL_NAMES: string[] = [
   ...esIndexSearchTools,
   ...wikidataTools,
   ...unipileControllersTools,
+  // Commented out inside candidateSearchTools, which still serves the LLM
+  // query-construction helpers
+  { definition: { name: 'search_apollo_people' } },
+  { definition: { name: 'search_apollo_companies' } },
 ].map((tool) => tool.definition.name);
 
     const knownTools = new Set<string>([
