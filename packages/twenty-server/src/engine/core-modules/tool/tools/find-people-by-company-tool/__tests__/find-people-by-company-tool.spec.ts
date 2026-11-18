@@ -477,6 +477,8 @@ describe('FindPeopleByCompanyTool', () => {
 
     const output = await tool.execute(
       {
+        // SIMPLIFIED_SEARCH: Bright Data is the default; Google must be asked for
+        sources: ['bright_data', 'google'],
         companies: [{ name: 'Monginis' }],
         roles: ['MD'],
         maxBudgetUsd: 0.05,
@@ -648,7 +650,7 @@ describe('FindPeopleByCompanyTool', () => {
     searchNaturalLanguage.mockRejectedValue(new Error('planner timed out'));
 
     const output = await tool.execute(
-      { companies: [{ name: 'Baskin Robbins India' }], roles: ['CEO'] },
+      { sources: ['bright_data', 'google'],  companies: [{ name: 'Baskin Robbins India' }], roles: ['CEO'] },
       context,
     );
     const company = (output.result as { companies: Array<Record<string, any>> })
@@ -694,7 +696,7 @@ describe('FindPeopleByCompanyTool taxonomy use', () => {
     });
 
     await tool.execute(
-      { companies: [{ name: 'Acme' }], roles: ['MD'] },
+      { sources: ['bright_data', 'google'],  companies: [{ name: 'Acme' }], roles: ['MD'] },
       { workspaceId: 'workspace-id' },
     );
 
@@ -867,7 +869,7 @@ describe('FindPeopleByCompanyTool Google enrichment', () => {
     });
 
     const output = await tool.execute(
-      { companies: [{ name: 'Sapphire Foods India Limited' }], roles: ['CEO'] },
+      { sources: ['bright_data', 'google'],  companies: [{ name: 'Sapphire Foods India Limited' }], roles: ['CEO'] },
       context,
     );
     const company = (output.result as { companies: Array<Record<string, any>> })
@@ -907,7 +909,7 @@ describe('FindPeopleByCompanyTool Google enrichment', () => {
     });
 
     const output = await tool.execute(
-      { companies: [{ name: 'Acme' }], roles: ['CEO'] },
+      { sources: ['bright_data', 'google'],  companies: [{ name: 'Acme' }], roles: ['CEO'] },
       context,
     );
     const company = (output.result as { companies: Array<Record<string, any>> })
@@ -932,7 +934,7 @@ describe('FindPeopleByCompanyTool Google enrichment', () => {
     });
 
     const output = await tool.execute(
-      { companies: [{ name: 'Baskin Robbins India' }], roles: ['CEO'] },
+      { sources: ['bright_data', 'google'],  companies: [{ name: 'Baskin Robbins India' }], roles: ['CEO'] },
       context,
     );
     const company = (output.result as { companies: Array<Record<string, any>> })
@@ -976,7 +978,7 @@ describe('FindPeopleByCompanyTool Google enrichment', () => {
     search.mockRejectedValue(new Error('instant down'));
 
     const output = await tool.execute(
-      { companies: [{ name: 'Sapphire Foods India Limited' }], roles: ['CEO'] },
+      { sources: ['bright_data', 'google'],  companies: [{ name: 'Sapphire Foods India Limited' }], roles: ['CEO'] },
       context,
     );
     const company = (output.result as { companies: Array<Record<string, any>> })
@@ -1113,7 +1115,7 @@ describe('FindPeopleByCompanyTool concurrency and retries', () => {
     });
 
     const output = await tool.execute(
-      { companies: [{ name: 'Baskin Robbins India' }], roles: ['CEO'] },
+      { sources: ['bright_data', 'google'],  companies: [{ name: 'Baskin Robbins India' }], roles: ['CEO'] },
       context,
     );
     const company = (output.result as { companies: Array<Record<string, any>> })
@@ -1134,7 +1136,7 @@ describe('FindPeopleByCompanyTool concurrency and retries', () => {
     );
 
     const output = await tool.execute(
-      { companies: [{ name: 'Acme' }], roles: ['CEO'] },
+      { sources: ['bright_data', 'google'],  companies: [{ name: 'Acme' }], roles: ['CEO'] },
       context,
     );
     const company = (output.result as { companies: Array<Record<string, any>> })
@@ -1274,7 +1276,7 @@ describe('FindPeopleByCompanyTool Google queries', () => {
     });
 
     await tool.execute(
-      { companies: [{ name: 'Acme' }], roles: ['MD'], location: 'India' },
+      { sources: ['bright_data', 'google'],  companies: [{ name: 'Acme' }], roles: ['MD'], location: 'India' },
       context,
     );
 
@@ -1296,7 +1298,7 @@ describe('FindPeopleByCompanyTool Google queries', () => {
     });
 
     await tool.execute(
-      { companies: [{ name: '99 Pancakes' }], roles: ['founder', 'CEO'] },
+      { sources: ['bright_data', 'google'],  companies: [{ name: '99 Pancakes' }], roles: ['founder', 'CEO'] },
       context,
     );
 
@@ -1318,6 +1320,8 @@ describe('FindPeopleByCompanyTool Google queries', () => {
 
     await tool.execute(
       {
+        // SIMPLIFIED_SEARCH: Bright Data is the default; Google must be asked for
+        sources: ['bright_data', 'google'],
         companies: [{ name: 'Acme', alternateNames: ['Globex'] }],
         roles: ['MD'],
       },
@@ -1341,7 +1345,7 @@ describe('FindPeopleByCompanyTool Google queries', () => {
     });
 
     const output = await tool.execute(
-      { companies: [{ name: 'Baskin Robbins India' }], roles: ['CEO'] },
+      { sources: ['bright_data', 'google'],  companies: [{ name: 'Baskin Robbins India' }], roles: ['CEO'] },
       context,
     );
     const company = (output.result as { companies: Array<Record<string, any>> })
@@ -1376,7 +1380,7 @@ describe('FindPeopleByCompanyTool Google queries', () => {
     });
 
     const output = await tool.execute(
-      { companies: [{ name: 'Baskin Robbins India' }], roles: ['CEO'] },
+      { sources: ['bright_data', 'google'],  companies: [{ name: 'Baskin Robbins India' }], roles: ['CEO'] },
       context,
     );
     const company = (output.result as { companies: Array<Record<string, any>> })
@@ -1414,7 +1418,12 @@ describe('FindPeopleByCompanyTool model extraction', () => {
   ) => {
     const built = buildTool(options);
     const output = await built.tool.execute(
-      { companies: [{ name: '99 Pancakes' }], roles },
+      {
+        // SIMPLIFIED_SEARCH: Bright Data is the default; Google must be asked for
+        sources: ['bright_data', 'google'],
+        companies: [{ name: '99 Pancakes' }],
+        roles,
+      },
       context,
     );
 
@@ -1663,6 +1672,8 @@ describe('FindPeopleByCompanyTool judged by a model', () => {
     const built = buildTool(options);
     const output = await built.tool.execute(
       {
+        // SIMPLIFIED_SEARCH: Bright Data is the default; Google must be asked for
+        sources: ['bright_data', 'google'],
         companies: [{ name: 'Hardcastle Restaurants Pvt. Ltd.' }],
         roles: ['MD', 'CEO'],
       },

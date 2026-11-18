@@ -146,17 +146,19 @@ const build = ({
 };
 
 describe('FindPeopleByCompanyTool plan', () => {
-  it('should wait for the user to pick sources before a project lookup', async () => {
+  // SIMPLIFIED_SEARCH: the data-source question is switched off, so a project
+  // lookup with no source in the brief searches the Bright Data default instead
+  // of stopping to ask.
+  it('should search Bright Data when no source is picked in the brief', async () => {
     const { tool, lookupPair } = build({ briefSources: null });
 
-    const output = await tool.execute(
+    await tool.execute(
       { fromProject: true, projectId: 'p', roles: ['Head of E-commerce'] },
       context,
     );
 
-    expect(output.success).toBe(false);
-    expect(output.error).toMatch(/not picked the data sources/);
-    expect(lookupPair).not.toHaveBeenCalled();
+    expect(lookupPair).toHaveBeenCalled();
+    expect(lookupPair.mock.calls[0]?.[1]?.sources).toEqual(['bright_data']);
   });
 
   it('should drop the sources the user did not pick', async () => {
