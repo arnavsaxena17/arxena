@@ -1,135 +1,141 @@
-import {
-  SEARCH_APOLLO_COMPANIES_TOOL_NAME,
-  SEARCH_APOLLO_PEOPLE_TOOL_NAME,
-} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-names.const';
+// SIMPLIFIED_SEARCH: the only names this file imported were the two Apollo
+// tools, which are commented out below.
+// import {
+//   SEARCH_APOLLO_COMPANIES_TOOL_NAME,
+//   SEARCH_APOLLO_PEOPLE_TOOL_NAME,
+// } from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-names.const';
 
 import {
   EXPAND_COMPANIES_INPUT_DESCRIPTOR,
   EXPAND_JOB_TITLES_INPUT_DESCRIPTOR,
   JOB_BRIEF_UNDERSTANDING_INPUT_DESCRIPTOR,
   PARSE_JOB_DESCRIPTION_INPUT_DESCRIPTOR,
-  SEARCH_APOLLO_COMPANIES_INPUT_DESCRIPTOR,
-  SEARCH_APOLLO_PEOPLE_INPUT_DESCRIPTOR,
+  // SIMPLIFIED_SEARCH: Apollo is not a source for this build
+  // SEARCH_APOLLO_COMPANIES_INPUT_DESCRIPTOR,
+  // SEARCH_APOLLO_PEOPLE_INPUT_DESCRIPTOR,
 } from '../utils/McpToolSchemas';
 
 import { callRestAPI } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';
 import { descriptorToInputSchema } from '../utils/input-schema';
 export const candidateSearchTools: McpTool[] = [
-  {
-    definition: {
-      name: SEARCH_APOLLO_PEOPLE_TOOL_NAME,
-      description:
-        'Search Apollo people using Arxena backend Apollo endpoint. Supports keywords, titles, organization IDs, and location filters.',
-      inputSchema: descriptorToInputSchema(
-        SEARCH_APOLLO_PEOPLE_INPUT_DESCRIPTOR,
-      ),
-    },
-    handler: async (args, config) => {
-      const {
-        keywords,
-        personTitles,
-        organizationIds,
-        personLocations,
-        organizationLocations,
-        includeSimilarTitles,
-        page,
-        perPage,
-      } = args as {
-        keywords?: string;
-        personTitles?: string[];
-        organizationIds?: string[];
-        personLocations?: string[];
-        organizationLocations?: string[];
-        includeSimilarTitles?: boolean;
-        page?: number;
-        perPage?: number;
-      };
-
-      const hasFilters =
-        (typeof keywords === 'string' && keywords.trim().length > 0) ||
-        (Array.isArray(personTitles) && personTitles.length > 0) ||
-        (Array.isArray(organizationIds) && organizationIds.length > 0) ||
-        (Array.isArray(personLocations) && personLocations.length > 0) ||
-        (Array.isArray(organizationLocations) &&
-          organizationLocations.length > 0);
-
-      if (!hasFilters) {
-        throw new Error(
-          'At least one search filter is required (keywords, personTitles, organizationIds, personLocations, or organizationLocations).',
-        );
-      }
-
-      return callRestAPI(
-        config.baseUrl,
-        config.apiToken,
-        'candidate-search/apollo',
-        'people',
-        {
-          keywords,
-          personTitles,
-          organizationIds,
-          personLocations,
-          organizationLocations,
-          includeSimilarTitles,
-          page,
-          perPage,
-        },
-      );
-    },
-  },
-  {
-    definition: {
-      name: SEARCH_APOLLO_COMPANIES_TOOL_NAME,
-      description:
-        'Search Apollo companies using Arxena backend Apollo endpoint. Supports organization name, domain, and location filters.',
-      inputSchema: descriptorToInputSchema(
-        SEARCH_APOLLO_COMPANIES_INPUT_DESCRIPTOR,
-      ),
-    },
-    handler: async (args, config) => {
-      const {
-        organizationName,
-        domains,
-        organizationLocations,
-        page,
-        perPage,
-      } = args as {
-        organizationName?: string;
-        domains?: string[];
-        organizationLocations?: string[];
-        page?: number;
-        perPage?: number;
-      };
-
-      const hasFilters =
-        (typeof organizationName === 'string' &&
-          organizationName.trim().length > 0) ||
-        (Array.isArray(domains) && domains.length > 0) ||
-        (Array.isArray(organizationLocations) &&
-          organizationLocations.length > 0);
-
-      if (!hasFilters) {
-        throw new Error(
-          'At least one search filter is required (organizationName, domains, or organizationLocations).',
-        );
-      }
-
-      return callRestAPI(
-        config.baseUrl,
-        config.apiToken,
-        'candidate-search/apollo',
-        'companies',
-        {
-          organizationName,
-          domains,
-          organizationLocations,
-          page,
-          perPage,
-        },
-      );
-    },
-  },
+  // SIMPLIFIED_SEARCH: Apollo is not a source for this build; the two Apollo
+  // search tools are commented out and the section is now only the
+  // LLM query-construction helpers.
+  // {
+  //   definition: {
+  //     name: SEARCH_APOLLO_PEOPLE_TOOL_NAME,
+  //     description:
+  //       'Search Apollo people using Arxena backend Apollo endpoint. Supports keywords, titles, organization IDs, and location filters.',
+  //     inputSchema: descriptorToInputSchema(
+  //       SEARCH_APOLLO_PEOPLE_INPUT_DESCRIPTOR,
+  //     ),
+  //   },
+  //   handler: async (args, config) => {
+  //     const {
+  //       keywords,
+  //       personTitles,
+  //       organizationIds,
+  //       personLocations,
+  //       organizationLocations,
+  //       includeSimilarTitles,
+  //       page,
+  //       perPage,
+  //     } = args as {
+  //       keywords?: string;
+  //       personTitles?: string[];
+  //       organizationIds?: string[];
+  //       personLocations?: string[];
+  //       organizationLocations?: string[];
+  //       includeSimilarTitles?: boolean;
+  //       page?: number;
+  //       perPage?: number;
+  //     };
+  //
+  //     const hasFilters =
+  //       (typeof keywords === 'string' && keywords.trim().length > 0) ||
+  //       (Array.isArray(personTitles) && personTitles.length > 0) ||
+  //       (Array.isArray(organizationIds) && organizationIds.length > 0) ||
+  //       (Array.isArray(personLocations) && personLocations.length > 0) ||
+  //       (Array.isArray(organizationLocations) &&
+  //         organizationLocations.length > 0);
+  //
+  //     if (!hasFilters) {
+  //       throw new Error(
+  //         'At least one search filter is required (keywords, personTitles, organizationIds, personLocations, or organizationLocations).',
+  //       );
+  //     }
+  //
+  //     return callRestAPI(
+  //       config.baseUrl,
+  //       config.apiToken,
+  //       'candidate-search/apollo',
+  //       'people',
+  //       {
+  //         keywords,
+  //         personTitles,
+  //         organizationIds,
+  //         personLocations,
+  //         organizationLocations,
+  //         includeSimilarTitles,
+  //         page,
+  //         perPage,
+  //       },
+  //     );
+  //   },
+  // },
+  // {
+  //   definition: {
+  //     name: SEARCH_APOLLO_COMPANIES_TOOL_NAME,
+  //     description:
+  //       'Search Apollo companies using Arxena backend Apollo endpoint. Supports organization name, domain, and location filters.',
+  //     inputSchema: descriptorToInputSchema(
+  //       SEARCH_APOLLO_COMPANIES_INPUT_DESCRIPTOR,
+  //     ),
+  //   },
+  //   handler: async (args, config) => {
+  //     const {
+  //       organizationName,
+  //       domains,
+  //       organizationLocations,
+  //       page,
+  //       perPage,
+  //     } = args as {
+  //       organizationName?: string;
+  //       domains?: string[];
+  //       organizationLocations?: string[];
+  //       page?: number;
+  //       perPage?: number;
+  //     };
+  //
+  //     const hasFilters =
+  //       (typeof organizationName === 'string' &&
+  //         organizationName.trim().length > 0) ||
+  //       (Array.isArray(domains) && domains.length > 0) ||
+  //       (Array.isArray(organizationLocations) &&
+  //         organizationLocations.length > 0);
+  //
+  //     if (!hasFilters) {
+  //       throw new Error(
+  //         'At least one search filter is required (organizationName, domains, or organizationLocations).',
+  //       );
+  //     }
+  //
+  //     return callRestAPI(
+  //       config.baseUrl,
+  //       config.apiToken,
+  //       'candidate-search/apollo',
+  //       'companies',
+  //       {
+  //         organizationName,
+  //         domains,
+  //         organizationLocations,
+  //         page,
+  //         perPage,
+  //       },
+  //     );
+  //   },
+  // },
   {
     definition: {
       name: 'parse_job_description',

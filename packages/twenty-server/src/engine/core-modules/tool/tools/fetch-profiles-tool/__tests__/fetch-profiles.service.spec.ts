@@ -257,7 +257,12 @@ describe('FetchProfilesService', () => {
         experience: [{ position: 'Head', companyName: 'Acme' }],
       })),
     });
-    const result = await service.fetch(input);
+    // SIMPLIFIED_SEARCH: Harvest is no longer a default source, so a test of the
+    // fallback has to ask for it explicitly.
+    const result = await service.fetch({
+      ...input,
+      sources: ['bright_data', 'harvest'],
+    });
 
     expect(harvest).toHaveBeenCalledTimes(1);
     expect(result.fetched).toEqual({ brightData: 1, harvest: 1 });
@@ -310,7 +315,10 @@ describe('FetchProfilesService', () => {
       ]),
       harvest: jest.fn(async () => ({ headline: 'CEO' })),
     });
-    const result = await service.fetch(input);
+    const result = await service.fetch({
+      ...input,
+      sources: ['bright_data', 'harvest'],
+    });
 
     expect(harvest).toHaveBeenCalled();
     expect(result.fetched.harvest).toBe(1);

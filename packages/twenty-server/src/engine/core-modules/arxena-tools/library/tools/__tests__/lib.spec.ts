@@ -37,8 +37,14 @@ describe('library entry', () => {
   });
 
   it('learns schemas for catalog tools and reports unknown names', async () => {
+    // SIMPLIFIED_SEARCH: get_org_chart and search_apollo_people are no longer
+    // in the library, so the tool that must resolve here is Bright Data.
     const result = await callArxenaTool(CONFIG, 'learn_tools', {
-      toolNames: ['get_org_chart', 'not_a_real_tool', 'search_apollo_people'],
+      toolNames: [
+        'search_bright_data_business',
+        'not_a_real_tool',
+        'search_apollo_people',
+      ],
     });
     const payload = readText(result) as {
       tools: Array<{ name: string; inputSchema: object }>;
@@ -47,7 +53,7 @@ describe('library entry', () => {
 
     assert.deepEqual(
       payload.tools.map((tool) => tool.name),
-      ['get_org_chart'],
+      ['search_bright_data_business'],
     );
     assert.deepEqual(payload.notFound.sort(), [
       'not_a_real_tool',

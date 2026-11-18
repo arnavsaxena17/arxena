@@ -13,34 +13,27 @@ import {
 import { ToolCategory } from 'twenty-shared/ai';
 
 describe('Arxena tool catalog', () => {
+  // SIMPLIFIED_SEARCH: this build serves Bright Data plus the tab/project/person
+  // surface only, so the catalog is smaller and the provider families below are
+  // absent. Restore the full-surface assertions with library/tools/index.ts.
   it('exposes Arxena tools without internal tools', () => {
-    expect(ARXENA_TOOL_CATALOG.length).toBeGreaterThan(50);
-    expect(ARXENA_TOOL_NAMES.has('get_org_chart')).toBe(true);
-    expect(ARXENA_TOOL_NAMES.has('get_org_chart_node_people')).toBe(true);
-    expect(ARXENA_TOOL_NAMES.has('google_serp_search')).toBe(true);
-    expect(ARXENA_TOOL_NAMES.has('list_linkedin_relations')).toBe(true);
-    expect(ARXENA_TOOL_NAMES.has('linkedin_unipile_get_own_profile')).toBe(
-      true,
-    );
-    expect(ARXENA_TOOL_NAMES.has('linkedin_unipile_get_profile')).toBe(true);
-    expect(ARXENA_TOOL_NAMES.has('fetch_linkedin_messages')).toBe(true);
-    expect(ARXENA_TOOL_NAMES.has('visit_linkedin_profile')).toBe(true);
-    expect(ARXENA_TOOL_NAMES.has('linkedin_unipile_get_user_posts')).toBe(true);
-    expect(ARXENA_TOOL_NAMES.has('linkedin_unipile_get_user_comments')).toBe(
-      true,
-    );
-    expect(ARXENA_TOOL_NAMES.has('linkedin_unipile_get_profile_overview')).toBe(
-      true,
-    );
-    expect(ARXENA_TOOL_NAMES.has('linkedin_unipile_list_chats')).toBe(false);
-    expect(ARXENA_TOOL_NAMES.has('linkedin_unipile_list_attendee_chats')).toBe(
-      false,
-    );
-    expect(ARXENA_TOOL_NAMES.has('linkedin_unipile_list_chat_messages')).toBe(
-      false,
-    );
-    expect(ARXENA_TOOL_NAMES.has('classify_taxonomy_profile')).toBe(true);
-    expect(ARXENA_TOOL_NAMES.has('list_taxonomy_slice')).toBe(true);
+    expect(ARXENA_TOOL_CATALOG.length).toBeGreaterThan(20);
+    // Kept: Bright Data and the helpers the sourcing loop needs
+    expect(ARXENA_TOOL_NAMES.has('search_bright_data_business')).toBe(true);
+    expect(ARXENA_TOOL_NAMES.has('parse_job_description')).toBe(true);
+    expect(ARXENA_TOOL_NAMES.has('expand_job_titles')).toBe(true);
+    // Gone: every other database and the LinkedIn/Unipile families
+    expect(ARXENA_TOOL_NAMES.has('get_org_chart')).toBe(false);
+    expect(ARXENA_TOOL_NAMES.has('get_org_chart_node_people')).toBe(false);
+    expect(ARXENA_TOOL_NAMES.has('google_serp_search')).toBe(false);
+    expect(ARXENA_TOOL_NAMES.has('list_linkedin_relations')).toBe(false);
+    expect(ARXENA_TOOL_NAMES.has('search_linkedin_people')).toBe(false);
+    expect(ARXENA_TOOL_NAMES.has('search_harvest_leads')).toBe(false);
+    expect(ARXENA_TOOL_NAMES.has('search_people_index')).toBe(false);
+    expect(ARXENA_TOOL_NAMES.has('search_apollo_people')).toBe(false);
+    expect(ARXENA_TOOL_NAMES.has('search_wikidata_companies')).toBe(false);
+    expect(ARXENA_TOOL_NAMES.has('classify_taxonomy_profile')).toBe(false);
+    expect(ARXENA_TOOL_NAMES.has('list_taxonomy_slice')).toBe(false);
     expect(ARXENA_TOOL_NAMES.has('generate_linkedin_query_agent1')).toBe(false);
   });
 
