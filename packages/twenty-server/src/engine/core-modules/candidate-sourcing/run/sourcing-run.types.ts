@@ -31,10 +31,7 @@ export const isTerminalSourcingRunPhase = (phase: SourcingRunPhase): boolean =>
   TERMINAL_SOURCING_RUN_PHASES.includes(phase);
 
 // Which tool a candidate drives (see sources/tool-adapters.ts)
-export type SourcingAdapterId =
-  | 'bright_data_people'
-  | 'people_index'
-  | 'people_by_company';
+export type SourcingAdapterId = 'bright_data_people' | 'people_by_company';
 
 // One (source, query) the loop can fetch from
 export type SourcingCandidate = {

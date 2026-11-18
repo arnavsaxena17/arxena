@@ -245,11 +245,14 @@ export const buildFindPeopleSendPrompt = (
   input: FindPeopleSendPromptInput,
 ): string => {
   return [
-    `Find target people for this project (projectId=${input.projectId ?? 'none'}) at the companies already on the Companies tab.`,
+    `Find target people for this project (projectId=${input.projectId ?? 'none'}).`,
     input.icpSpecSummary
       ? `Effective ICP JSON: ${input.icpSpecSummary}`
       : 'Use workspace ICP target titles and locations.',
-    'load_skills(["sourcing"]), search, then upsert_outreach_target_people({ projectId, mode: "merge", people }) before ending.',
+    // The server-owned loop plans, probes, judges and writes the People tab
+    // itself, so the request is one tool call and a budget, not a search plan
+    'Prefer the server-driven run: learn_tools({ toolNames: ["sourcing_start"] }), ask me for a budget cap if I have not given one, then call sourcing_start({ request, budgetUsd }) and follow its question with sourcing_next. Do not call search tools one by one.',
+    'If sourcing_start is not in the catalog, fall back: load_skills(["sourcing"]), search the companies already on the Companies tab, then upsert_outreach_target_people({ projectId, mode: "merge", people }) before ending.',
     'Do not create enrollment records until I confirm Enroll.',
   ]
     .filter(Boolean)

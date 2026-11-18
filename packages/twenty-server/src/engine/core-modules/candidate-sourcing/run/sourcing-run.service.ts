@@ -8,7 +8,10 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { BRIGHT_DATA_COST_PER_RECORD_USD } from 'src/engine/core-modules/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
 import { countsTowardTarget } from 'src/engine/core-modules/candidate-sourcing/run/judge.util';
 import {
+  buildBroadenedQueries,
+  DEFAULT_LOOP_SOURCES,
   estimateProbeCostUsd,
+  normaliseQuery,
   planCandidates,
   unplannedSources,
 } from 'src/engine/core-modules/candidate-sourcing/run/plan.util';
@@ -637,9 +640,20 @@ export class SourcingRunService {
     );
   }
 
+  // The first broadening the run has not asked the source for yet, if any
+  private broaderQueryFor(state: SourcingRunState): string | undefined {
+    const planned = new Set(
+      state.candidates.map((candidate) => normaliseQuery(candidate.query)),
+    );
+
+    return buildBroadenedQueries(state.spec).find(
+      (query) => !planned.has(normaliseQuery(query)),
+    );
+  }
+
   private fixQuestion(state: SourcingRunState): SourcingRunQuestion {
     const options: SourcingRunQuestion['options'] = [];
-    const unusedSources = ['internal-index', 'bright-data'].filter(
+    const unusedSources = DEFAULT_LOOP_SOURCES.filter(
       (source) =>
         !state.candidates.some((candidate) => candidate.source === source),
     );
@@ -651,7 +665,7 @@ export class SourcingRunService {
       });
     }
 
-    if (state.spec.normalized.titles.length > 0) {
+    if (this.broaderQueryFor(state) !== undefined) {
       options.push({
         value: 'broaden_titles',
         label: `Search equivalent titles too (${state.spec.normalized.titles.slice(0, 5).join(', ')})`,
@@ -682,7 +696,7 @@ export class SourcingRunService {
       const extra = planCandidates({
         spec: state.spec,
         request: state.request,
-        sources: ['internal-index', 'bright-data'].filter(
+        sources: DEFAULT_LOOP_SOURCES.filter(
           (source) =>
             !state.candidates.some((candidate) => candidate.source === source),
         ),
@@ -693,25 +707,31 @@ export class SourcingRunService {
 
       candidates = [...candidates, ...extra];
     } else if (knob === 'broaden_titles') {
-      const titles = state.spec.normalized.titles.join(' OR ');
+      const broaderQuery = this.broaderQueryFor(state);
+      const template = state.candidates.find(
+        (candidate) => candidate.adapter === 'bright_data_people',
+      );
+
+      if (broaderQuery === undefined || template === undefined) {
+        return this.view(state);
+      }
 
       candidates = [
         ...candidates,
-        ...candidates
-          .filter((candidate) => candidate.adapter === 'people_index')
-          .slice(0, 1)
-          .map((candidate) => ({
-            ...candidate,
-            id: `${candidate.id}-fix${state.fixesUsed + 1}`,
-            query: `${titles} ${candidate.query}`.trim(),
-            fetched: 0,
-            newRows: 0,
-            qualified: 0,
-            spentUsd: 0,
-            exhausted: false,
-            probe: undefined,
-            cursor: undefined,
-          })),
+        {
+          ...template,
+          id: `${template.id}-fix${state.fixesUsed + 1}`,
+          query: broaderQuery,
+          fetched: 0,
+          newRows: 0,
+          qualified: 0,
+          spentUsd: 0,
+          exhausted: false,
+          probe: undefined,
+          cursor: undefined,
+          lastError: undefined,
+          pendingRunId: undefined,
+        },
       ];
     } else {
       return this.view(state);

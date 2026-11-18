@@ -1,5 +1,4 @@
 import {
-  buildSearchQuery,
   estimateProbeCostUsd,
   planCandidates,
   unplannedSources,
@@ -30,8 +29,8 @@ const candidate = (
   exhausted = false,
 ): SourcingCandidate => ({
   id,
-  source: 'internal-index',
-  adapter: 'people_index',
+  source: 'bright-data',
+  adapter: 'bright_data_people',
   query: 'q',
   fetched: 0,
   newRows: 0,
@@ -42,15 +41,65 @@ const candidate = (
 });
 
 describe('planCandidates', () => {
-  it('should plan the free index then Bright Data by default', () => {
+  it('should plan Bright Data on its own, one candidate per query variant', () => {
     const planned = planCandidates({
-      spec: spec(),
+      spec: spec({ budgetUsd: 2 }),
       request: 'Plant heads in Gujarat chemical companies',
     });
 
-    expect(planned.map((item) => [item.adapter, item.query])).toEqual([
-      ['people_index', 'Plant head Gujarat'],
-      ['bright_data_people', 'Plant heads in Gujarat chemical companies'],
+    expect(planned.map((item) => [item.source, item.adapter, item.query])).toEqual(
+      [
+        [
+          'bright-data',
+          'bright_data_people',
+          'Plant heads in Gujarat chemical companies',
+        ],
+        ['bright-data', 'bright_data_people', 'plant head Gujarat'],
+      ],
+    );
+    // Two probes the budget covers are two guesses, not two prices
+    expect(estimateProbeCostUsd(planned, spec({ budgetUsd: 2 }))).toBeCloseTo(
+      1,
+    );
+  });
+
+  it('should plan as many variants as the budget covers', () => {
+    const narrow = planCandidates({
+      spec: spec({ budgetUsd: 0.3 }),
+      request: 'Plant heads in Gujarat chemical companies',
+    });
+    const wide = planCandidates({
+      spec: spec({ budgetUsd: 50 }),
+      request: 'Plant heads in Gujarat chemical companies',
+    });
+
+    expect(narrow).toHaveLength(1);
+    expect(wide.length).toBeGreaterThan(narrow.length);
+    expect(wide.length).toBeLessThanOrEqual(3);
+  });
+
+  it('should order variants by precision: request, employer-focused, broad', () => {
+    const planned = planCandidates({
+      spec: spec({
+        budgetUsd: 50,
+        hard: [
+          { field: 'title', userWords: 'Sales Rep', normalized: ['sales rep'] },
+          { field: 'location', userWords: 'Mumbai', normalized: ['mumbai'] },
+          {
+            field: 'company_type',
+            userWords: 'oncology pharma',
+            normalized: ['oncology pharma'],
+          },
+        ],
+        normalized: { titles: ['sales rep'], industries: [] },
+      }),
+      request: 'sales reps at oncology pharma companies in Mumbai',
+    });
+
+    expect(planned.map((item) => item.query)).toEqual([
+      'sales reps at oncology pharma companies in Mumbai',
+      'sales rep oncology pharma Mumbai',
+      'sales rep Mumbai',
     ]);
   });
 
@@ -88,16 +137,16 @@ describe('planCandidates', () => {
 
   it('should keep only picked sources it can search, and name the rest', () => {
     const planned = planCandidates({
-      spec: spec(),
+      spec: spec({ budgetUsd: 0.3 }),
       request: 'x',
-      sources: ['linkedin', 'internal-index'],
+      sources: ['linkedin', 'bright-data'],
     });
 
-    expect(planned.map((item) => item.source)).toEqual(['internal-index']);
+    expect(planned.map((item) => item.source)).toEqual(['bright-data']);
     expect(unplannedSources(['linkedin', 'internal-index'])).toEqual([
       'linkedin',
+      'internal-index',
     ]);
-    expect(buildSearchQuery(spec({ hard: [] }))).toBe('');
   });
 });
 

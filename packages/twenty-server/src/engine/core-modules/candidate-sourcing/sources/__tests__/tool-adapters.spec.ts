@@ -19,8 +19,8 @@ const candidate = (
   overrides: Partial<SourcingCandidate> = {},
 ): SourcingCandidate => ({
   id: 'c',
-  source: 'internal-index',
-  adapter: 'people_index',
+  source: 'bright-data',
+  adapter: 'bright_data_people',
   query: 'CFO Gurgaon',
   fetched: 0,
   newRows: 0,
@@ -33,38 +33,6 @@ const candidate = (
 const base = { spec, projectId: 'p', budgetUsd: 3, remainingTarget: 7 };
 
 describe('sourcing tool adapters', () => {
-  it('should page the people index and stop on a short page', () => {
-    const adapter = SOURCING_TOOL_ADAPTERS.people_index;
-    const call = adapter.build({
-      ...base,
-      phase: 'fetch',
-      candidate: candidate({ cursor: 100 }),
-    });
-
-    expect(call).toEqual({
-      toolName: 'search_people_index',
-      args: { query: 'CFO Gurgaon', limit: 100, offset: 100, projectId: 'p' },
-    });
-    expect(
-      adapter.read(
-        { success: true, message: '', result: { fetched: 100 } },
-        call,
-      ).hasMore,
-    ).toBe(true);
-    expect(
-      adapter.read(
-        { success: true, message: '', result: { fetched: 40 } },
-        call,
-      ).hasMore,
-    ).toBe(false);
-    expect(
-      adapter.read(
-        { success: false, message: 'x', error: 'Rate limit (429)' },
-        call,
-      ),
-    ).toEqual(expect.objectContaining({ hasMore: false, costUsd: 0 }));
-  });
-
   it('should estimate then fetch Bright Data within the round share', () => {
     const adapter = SOURCING_TOOL_ADAPTERS.bright_data_people;
     const probe = adapter.build({

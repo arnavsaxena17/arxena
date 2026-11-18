@@ -11,38 +11,133 @@ import { type SourcingSpec } from 'src/engine/core-modules/outreach-command/util
 
 // Sources the loop can fetch from today, by the adapter that drives them.
 // LinkedIn and Harvest wait for the Python compiler (W3) to build their
-// boolean queries; until then a run on them is planned without them.
+// boolean queries; until then a run on them is planned without them. The
+// internal index is left out for now: its tool is off in most workspaces, and
+// planning a candidate whose tool is absent only spends a round to learn that.
 const ADAPTER_BY_SOURCE: Partial<Record<SourcingSourceKey, SourcingAdapterId>> =
   {
-    'internal-index': 'people_index',
     'bright-data': 'bright_data_people',
   };
 
-// Without a source pick the free index goes first, then Bright Data
-export const DEFAULT_LOOP_SOURCES: SourcingSourceKey[] = [
-  'internal-index',
-  'bright-data',
-];
+export const DEFAULT_LOOP_SOURCES: SourcingSourceKey[] = ['bright-data'];
 
 // Per company x role pair cap find_people_by_company spends by default
 const PEOPLE_BY_COMPANY_PER_PAIR_USD = 0.1;
+
+// One written request is one plan for the source's planner, so the same intent
+// phrased around fewer facets is a second slice of the same pool: that is what
+// keeps a run alive after its first query runs dry.
+export const MAX_QUERY_VARIANTS_PER_SOURCE = 3;
 
 const wordsOf = (spec: SourcingSpec, field: string): string[] =>
   spec.hard
     .filter((constraint) => constraint.field === field)
     .map((constraint) => constraint.userWords);
 
-// The words a search box gets: who, where, at what kind of employer
-export const buildSearchQuery = (spec: SourcingSpec): string =>
-  [
-    ...wordsOf(spec, 'title'),
-    ...wordsOf(spec, 'seniority'),
-    ...wordsOf(spec, 'function'),
-    ...wordsOf(spec, 'industry'),
-    ...wordsOf(spec, 'location'),
-  ]
+const softWordsOf = (spec: SourcingSpec, field: string): string[] =>
+  spec.soft
+    .filter((constraint) => constraint.field === field)
+    .map((constraint) => constraint.userWords);
+
+const joinWords = (...parts: string[][]): string => {
+  const seen = new Set<string>();
+
+  return parts
+    .flat()
+    .map((part) => part.trim())
+    .filter((part) => {
+      const key = part.toLowerCase();
+
+      if (part.length === 0 || seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+
+      return true;
+    })
     .join(' ')
     .trim();
+};
+
+export const normaliseQuery = (query: string): string =>
+  query.replace(/\s+/g, ' ').trim();
+
+const queryKeyOf = (query: string): string => normaliseQuery(query).toLowerCase();
+
+// What "broaden" can still ask: who and where, then who alone. Both are the
+// same intent with a qualifier dropped, so a row that comes back is a row the
+// judge can still settle — it just is not filtered by the source first.
+export const buildBroadenedQueries = (spec: SourcingSpec): string[] => {
+  const titles = spec.normalized.titles;
+  const locations = wordsOf(spec, 'location');
+
+  const seen = new Set<string>();
+
+  return [joinWords(titles, locations), joinWords(titles)]
+    .map(normaliseQuery)
+    .filter((query) => {
+      const key = queryKeyOf(query);
+
+      if (key.length === 0 || seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+
+      return true;
+    });
+};
+
+// Most specific first: the request as written, then who+where+what kind of
+// employer, then who and where alone. Each is a slice the source's planner can
+// treat as its own ask; identical phrasings collapse to one.
+export const buildQueryVariants = (
+  spec: SourcingSpec,
+  request: string,
+): string[] => {
+  const titles = spec.normalized.titles;
+  const locations = wordsOf(spec, 'location');
+  const employers = [
+    ...wordsOf(spec, 'company_type'),
+    ...wordsOf(spec, 'industry'),
+    ...softWordsOf(spec, 'industry'),
+  ];
+
+  const seen = new Set<string>();
+
+  return [
+    request,
+    joinWords(titles, employers, locations),
+    joinWords(titles, locations),
+  ]
+    .map((query) => query.replace(/\s+/g, ' ').trim())
+    .filter((query) => {
+      const key = queryKeyOf(query);
+
+      if (key.length === 0 || seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+
+      return true;
+    });
+};
+
+// Every variant after the first costs a probe estimate, so the plan only asks
+// for as many as the run's budget covers before the user sees a yield number.
+const variantsWithinBudget = (
+  variants: string[],
+  budgetUsd: number,
+): string[] => {
+  const affordable = Math.min(
+    MAX_QUERY_VARIANTS_PER_SOURCE,
+    Math.max(1, Math.floor(budgetUsd / BRIGHT_DATA_ESTIMATE_BUDGET_USD)),
+  );
+
+  return variants.slice(0, affordable);
+};
 
 const candidateOf = (
   adapter: SourcingAdapterId,
@@ -84,19 +179,27 @@ export const planCandidates = ({
     (source): source is SourcingSourceKey =>
       ADAPTER_BY_SOURCE[source as SourcingSourceKey] !== undefined,
   );
-
-  return picked.map((source, index) =>
-    candidateOf(
-      ADAPTER_BY_SOURCE[source] as SourcingAdapterId,
-      source,
-      // Bright Data's planner reads the request as written; the index needs
-      // the search words
-      source === 'bright-data'
-        ? request.trim()
-        : buildSearchQuery(spec) || request.trim(),
-      index,
-    ),
+  const variants = variantsWithinBudget(
+    buildQueryVariants(spec, request),
+    spec.budgetUsd ?? 0,
   );
+
+  const planned: SourcingCandidate[] = [];
+
+  for (const source of picked) {
+    for (const query of variants) {
+      planned.push(
+        candidateOf(
+          ADAPTER_BY_SOURCE[source] as SourcingAdapterId,
+          source,
+          query,
+          planned.length,
+        ),
+      );
+    }
+  }
+
+  return planned;
 };
 
 // The picked sources the loop cannot fetch from yet, so the card says so
@@ -121,7 +224,5 @@ export const estimateProbeCostUsd = (
           PEOPLE_BY_COMPANY_PER_PAIR_USD *
             Math.max(1, wordsOf(spec, 'company').length)
         );
-      case 'people_index':
-        return total;
     }
   }, 0);

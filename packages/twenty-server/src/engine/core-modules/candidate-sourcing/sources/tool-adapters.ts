@@ -48,8 +48,6 @@ export type SourcingToolAdapter = {
   read: (output: ToolOutput, call: SourcingToolCall) => SourcingToolReading;
 };
 
-const PROBE_PAGE_SIZE = 25;
-const FETCH_PAGE_SIZE = 100;
 // Bright Data's ludicrous fetch accepts 0.01 to 10 USD per query
 const BRIGHT_DATA_MIN_FETCH_USD = 0.01;
 const BRIGHT_DATA_MAX_FETCH_USD = 10;
@@ -91,35 +89,6 @@ const wordsOf = (spec: SourcingSpec, field: string): string[] =>
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value));
-
-const peopleIndexAdapter: SourcingToolAdapter = {
-  id: 'people_index',
-  build: ({ phase, candidate, projectId }) => ({
-    toolName: 'search_people_index',
-    args: {
-      query: candidate.query,
-      limit: phase === 'probe' ? PROBE_PAGE_SIZE : FETCH_PAGE_SIZE,
-      offset: candidate.cursor ?? 0,
-      projectId,
-    },
-  }),
-  read: (output, call) => {
-    if (!output.success) {
-      return failed(output);
-    }
-
-    const result = resultOf(output);
-    const fetched = firstNumber(result, ['fetched']) ?? 0;
-    const limit = Number(call.args.limit);
-
-    return {
-      costUsd: firstNumber(result, ['costUsd']) ?? 0,
-      counts: firstNumber(result, ['total', 'totalCount']),
-      // The index pages until a page comes back short
-      hasMore: fetched >= limit && result.hasMore !== false,
-    };
-  },
-};
 
 const brightDataPeopleAdapter: SourcingToolAdapter = {
   id: 'bright_data_people',
@@ -231,7 +200,6 @@ const peopleByCompanyAdapter: SourcingToolAdapter = {
 export const SOURCING_TOOL_ADAPTERS: Readonly<
   Record<SourcingAdapterId, SourcingToolAdapter>
 > = {
-  people_index: peopleIndexAdapter,
   bright_data_people: brightDataPeopleAdapter,
   people_by_company: peopleByCompanyAdapter,
 };

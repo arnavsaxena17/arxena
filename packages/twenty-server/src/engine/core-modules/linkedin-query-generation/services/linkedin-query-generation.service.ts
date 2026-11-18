@@ -840,14 +840,17 @@ export class LinkedinQueryGenerationService {
       ];
 
       if (this.streamProcessingService) {
-        const streamFactory = async () =>
-          openai.chat.completions.create({
-            model,
+        const streamFactory = () =>
+          this.createChatCompletionStream(
+            openai,
+            {
+              model,
+              messages,
+              stream: true,
+              response_format: toOpenAiJsonSchemaResponseFormat(schema, name),
+            },
             temperature,
-            messages,
-            stream: true,
-            response_format: toOpenAiJsonSchemaResponseFormat(schema, name),
-          });
+          );
 
         const { content: accumulatedContent } =
           await this.streamProcessingService.executeStreamingLlmCall(
@@ -871,13 +874,16 @@ export class LinkedinQueryGenerationService {
       }
 
       // Fallback when StreamProcessingService not injected (e.g. standalone LinkedinQueryGenerationModule)
-      const stream = await openai.chat.completions.create({
-        model,
+      const stream = await this.createChatCompletionStream(
+        openai,
+        {
+          model,
+          messages,
+          stream: true,
+          response_format: toOpenAiJsonSchemaResponseFormat(schema, name),
+        },
         temperature,
-        messages,
-        stream: true,
-        response_format: toOpenAiJsonSchemaResponseFormat(schema, name),
-      });
+      );
       let accumulatedContent = '';
       for await (const chunk of stream) {
         const delta = chunk.choices[0]?.delta?.content;
@@ -904,18 +910,21 @@ export class LinkedinQueryGenerationService {
     // For models that don't (e.g. gpt-3.5-turbo), fall back to plain JSON-in-text parsing.
     // const supportsStructuredOutputs = !/^gpt-3\.5/i.test(model);
 
-    const completion = await openai.chat.completions.create({
-      model,
+    const completion = await this.createChatCompletion(
+      openai,
+      {
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        response_format: toOpenAiJsonSchemaResponseFormat(schema, name),
+        // ...(supportsStructuredOutputs
+        //   ? { response_format: toOpenAiJsonSchemaResponseFormat(schema, name) }
+        //   : {}),
+      },
       temperature,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      response_format: toOpenAiJsonSchemaResponseFormat(schema, name),
-      // ...(supportsStructuredOutputs
-      //   ? { response_format: toOpenAiJsonSchemaResponseFormat(schema, name) }
-      //   : {}),
-    });
+    );
 
     const content = completion.choices[0]?.message?.content?.trim();
     if (!content) {
@@ -927,6 +936,63 @@ export class LinkedinQueryGenerationService {
 
     const raw = this.parseJson(content);
     return schema.parse(raw) as T;
+  }
+
+  // Some models accept only their provider default temperature and reject any
+  // explicit value (gpt-6-luna answers 400 to temperature 0). Drop the field and
+  // retry once, rather than keeping a model allowlist that goes stale.
+  private isUnsupportedTemperatureError(error: unknown): boolean {
+    const message = error instanceof Error ? error.message : String(error);
+
+    return (
+      /temperature/i.test(message) &&
+      /(unsupported|does not support|only the default|not supported)/i.test(
+        message,
+      )
+    );
+  }
+
+  private async createChatCompletion(
+    openai: OpenAI,
+    params: Omit<
+      OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
+      'temperature'
+    >,
+    temperature: number,
+  ): Promise<OpenAI.Chat.Completions.ChatCompletion> {
+    try {
+      return await openai.chat.completions.create({ ...params, temperature });
+    } catch (error) {
+      if (!this.isUnsupportedTemperatureError(error)) {
+        throw error;
+      }
+
+      this.logger.warn(
+        'Model rejects an explicit temperature; retrying with its default',
+      );
+
+      return openai.chat.completions.create(params);
+    }
+  }
+
+  private async createChatCompletionStream(
+    openai: OpenAI,
+    params: Omit<OpenAI.Chat.ChatCompletionCreateParamsStreaming, 'temperature'>,
+    temperature: number,
+  ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
+    try {
+      return await openai.chat.completions.create({ ...params, temperature });
+    } catch (error) {
+      if (!this.isUnsupportedTemperatureError(error)) {
+        throw error;
+      }
+
+      this.logger.warn(
+        'Model rejects an explicit temperature; retrying with its default',
+      );
+
+      return openai.chat.completions.create(params);
+    }
   }
 
   private parseJson(content: string): unknown {
