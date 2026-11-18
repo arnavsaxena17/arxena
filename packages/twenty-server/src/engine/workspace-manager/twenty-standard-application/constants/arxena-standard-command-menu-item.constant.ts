@@ -149,21 +149,25 @@ export const ARXENA_STANDARD_COMMAND_MENU_ITEMS = {
     engineComponentKey: EngineComponentKey.ARX_REFRESH_CHAT_COUNT,
     hotKeys: null,
   },
-  arxUpdateSnapshotProfiles: {
-    universalIdentifier: '7d45fedf-267c-53b1-844a-4ee59726f87a',
-    label: 'Save Resumes & Contacts from Portals',
-    icon: 'IconRefresh',
-    isPinned: false,
-    position: 211,
-    shortLabel: 'Save Resumes & Contacts from Portals',
-    availabilityType: CommandMenuItemAvailabilityType.RECORD_SELECTION,
-    conditionalAvailabilityExpression: CANDIDATE_SELECTION,
-    availabilityObjectMetadataUniversalIdentifier: null,
-    frontComponentUniversalIdentifier: null,
-    engineComponentKey:
-      EngineComponentKey.ARX_UPDATE_SNAPSHOT_PROFILES_FROM_JOB_BOARDS,
-    hotKeys: null,
-  },
+  // SIMPLIFIED_SEARCH: snapshot management is off. The item's endpoint is
+  // also commented out in CandidateSourcingController, so seeding the menu
+  // entry would only offer a button that cannot work.
+  // arxUpdateSnapshotProfiles: {
+  //   universalIdentifier: '7d45fedf-267c-53b1-844a-4ee59726f87a',
+  //   label: 'Save Resumes & Contacts from Portals',
+  //   icon: 'IconRefresh',
+  //   isPinned: false,
+  //   position: 211,
+  //   shortLabel: 'Save Resumes & Contacts from Portals',
+  //   availabilityType: CommandMenuItemAvailabilityType.RECORD_SELECTION,
+  //   conditionalAvailabilityExpression: CANDIDATE_SELECTION,
+  //   availabilityObjectMetadataUniversalIdentifier: null,
+  //   frontComponentUniversalIdentifier: null,
+  //   engineComponentKey:
+  //     EngineComponentKey.ARX_UPDATE_SNAPSHOT_PROFILES_FROM_JOB_BOARDS,
+  //   hotKeys: null,
+  // },
+
   arxSendToWhatsapp: {
     universalIdentifier: '7bc389df-e55b-592c-aafb-c0c093ee76fe',
     label: 'Send to Whatsapp Chrome Extension',

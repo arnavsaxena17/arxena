@@ -65,7 +65,9 @@ import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/ser
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
 import { JDParserService } from 'src/engine/core-modules/candidate-sourcing/services/jd-parser.service';
 import { OtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/other-fields.service';
-import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
+// SIMPLIFIED_SEARCH: snapshot management is off, so the snapshot-profile
+// hydration endpoint below and the PersonService it used are commented out.
+// import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
 import {
   createProjectIdErrorResponse,
@@ -110,7 +112,7 @@ export class CandidateSourcingController {
     private readonly candidateService: CandidateService,
     private readonly processCandidatesService: ProcessCandidatesService,
     private readonly processAiFiltersService: ProcessAiFiltersService,
-    private readonly personService: PersonService,
+    // private readonly personService: PersonService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly aiFilteringService: AiFilteringService,
     private readonly filterDescriptionProcessorService: FilterDescriptionProcessorService,
@@ -203,49 +205,52 @@ export class CandidateSourcingController {
     }
   }
 
-  @Post('update-snapshot-profiles')
-  @UseGuards(JwtAuthGuard)
-  async updateProfiles(@Req() request: any) {
-    const apiToken = request.headers.authorization
-      .split(' ')[1]
-      .replace(/[\r\n]+/g, '');
-    const { candidateIds, uniqueStringKeys, personIds, objectNameSingular } =
-      request.body as {
-        candidateIds: string[];
-        uniqueStringKeys: string[];
-        personIds: string[];
-        objectNameSingular: string;
-      };
-
-    console.log('jobCandidateIds::', candidateIds);
-    console.log('objectNameSingular::', objectNameSingular);
-    console.log('uniqueStringKeys::', uniqueStringKeys);
-    console.log('personIds::', personIds);
-
-    try {
-      for (let i = 0; i < candidateIds.length; i++) {
-        const candidateId = candidateIds[i] || '';
-        const personId = personIds[i] || '';
-        const uniqueStringKey = uniqueStringKeys[i] || '';
-
-        await this.personService.purchaseAndUpdateApnaProfile(
-          'update-snapshot-profiles',
-          'update-snapshot-profiles',
-          candidateId, // Pass individual ID instead of array
-          personId, // Pass individual ID instead of array
-          uniqueStringKey, // Pass individual key instead of array
-          apiToken,
-          '',
-        );
-      }
-
-      return { status: 'Success' };
-    } catch (error) {
-      console.log('Error in updateProfiles:', error);
-
-      return { status: 'Failed', error: error.message };
-    }
-  }
+  // SIMPLIFIED_SEARCH: snapshot management is off. This endpoint is the paid
+  // Naukri snapshot-profile hydration call (purchaseAndUpdateApnaProfile);
+  // hiding the command-menu item alone would leave it reachable by request.
+  // @Post('update-snapshot-profiles')
+  // @UseGuards(JwtAuthGuard)
+  // async updateProfiles(@Req() request: any) {
+  //   const apiToken = request.headers.authorization
+  //     .split(' ')[1]
+  //     .replace(/[\r\n]+/g, '');
+  //   const { candidateIds, uniqueStringKeys, personIds, objectNameSingular } =
+  //     request.body as {
+  //       candidateIds: string[];
+  //       uniqueStringKeys: string[];
+  //       personIds: string[];
+  //       objectNameSingular: string;
+  //     };
+  //
+  //   console.log('jobCandidateIds::', candidateIds);
+  //   console.log('objectNameSingular::', objectNameSingular);
+  //   console.log('uniqueStringKeys::', uniqueStringKeys);
+  //   console.log('personIds::', personIds);
+  //
+  //   try {
+  //     for (let i = 0; i < candidateIds.length; i++) {
+  //       const candidateId = candidateIds[i] || '';
+  //       const personId = personIds[i] || '';
+  //       const uniqueStringKey = uniqueStringKeys[i] || '';
+  //
+  //       await this.personService.purchaseAndUpdateApnaProfile(
+  //         'update-snapshot-profiles',
+  //         'update-snapshot-profiles',
+  //         candidateId, // Pass individual ID instead of array
+  //         personId, // Pass individual ID instead of array
+  //         uniqueStringKey, // Pass individual key instead of array
+  //         apiToken,
+  //         '',
+  //       );
+  //     }
+  //
+  //     return { status: 'Success' };
+  //   } catch (error) {
+  //     console.log('Error in updateProfiles:', error);
+  //
+  //     return { status: 'Failed', error: error.message };
+  //   }
+  // }
 
   @Post('process-ai-filters')
   @UseGuards(JwtAuthGuard)
