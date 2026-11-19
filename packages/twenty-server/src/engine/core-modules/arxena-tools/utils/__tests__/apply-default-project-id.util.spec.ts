@@ -18,14 +18,22 @@ describe('applyDefaultProjectId', () => {
     ).toEqual({ query: 'qsr', projectId: 'project-1' });
   });
 
-  it('should keep a projectId the model passed', () => {
+  it('should replace a projectId that differs from the browsing context', () => {
     expect(
       applyDefaultProjectId(
         'search_linkedin_people',
         { projectId: 'project-2' },
         'project-1',
       ),
-    ).toEqual({ projectId: 'project-2' });
+    ).toEqual({ projectId: 'project-1' });
+  });
+
+  it('should keep a projectId that matches the browsing context', () => {
+    const args = { projectId: 'project-1' };
+
+    expect(
+      applyDefaultProjectId('search_linkedin_people', args, 'project-1'),
+    ).toBe(args);
   });
 
   it('should leave tools that take projectId as a filter alone', () => {

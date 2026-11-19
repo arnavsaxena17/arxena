@@ -554,6 +554,40 @@ describe('FindPeopleByCompanyTool', () => {
     ).toBe('Found');
   });
 
+  it('should report a person the tab already held as alreadyOnTab, not newRows', async () => {
+    const { tool, upsert } = buildTool({
+      brightDataDocuments: [
+        buildBrightDataDocument({
+          name: 'Amruta Kawre',
+          current_title: 'Managing Director',
+          current_company_name: 'Monginis Foods Pvt. Ltd.',
+          url: 'https://in.linkedin.com/in/amruta-kawre',
+        }),
+      ],
+      organic: [],
+    });
+
+    upsert.mockResolvedValue({
+      success: true,
+      message: '',
+      result: { createdCount: 0, updatedCount: 1 },
+    });
+
+    const output = await tool.execute(
+      {
+        companies: [{ id: 'company-row-1', name: 'Monginis' }],
+        roles: ['MD'],
+        projectId: 'project-id',
+      },
+      context,
+    );
+
+    expect(output.result).toEqual(
+      expect.objectContaining({ written: 1, newRows: 0, alreadyOnTab: 1 }),
+    );
+    expect(output.message).toContain('found no one new');
+  });
+
   it('should record Not found on the company row when nobody is found', async () => {
     const { tool, upsert, writeOtherFields } = buildTool({
       brightDataDocuments: [],

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import {
   generateObject,
@@ -10,6 +10,7 @@ import {
 import { isDefined } from 'twenty-shared/utils';
 
 import { UsageOperationType } from 'src/engine/core-modules/usage/enums/usage-operation-type.enum';
+import { formatValueForLog } from 'src/engine/core-modules/tool-provider/utils/format-value-for-log.util';
 import { AiBillingService } from 'src/engine/metadata-modules/ai/ai-billing/services/ai-billing.service';
 import { type ModelId } from 'src/engine/metadata-modules/ai/ai-models/types/model-id.type';
 
@@ -29,6 +30,7 @@ type GenerateTextOptions = Parameters<typeof generateText>[0];
 // from the `ai` package so new LLM call sites are tracked automatically.
 @Injectable()
 export class AiSdkExecutionService {
+  private readonly logger = new Logger(AiSdkExecutionService.name);
   constructor(private readonly aiBillingService: AiBillingService) {}
 
   async generateObject(
@@ -41,7 +43,9 @@ export class AiSdkExecutionService {
     try {
       result = await generateObject(params.options);
 
-      console.log('result in generateObject', JSON.stringify(result, null, 2));
+      this.logger.log(
+        `[AI_SDK_EXECUTION] generateObject result\n\n${formatValueForLog(result)}`,
+      );
       return result;
     } finally {
       void this.billUsage({

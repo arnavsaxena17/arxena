@@ -67,6 +67,11 @@ import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.ty
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
+import {
+  describeTabWrite,
+  type TabWriteCounts,
+  toTabWriteCounts,
+} from 'src/engine/core-modules/tool/utils/describe-tab-write.util';
 
 import {
   type CompanyOutcome,
@@ -150,6 +155,16 @@ const capCompaniesToTarget = <TCompany>(
   const cap = Math.max(target * 2, target + 5);
 
   return companies.length <= cap ? companies : companies.slice(0, cap);
+};
+
+// count is the rows sent to the People tab; newRows and alreadyOnTab split
+// them by whether the tab already held that person
+type PeopleTabWrite = TabWriteCounts & { count: number; error?: string };
+
+const EMPTY_PEOPLE_TAB_WRITE: PeopleTabWrite = {
+  count: 0,
+  newRows: 0,
+  alreadyOnTab: 0,
 };
 
 // the upsert is a read-modify-write on the project's cached list, so writes
@@ -648,14 +663,16 @@ export class FindPeopleByCompanyTool implements Tool {
     onOutcome?: (outcome: CompanyOutcome, writtenCount: number) => void,
   ): Promise<{
     outcomes: CompanyOutcome[];
-    written: { count: number; error?: string };
+    written: PeopleTabWrite;
   }> {
     const resolvedRoles = await this.titleExpansionService.resolveRoles(
       input.roles,
     );
-    const writeResult: { count: number; errors: string[] } = {
+    const writeResult = {
       count: 0,
-      errors: [],
+      newRows: 0,
+      alreadyOnTab: 0,
+      errors: [] as string[],
     };
     // Spread the starts so rows reach the People tab as each pair resolves.
     // The first one still starts immediately
@@ -691,6 +708,8 @@ export class FindPeopleByCompanyTool implements Tool {
         await this.recordPairState(input, outcome, context.workspaceId);
 
         writeResult.count += written.count;
+        writeResult.newRows += written.newRows;
+        writeResult.alreadyOnTab += written.alreadyOnTab;
         if (isDefined(written.error)) {
           writeResult.errors.push(written.error);
         }
@@ -710,7 +729,14 @@ export class FindPeopleByCompanyTool implements Tool {
 
     return {
       outcomes,
-      written: { count: writeResult.count, error: writeResult.errors[0] },
+      written: {
+        count: writeResult.count,
+        newRows: writeResult.newRows,
+        alreadyOnTab: writeResult.alreadyOnTab,
+        ...(isDefined(writeResult.errors[0]) && {
+          error: writeResult.errors[0],
+        }),
+      },
     };
   }
 
@@ -739,7 +765,7 @@ export class FindPeopleByCompanyTool implements Tool {
   private reportOutcomes(
     input: ResolvedInput,
     outcomes: CompanyOutcome[],
-    written: { count: number; error?: string },
+    written: PeopleTabWrite,
     extra: Record<string, unknown> = {},
   ): ToolOutput {
     const spentUsd = outcomes.reduce(
@@ -763,7 +789,7 @@ export class FindPeopleByCompanyTool implements Tool {
 
     return {
       success: true,
-      message: `${pairs.byState.found} of ${pairs.expectedPairs} company x role pairs covered (${pairs.byState.none_found} none found, ${pairs.byState.ambiguous} ambiguous, ${pairs.byState.unresolvable} unresolvable), spend $${spentUsd.toFixed(3)}`,
+      message: `${pairs.byState.found} of ${pairs.expectedPairs} company x role pairs covered (${pairs.byState.none_found} none found, ${pairs.byState.ambiguous} ambiguous, ${pairs.byState.unresolvable} unresolvable), spend $${spentUsd.toFixed(3)}. ${describeTabWrite(written, 'people')}`,
       result: {
         roles: input.roles,
         plan: input.plan,
@@ -866,6 +892,8 @@ export class FindPeopleByCompanyTool implements Tool {
           .slice(0, 50),
         spentUsd: Number(spentUsd.toFixed(4)),
         written: written.count,
+        newRows: written.newRows,
+        alreadyOnTab: written.alreadyOnTab,
         ...(isDefined(written.error) && { writeError: written.error }),
         ...extra,
       },
@@ -1161,6 +1189,8 @@ export class FindPeopleByCompanyTool implements Tool {
         ),
         spentUsd: state.spentUsd + chunkSpentUsd,
         written: state.written + written.count,
+        newRows: (state.newRows ?? 0) + written.newRows,
+        alreadyOnTab: (state.alreadyOnTab ?? 0) + written.alreadyOnTab,
         errors: isDefined(written.error)
           ? [...state.errors, written.error]
           : state.errors,
@@ -1365,9 +1395,9 @@ export class FindPeopleByCompanyTool implements Tool {
     input: ResolvedInput,
     outcomes: CompanyOutcome[],
     context: ToolExecutionContext,
-  ): Promise<{ count: number; error?: string }> {
+  ): Promise<PeopleTabWrite> {
     if (!isNonEmptyString(input.projectId)) {
-      return { count: 0 };
+      return EMPTY_PEOPLE_TAB_WRITE;
     }
 
     const people = outcomes.flatMap((outcome) =>
@@ -1393,7 +1423,7 @@ export class FindPeopleByCompanyTool implements Tool {
     );
 
     if (people.length === 0) {
-      return { count: 0 };
+      return EMPTY_PEOPLE_TAB_WRITE;
     }
 
     const output = await runExclusivelyPerProject(input.projectId, () =>
@@ -1403,9 +1433,24 @@ export class FindPeopleByCompanyTool implements Tool {
       ),
     );
 
-    return output.success
-      ? { count: people.length }
-      : { count: 0, error: output.error };
+    if (!output.success) {
+      return { ...EMPTY_PEOPLE_TAB_WRITE, error: output.error };
+    }
+
+    const result = (output.result ?? {}) as {
+      createdCount?: unknown;
+      updatedCount?: unknown;
+    };
+
+    return {
+      count: people.length,
+      ...toTabWriteCounts({
+        createdCount:
+          typeof result.createdCount === 'number' ? result.createdCount : 0,
+        updatedCount:
+          typeof result.updatedCount === 'number' ? result.updatedCount : 0,
+      }),
+    };
   }
 
   // Writes the pair state to the company row, so companies with nobody

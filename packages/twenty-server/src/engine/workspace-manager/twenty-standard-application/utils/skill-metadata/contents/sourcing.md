@@ -166,7 +166,7 @@ Exa (`src-exa`) and Wikidata (`src-wikidata`) are for niche public people and fo
 
 ### Results
 
-Search results never come back as rows. Every search writes the project tab directly and returns counts (`fetched`, `added`, `duplicates`, `total`, `ephemeralWritten`) plus a `nextStep`. A search requires a project; the project is the only handle. Never read rows into the chat: no `code_interpreter`, no `extract_json_paths`, no pasting names. `get_outreach_tab` with `summarize`, `filter` or `groupBy`, and a `limit` of 10 when you need a sample.
+Search results never come back as rows. Every search writes the project tab directly and returns counts plus a `nextStep`. **Report `newRows`, never the tab total**; `newRows: 0` means no one new. A search requires a project; the project is the only handle. Never read rows into the chat: no `code_interpreter`, no `extract_json_paths`, no pasting names. `get_outreach_tab` with `summarize`, `filter` or `groupBy`, and a `limit` of 10 when you need a sample.
 
 
 `outreach_tab`: `export` (a CSV of the project tab) and `dedupe` (`against: "crm"`, `remove: true` to drop matches). Use `get_outreach_tab` for `summary` and a 10-row sample. Prefer `save_outreach_targets_to_crm` once rows are on the tab. For "find me N": fetch, `dedupe` against the CRM, report the counts, and offer export or save. Do neither without a yes.

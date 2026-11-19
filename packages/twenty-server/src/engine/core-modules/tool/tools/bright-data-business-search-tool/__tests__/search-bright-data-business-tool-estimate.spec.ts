@@ -162,9 +162,38 @@ describe('SearchBrightDataBusinessTool ludicrous estimate', () => {
         awaitingConfirmation: true,
         probeRowsWritten: 2,
         probeRowsTotal: 2,
+        newRows: 2,
+        alreadyOnTab: 0,
       }),
     );
     expect(output.result).not.toHaveProperty('listId');
+  });
+
+  it('should report no new rows when every sampled row was already on the tab', async () => {
+    const { tool, upsertCompanies } = buildTool();
+
+    upsertCompanies.execute.mockResolvedValue({
+      success: true,
+      result: {
+        writtenRowIds: ['row-1', 'row-2'],
+        createdCount: 0,
+        updatedCount: 2,
+      },
+    });
+
+    const output = await tool.execute(
+      { entity: 'company', query: 'qsr restaurants in mumbai' },
+      { workspaceId: 'workspace-1', projectId: 'project-1' },
+    );
+
+    expect(output.result).toEqual(
+      expect.objectContaining({
+        probeRowsWritten: 2,
+        newRows: 0,
+        alreadyOnTab: 2,
+      }),
+    );
+    expect(output.message).toContain('found no one new');
   });
 
   it('should still return the estimate when the probe write fails', async () => {

@@ -47,6 +47,10 @@ export type FindPeopleRunState = {
   byState: Partial<Record<FindPeopleTerminalState, number>>;
   spentUsd: number;
   written: number;
+  // Split of written by whether the People tab already held the person,
+  // summed at each chunk end. Optional so runs saved before it still load
+  newRows?: number;
+  alreadyOnTab?: number;
   errors: string[];
   halfwayReported: boolean;
   cancelRequested: boolean;
@@ -216,6 +220,8 @@ export class FindPeopleRunService {
       byState: state.byState,
       spentUsd: Number(state.spentUsd.toFixed(4)),
       written: state.written,
+      newRows: state.newRows ?? 0,
+      alreadyOnTab: state.alreadyOnTab ?? 0,
       ...(state.deferredByBudget !== undefined &&
         state.deferredByBudget > 0 && {
           deferredByBudget: state.deferredByBudget,

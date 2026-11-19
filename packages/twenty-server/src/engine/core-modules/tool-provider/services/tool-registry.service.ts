@@ -21,6 +21,8 @@ import {
   isToolIoLoggingEnabled,
 } from 'src/engine/core-modules/tool-provider/utils/format-tool-call-log.util';
 import { wrapWithErrorHandler } from 'src/engine/core-modules/tool-provider/utils/tool-error.util';
+import { sourceRefusalFor } from 'src/engine/core-modules/tool-provider/utils/sourcing-source-guard.util';
+import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
 import { ToolOutputSpillService } from 'src/engine/core-modules/tool/services/tool-output-spill.service';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { type RolePermissionConfig } from 'src/engine/twenty-orm/types/role-permission-config';
@@ -34,7 +36,40 @@ export class ToolRegistryService {
     private readonly providers: ToolProvider[],
     private readonly toolExecutorService: ToolExecutorService,
     private readonly toolOutputSpillService: ToolOutputSpillService,
+    // Optional so a context without the outreach module (or a test) still
+    // dispatches; without it no source is restricted
+    @Optional()
+    private readonly sourcingLedgerService?: SourcingLedgerService,
   ) {}
+
+  // The sources the user picked at the start of the run are binding: a tool
+  // for any other source is refused here, on the one path every call takes,
+  // rather than left to the prompt
+  private async sourceRefusal(
+    toolName: string,
+    args: Record<string, unknown> | undefined,
+    context: ToolProviderContext,
+  ): Promise<string | undefined> {
+    const projectId =
+      typeof args?.projectId === 'string' && args.projectId.length > 0
+        ? args.projectId
+        : context.projectId;
+
+    if (!projectId || !this.sourcingLedgerService) {
+      return undefined;
+    }
+
+    const events = await this.sourcingLedgerService
+      .read(context.workspaceId, projectId)
+      .catch(() => []);
+    const brief = [...events].reverse().find((event) => event.kind === 'brief');
+
+    return sourceRefusalFor(
+      toolName,
+      brief?.kind === 'brief' ? brief.sources : undefined,
+      args,
+    );
+  }
 
   async getCatalog(context: ToolProviderContext): Promise<ToolIndexEntry[]> {
     const results = await Promise.all(

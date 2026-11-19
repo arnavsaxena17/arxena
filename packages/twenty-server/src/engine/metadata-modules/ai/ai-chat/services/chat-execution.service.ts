@@ -83,6 +83,11 @@ import {
 } from 'src/engine/metadata-modules/ai/ai-chat/tools/ask-questions.tool';
 import { type ExtractedFile } from 'src/engine/metadata-modules/ai/ai-chat/types/extracted-file.type';
 import { extractCodeInterpreterFiles } from 'src/engine/metadata-modules/ai/ai-chat/utils/extract-code-interpreter-files.util';
+import {
+  formatContentPartsForLog,
+  formatMessagesForLog,
+  formatToolSetForLog,
+} from 'src/engine/metadata-modules/ai/ai-chat/utils/format-messages-for-log.util';
 import { injectMessageTimestamps } from 'src/engine/metadata-modules/ai/ai-chat/utils/inject-message-timestamps.util';
 import {
   getCacheProviderOptions,
@@ -291,12 +296,12 @@ export class ChatExecutionService {
 
     this.logger.log(
       `[AI_CHAT] preloadedTools count=${Object.keys(preloadedTools).length} ` +
-        `names=[${Object.keys(preloadedTools).join(', ')}]`,
+        `names=[${Object.keys(preloadedTools).join(', ')}]\n${formatToolSetForLog(preloadedTools)}`,
     );
 
     this.logger.log(
       `[AI_CHAT] nativeTools count=${Object.keys(nativeTools).length} ` +
-        `names=[${Object.keys(nativeTools).join(', ')}]`,
+        `names=[${Object.keys(nativeTools).join(', ')}]\n${formatToolSetForLog(nativeTools)}`,
     );
 
     const preloadedToolNames = [
@@ -307,7 +312,7 @@ export class ChatExecutionService {
 
     this.logger.log(
       `[AI_CHAT] directTools count=${Object.keys(directTools).length} ` +
-        `names=[${Object.keys(directTools).join(', ')}]`,
+        `names=[${Object.keys(directTools).join(', ')}]\n${formatToolSetForLog(directTools)}`,
     );
 
     // ToolSet is constant for the entire conversation — no mutation.
@@ -335,7 +340,7 @@ export class ChatExecutionService {
 
     this.logger.log(
       `[AI_CHAT] coreTools count=${Object.keys(coreTools).length} ` +
-        `names=[${Object.keys(coreTools).join(', ')}]`,
+        `names=[${Object.keys(coreTools).join(', ')}]\n${formatToolSetForLog(coreTools)}`,
     );
 
     const activeTools: ToolSet = {
@@ -361,7 +366,9 @@ export class ChatExecutionService {
         `names=[${Object.keys(activeTools).join(', ')}]`,
     );
 
-    this.logger.log(`[AI_CHAT] activeTools=${JSON.stringify(activeTools)} `);
+    this.logger.log(
+      `[AI_CHAT] activeTools\n\n${formatToolSetForLog(activeTools)}`,
+    );
 
     const isCodeInterpreterEnabled = this.codeInterpreterService.isEnabled();
 
@@ -391,7 +398,8 @@ export class ChatExecutionService {
 
     this.logger.log(
       `[AI_CHAT] messages afterFileParts messageCount=${processedMessages.length} ` +
-        `codeInterpreter=${isCodeInterpreterEnabled} storedFiles=${storedFiles.length}`,
+        `codeInterpreter=${isCodeInterpreterEnabled} storedFiles=${storedFiles.length}\n` +
+        formatMessagesForLog(processedMessages),
     );
 
     if (isDefined(browsingContext)) {
@@ -402,7 +410,7 @@ export class ChatExecutionService {
 
       this.logger.log(
         `[AI_CHAT] browsingContext type=${browsingContext.type} ` +
-          `contextLength=${contextString.length}`,
+          `contextLength=${contextString.length}\n${contextString}`,
       );
 
       processedMessages = this.injectBrowsingContextIntoLastUserMessage(
@@ -704,7 +712,8 @@ export class ChatExecutionService {
         this.logger.log(
           `[AI_CHAT] prepareStep #${nextStepIndex} ` +
             `messageCount=${stepMessages.length} ` +
-            `roles=[${stepMessages.map((message) => message.role).join(', ')}]`,
+            `roles=[${stepMessages.map((message) => message.role).join(', ')}]\n` +
+            `# stepMessages\n\n${formatMessagesForLog(stepMessages)}`,
         );
 
         return {
@@ -770,7 +779,7 @@ export class ChatExecutionService {
         const stepLatencyMs = Math.round(performance.now() - stepStartedAt);
         const toolNames = step.toolCalls.map((toolCall) => toolCall.toolName);
         this.logger.log(
-          `[AI_CHAT_STEP] toolCalls=${JSON.stringify(step.toolCalls, null, 2)}`,
+          `[AI_CHAT_STEP] #${currentStepIndex} output\n\n${formatContentPartsForLog(step.content)}`,
         );
         const cacheCreationTokens = extractCacheCreationTokens(
           step.providerMetadata,
@@ -787,7 +796,6 @@ export class ChatExecutionService {
         this.logger.log(
           `[AI_CHAT_STEP] #${currentStepIndex} finishReason=${step.finishReason} ` +
             `latencyMs=${stepLatencyMs} toolNames=[${toolNames.join(', ')}] ` +
-            `toolCalls=${JSON.stringify(toolNames, null, 2)} ` +
             `toolCallIds=[${step.toolCalls.map((toolCall) => toolCall.toolCallId).join(', ')}] ` +
             `contentPartTypes=[${step.content.map((part) => part.type).join(', ')}]`,
         );
@@ -950,7 +958,7 @@ export class ChatExecutionService {
     const lastUserMessage = messages[lastUserIndex];
     const note =
       browsingContextType === 'outreachCommand'
-        ? 'When the user asks to find/fetch/add/build target companies or people for this campaign, follow the rules below and the search skill write contract: pass projectId on every Find search so results write the ephemeral Companies or People tab. A project is required: never run a Find without one. Never create CRM Candidates until the user confirms Add to CRM / Enroll. Do not stop at a chat-only list. If projectId is missing or none, ask_questions which project — never guess from a similar name.'
+        ? 'When the user asks to find/fetch/add/build target companies or people for this campaign, follow the rules below and the search skill write contract: pass projectId on every Find search so results write the ephemeral Companies or People tab. A project is required: never run a Find without one. Never create CRM Candidates until the user confirms Add to CRM / Enroll. Do not stop at a chat-only list. When the companies are named, including a set you confirmed with the user, find people with find_people_by_company (sourcing section people-by-company), not a people search. If projectId is missing or none, ask_questions which project — never guess from a similar name.'
         : browsingContextType === 'orgChart'
           ? 'When the user asks to find, show, or highlight people or teams on this org chart, load org-structure-insights and call highlight_org_chart for this companyId. Only use this context if the user asks about the current chart.'
           : 'Only use this if the user explicitly asks about the current page, record, or view. Do not call any tools based on this context.';
@@ -1061,6 +1069,7 @@ export class ChatExecutionService {
       'Target people on the People tab are ephemeral (Find) until the user selects rows and confirms Add to CRM / Enroll.',
       'When the user asks to find/fetch/search people (target titles, MD/CEO, personas) for this campaign:',
       '1. load_skills(["sourcing"]) with sections: ["people"] (or ["people-by-company"] when employers are already named)',
+      '   If the companies are named, including a set you confirmed with the user (an ask_questions answer that picks the employers), switch to people-by-company and call find_people_by_company with those companies. Do not put employer names into a search_bright_data_business people query.',
       '2. Search using companies from this project when relevant',
       '3. Write to the People tab before ending the turn: pass projectId on the search. The search writes the tab; a project is required, so ask which project before searching if it is missing.',
       'Do NOT create_candidate / create_one_person / create_one_candidate for the People tab. CRM Candidate writes only after explicit user confirmation.',

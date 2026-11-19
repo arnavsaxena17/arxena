@@ -18,7 +18,7 @@ there first: it is free and it can filter on `linkedinUrl` itself.
 
 {{sources: capabilities people}}
 
-A population is this section: a title, a skill, an industry, a city, or "all software engineers who know React in SaaS companies in Mumbai". Do not call `find_people_by_company` and do not look up each person at each company. A role at companies already named loads `people-by-company`.
+A population is this section: a title, a skill, an industry or a city; do not look up each person at each company. **If the companies are named, including a set you confirmed with the user (an `ask_questions` answer), switch to `people-by-company` and call `find_people_by_company`.** Never list employers in a Bright Data people query.
 
 ### Provider map (choose by intent)
 

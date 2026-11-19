@@ -143,6 +143,7 @@ import { AddAgentToolConfigsColumnFastInstanceCommand } from './2-25/2-25-instan
 import { AddWorkspaceBillingTreatmentOverridesFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000180-add-workspace-billing-treatment-overrides';
 import { CreateProviderCallCoreTableFastInstanceCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-instance-command-fast-1793432153731-create-provider-call-core-table';
 import { AddUserWorkspaceWhatsappColumnsFastInstanceCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-instance-command-fast-1793600000000-add-user-workspace-whatsapp-columns';
+import { AddLastBrowsingContextToAgentChatThreadFastInstanceCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-instance-command-fast-1793700000000-add-last-browsing-context-to-agent-chat-thread';
 
 export const INSTANCE_COMMANDS = [
   AddViewFieldGroupIdIndexOnViewFieldFastInstanceCommand,
@@ -288,4 +289,5 @@ export const INSTANCE_COMMANDS = [
   AddWorkspaceBillingTreatmentOverridesFastInstanceCommand,
   CreateProviderCallCoreTableFastInstanceCommand,
   AddUserWorkspaceWhatsappColumnsFastInstanceCommand,
+  AddLastBrowsingContextToAgentChatThreadFastInstanceCommand,
 ];

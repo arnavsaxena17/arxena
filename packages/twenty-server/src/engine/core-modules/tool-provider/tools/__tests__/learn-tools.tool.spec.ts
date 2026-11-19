@@ -1,9 +1,13 @@
 import { type ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
-import { createLearnToolsTool } from 'src/engine/core-modules/tool-provider/tools/learn-tools.tool';
+import {
+  createLearnToolsTool,
+  LEARN_TOOLS_MAX_INLINE_BYTES,
+} from 'src/engine/core-modules/tool-provider/tools/learn-tools.tool';
 import { type ToolContext } from 'src/engine/core-modules/tool-provider/types/tool-context.type';
 
 describe('createLearnToolsTool', () => {
   const context = {} as ToolContext;
+  const oversizedPadding = 'x'.repeat(LEARN_TOOLS_MAX_INLINE_BYTES);
 
   it('surfaces "did you mean" suggestions when a tool name is not found', async () => {
     const toolRegistry = {
@@ -131,7 +135,7 @@ describe('createLearnToolsTool', () => {
       getToolInfo: jest
         .fn()
         .mockResolvedValue([
-          { name: 'find_many_people', inputSchema: { type: 'object' } },
+          { name: 'find_many_people', inputSchema: { type: 'object' }, padding: oversizedPadding },
         ]),
       suggestSimilarToolNames: jest.fn(),
       spillToolOutputIfTooLarge,
@@ -152,7 +156,7 @@ describe('createLearnToolsTool', () => {
         message: 'Learned 1 tool: find_many_people.',
         result: {
           tools: [
-            { name: 'find_many_people', inputSchema: { type: 'object' } },
+            { name: 'find_many_people', inputSchema: { type: 'object' }, padding: oversizedPadding },
           ],
         },
       },
@@ -160,7 +164,7 @@ describe('createLearnToolsTool', () => {
       'learn_tools',
     );
     expect(result.tools).toEqual([
-      { name: 'find_many_people', inputSchema: { type: 'object' } },
+      { name: 'find_many_people', inputSchema: { type: 'object' }, padding: oversizedPadding },
     ]);
     expect(result.spilledTools).toBeUndefined();
     expect(result.warnings).toBeUndefined();
@@ -186,6 +190,7 @@ describe('createLearnToolsTool', () => {
         {
           name: 'find_many_people',
           description: 'Search people',
+          padding: oversizedPadding,
           inputSchema: {
             type: 'object',
             $defs: {
@@ -261,7 +266,7 @@ describe('createLearnToolsTool', () => {
       getToolInfo: jest
         .fn()
         .mockResolvedValue([
-          { name: 'find_many_people', inputSchema: { type: 'object' } },
+          { name: 'find_many_people', inputSchema: { type: 'object' }, padding: oversizedPadding },
         ]),
       suggestSimilarToolNames: jest.fn(),
       spillToolOutputIfTooLarge,
@@ -290,5 +295,32 @@ describe('createLearnToolsTool', () => {
     expect(result.warnings).toEqual([
       'Large output spill failed; the output was truncated inline.',
     ]);
+  });
+});
+
+describe('createLearnToolsTool inline budget', () => {
+  it('keeps full schemas inline and skips the spill service below the learn_tools limit', async () => {
+    const spillToolOutputIfTooLarge = jest.fn();
+    const toolRegistry = {
+      getToolInfo: jest.fn().mockResolvedValue([
+        {
+          name: 'find_many_people',
+          description: 'x'.repeat(30000),
+          inputSchema: { type: 'object' },
+        },
+      ]),
+      suggestSimilarToolNames: jest.fn(),
+      spillToolOutputIfTooLarge,
+    } as unknown as ToolRegistryService;
+
+    const result = await createLearnToolsTool(
+      toolRegistry,
+      {} as ToolContext,
+      { spillLargeOutput: true },
+    ).execute({ toolNames: ['find_many_people'], aspects: ['schema'] });
+
+    expect(spillToolOutputIfTooLarge).not.toHaveBeenCalled();
+    expect(result.spilledTools).toBeUndefined();
+    expect(result.tools[0]).toHaveProperty('inputSchema');
   });
 });

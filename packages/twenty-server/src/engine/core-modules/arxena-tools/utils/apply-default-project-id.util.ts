@@ -10,8 +10,9 @@ const TAB_WRITING_TOOL_NAMES: ReadonlySet<string> = new Set([
   SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME,
 ]);
 
-// The model often drops projectId; the browsing context knows the project the
-// user is on, so a Find still lands on its tab
+// The model often drops projectId, and sometimes mis-copies the UUID; the
+// browsing context knows the project the user is on, so a Find still lands on
+// its tab and a mutated id never reaches the tool
 export const applyDefaultProjectId = (
   toolName: string,
   args: Record<string, unknown>,
@@ -19,6 +20,6 @@ export const applyDefaultProjectId = (
 ): Record<string, unknown> =>
   TAB_WRITING_TOOL_NAMES.has(toolName) &&
   isNonEmptyString(projectId) &&
-  !isNonEmptyString(args.projectId)
+  args.projectId !== projectId
     ? { ...args, projectId }
     : args;

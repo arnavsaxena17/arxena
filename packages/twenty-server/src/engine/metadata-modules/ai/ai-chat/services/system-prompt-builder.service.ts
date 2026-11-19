@@ -168,7 +168,9 @@ export class SystemPromptBuilderService {
       workspaceInstructions,
       includeBrowsingContext: true,
     });
-    console.log('contextSection content:', contextSection);
+    this.logger.log(
+      `[SYSTEM_PROMPT_BUILDER] contextSection\n${contextSection}`,
+    );
 
     if (contextSection) {
       parts.push(contextSection);
@@ -178,22 +180,28 @@ export class SystemPromptBuilderService {
       toolCatalog,
       preloadedTools,
     );
-    console.log('toolCatalogSection content:', toolCatalogSection);
+    this.logger.log(
+      `[SYSTEM_PROMPT_BUILDER] toolCatalogSection\n${toolCatalogSection}`,
+    );
 
     const skillCatalogSection = this.buildSkillCatalogSection(skillCatalog);
-    console.log('skillCatalogSection content:', skillCatalogSection);
+    this.logger.log(
+      `[SYSTEM_PROMPT_BUILDER] skillCatalogSection\n${skillCatalogSection}`,
+    );
 
     parts.push(toolCatalogSection);
     parts.push(skillCatalogSection);
 
     if (storedFiles && storedFiles.length > 0) {
       const uploadedFilesSection = this.buildUploadedFilesSection(storedFiles);
-      console.log('uploadedFilesSection content:', uploadedFilesSection);
+      this.logger.log(
+        `[SYSTEM_PROMPT_BUILDER] uploadedFilesSection\n${uploadedFilesSection}`,
+      );
       parts.push(uploadedFilesSection);
     }
 
     const fullPrompt = parts.join('\n');
-    console.log('fullPrompt content:', fullPrompt);
+    this.logger.log(`[SYSTEM_PROMPT_BUILDER] fullPrompt\n${fullPrompt}`);
 
     return fullPrompt;
   }

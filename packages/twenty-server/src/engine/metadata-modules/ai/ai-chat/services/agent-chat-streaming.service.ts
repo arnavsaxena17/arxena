@@ -185,6 +185,12 @@ export class AgentChatStreamingService {
       );
     }
 
+    await this.rememberBrowsingContext({
+      thread,
+      workspaceId: workspace.id,
+      browsingContext,
+    });
+
     const hasQueuedBacklog = await this.agentChatService.hasQueuedMessages({
       threadId,
       workspaceId: workspace.id,
@@ -391,7 +397,7 @@ export class AgentChatStreamingService {
           userWorkspaceId,
           workspaceId: workspace.id,
           messages,
-          browsingContext: null,
+          browsingContext: thread.lastBrowsingContext ?? null,
           modelId,
           lastUserMessageText: textPart?.text ?? '',
           lastUserMessageParts: retriedMessage.parts,
@@ -527,7 +533,7 @@ export class AgentChatStreamingService {
         userWorkspaceId,
         workspaceId: workspace.id,
         messages,
-        browsingContext: null,
+        browsingContext: thread.lastBrowsingContext ?? null,
         modelId,
         lastUserMessageText: '',
         lastUserMessageParts: [],
@@ -652,7 +658,7 @@ export class AgentChatStreamingService {
           userWorkspaceId,
           workspaceId,
           messages: uiMessages,
-          browsingContext: null,
+          browsingContext: thread.lastBrowsingContext ?? null,
           lastUserMessageText: messageText,
           lastUserMessageParts,
           hasTitle,
@@ -675,6 +681,34 @@ export class AgentChatStreamingService {
       });
       throw error;
     }
+  }
+
+  // The client sends a browsing context only with a new message, so the thread
+  // keeps it for the turns that resume without one. A message sent with no
+  // context clears it: the user has left the page it described.
+  private async rememberBrowsingContext({
+    thread,
+    workspaceId,
+    browsingContext,
+  }: {
+    thread: Pick<AgentChatThreadEntity, 'id' | 'lastBrowsingContext'>;
+    workspaceId: string;
+    browsingContext: BrowsingContextType | null;
+  }): Promise<void> {
+    const next = browsingContext ?? null;
+
+    if (
+      JSON.stringify(thread.lastBrowsingContext ?? null) ===
+      JSON.stringify(next)
+    ) {
+      return;
+    }
+
+    await this.threadRepository.update(
+      workspaceId,
+      { id: thread.id },
+      { lastBrowsingContext: next },
+    );
   }
 
   private async releaseStreamClaim(

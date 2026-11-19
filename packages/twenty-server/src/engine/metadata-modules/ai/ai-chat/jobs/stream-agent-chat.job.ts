@@ -38,6 +38,7 @@ import { AgentChatStreamingService } from 'src/engine/metadata-modules/ai/ai-cha
 import { AgentChatService } from 'src/engine/metadata-modules/ai/ai-chat/services/agent-chat.service';
 import { ChatExecutionService } from 'src/engine/metadata-modules/ai/ai-chat/services/chat-execution.service';
 import { findPendingQuestionPart } from 'src/engine/metadata-modules/ai/ai-chat/utils/find-pending-question-part.util';
+import { formatContentPartsForLog } from 'src/engine/metadata-modules/ai/ai-chat/utils/format-messages-for-log.util';
 import { AGENT_CHAT_CHECKPOINT_INTERVAL_MS } from 'src/engine/metadata-modules/ai/ai-chat/constants/agent-chat-checkpoint-interval-ms.constant';
 import { getCancelChannel } from 'src/engine/metadata-modules/ai/ai-chat/utils/get-cancel-channel.util';
 import { mapErrorToStreamError } from 'src/engine/metadata-modules/ai/ai-chat/utils/map-error-to-stream-error.util';
@@ -834,8 +835,8 @@ export class StreamAgentChatJob {
         `reason=${reason}, threadId=${threadId}, workspaceId=${workspaceId}, ` +
         `isAborted=${isAborted}, outOfCredits=${outOfCredits}, hasText=${hasText}, ` +
         `streamError=${errorDetail}, ` +
-        `inputTokens=${streamUsage.inputTokens},` +
-        `responseMessage.parts=${JSON.stringify(responseMessage.parts)}`,
+        `inputTokens=${streamUsage.inputTokens}\n\n` +
+        `# responseMessage.parts\n\n${formatContentPartsForLog(responseMessage.parts)}`,
     );
 
     if (streamError instanceof Error && isDefined(streamError.stack)) {

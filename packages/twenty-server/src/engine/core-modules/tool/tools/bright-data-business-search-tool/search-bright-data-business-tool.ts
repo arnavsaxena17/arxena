@@ -4,6 +4,8 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 
 import { OUTREACH_TAB_MAX_ROWS } from 'src/engine/core-modules/outreach-command/constants/outreach-tab.constants';
+import { SourcingBudgetService } from 'src/engine/core-modules/outreach-command/services/sourcing-budget.service';
+import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
 import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
 import {
   type BrightDataLudicrousPlan,
@@ -37,6 +39,10 @@ import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/to
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
+import {
+  describeTabWrite,
+  toTabWriteCounts,
+} from 'src/engine/core-modules/tool/utils/describe-tab-write.util';
 
 // Kept rows stay the chat count. The tab gets every paid row so the Jev
 // verdict can be Yes or No in otherFields.relevant.
@@ -115,6 +121,10 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
     private readonly upsertOutreachTargetPeopleTool: UpsertOutreachTargetPeopleTool,
     @Optional()
     private readonly personFitFilterService?: BrightDataPersonFitFilterService,
+    @Optional()
+    private readonly sourcingBudgetService?: SourcingBudgetService,
+    @Optional()
+    private readonly sourcingLedgerService?: SourcingLedgerService,
   ) {}
 
   async execute(
@@ -208,12 +218,16 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
             })
           : undefined;
 
+      const tabWrite = toTabWriteCounts(ephemeral);
+      const tabName = input.entity === 'company' ? 'companies' : 'people';
+
       return {
         success: true,
-        message:
+        message: `${
           lookup.kind === 'domain'
             ? `Found ${documents.length} company record(s) for domain ${lookup.domainHost}`
-            : `Found ${documents.length} ${input.entity} record(s) for LinkedIn URL ${lookup.linkedinUrlKey}`,
+            : `Found ${documents.length} ${input.entity} record(s) for LinkedIn URL ${lookup.linkedinUrlKey}`
+        }. ${describeTabWrite(tabWrite, tabName)}`,
         result: {
           entity: input.entity,
           mode: search.mode,
@@ -231,6 +245,7 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
           updatedCount: ephemeral.updatedCount,
           newUnique: ephemeral.createdCount,
           alreadyKnown: ephemeral.updatedCount,
+          ...tabWrite,
           probe: false,
           ...(runBudget?.runCapUsd !== undefined && { runBudget }),
           totalCountHint:
@@ -450,8 +465,10 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
       let probes: {
         written: number;
         total: number;
+        createdCount: number;
+        updatedCount: number;
         error?: string;
-      } = { written: 0, total: 0 };
+      } = { written: 0, total: 0, createdCount: 0, updatedCount: 0 };
 
       try {
         const plan = await this.brightDataLudicrousSearchService.getPlan({
@@ -469,9 +486,15 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
         );
       }
 
+      const probeTabWrite = toTabWriteCounts(probes);
+      const probeTabName = input.entity === 'company' ? 'companies' : 'people';
+
       return {
         success: true,
-        message: summary.message,
+        message:
+          probes.written > 0
+            ? `${summary.message} Sample rows: ${describeTabWrite(probeTabWrite, probeTabName)}`
+            : summary.message,
         result: {
           mode: 'ludicrous',
           query: input.query.trim(),
@@ -481,6 +504,8 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
           ...summary,
           probeRowsWritten: probes.written,
           probeRowsTotal: probes.total,
+          // The sampled rows only; the fetch reports its own newRows
+          ...probeTabWrite,
           ...(probes.error !== undefined
             ? { probeWriteError: probes.error }
             : {}),
@@ -539,11 +564,13 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
             projectId,
           );
 
+    const tabWrite = toTabWriteCounts(ephemeral);
+
     // Records never go back to the model. They are in the project tab and in
     // the dataset store for this project, so the conversation only gets counts.
     return {
       success: true,
-      message: `${reused ? 'Reused' : 'Fetched'} ${run.documents.length} relevant of ${documents.length} ${input.entity} record(s)${reused ? ' already paid for' : ` for $${run.spentUsd.toFixed(3)} (budget $${run.budgetUsd.toFixed(2)})`}. The project tab lists every fetched row; otherFields.relevant is the Jev verdict.`,
+      message: `${reused ? 'Reused' : 'Fetched'} ${run.documents.length} relevant of ${documents.length} ${input.entity} record(s)${reused ? ' already paid for' : ` for $${run.spentUsd.toFixed(3)} (budget $${run.budgetUsd.toFixed(2)})`}. ${describeTabWrite(tabWrite, input.entity === 'company' ? 'companies' : 'people')} The project tab lists every fetched row; otherFields.relevant is the Jev verdict.`,
       result: {
         entity: input.entity,
         mode: 'ludicrous',
@@ -558,6 +585,7 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
         writtenRowIds: ephemeral.writtenRowIds,
         createdCount: ephemeral.createdCount,
         updatedCount: ephemeral.updatedCount,
+        ...tabWrite,
         ...(ephemeral.error
           ? {
               ephemeralError: `Could not write to the project tab: ${ephemeral.error}. The rows are kept for this project; retry with execute: true.`,
@@ -585,12 +613,14 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
   ): Promise<{
     written: number;
     total: number;
+    createdCount: number;
+    updatedCount: number;
     error?: string;
   }> {
     const documents = documentsForPlanSamples(plan);
 
     if (documents.length === 0) {
-      return { written: 0, total: 0 };
+      return { written: 0, total: 0, createdCount: 0, updatedCount: 0 };
     }
 
     try {
@@ -601,6 +631,8 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
       return {
         written: ephemeral.written,
         total: documents.length,
+        createdCount: ephemeral.createdCount,
+        updatedCount: ephemeral.updatedCount,
         ...(ephemeral.error ? { error: ephemeral.error } : {}),
       };
     } catch (error) {
@@ -609,6 +641,8 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
       return {
         written: 0,
         total: documents.length,
+        createdCount: 0,
+        updatedCount: 0,
         error: error instanceof Error ? error.message : String(error),
       };
     }

@@ -23,6 +23,8 @@ const redact = (value: unknown): unknown => {
   return value;
 };
 
+export const redactForLog = redact;
+
 export const truncateForLog = (value: unknown, maxChars = MAX_LOGGED_CHARS) => {
   let text: string;
 

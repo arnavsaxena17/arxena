@@ -12,6 +12,11 @@ import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.
 
 export const LEARN_TOOLS_TOOL_NAME = 'learn_tools';
 
+// Tool schemas are instructions the model needs whole, not data to navigate:
+// a spilled schema costs an extra hop and clips argument hints. Spill only
+// when the batch is far beyond the general 16 KB inline limit.
+export const LEARN_TOOLS_MAX_INLINE_BYTES = 64000;
+
 const learnToolsAspectSchema = z.enum(['description', 'schema']);
 
 export type LearnToolsAspect = z.infer<typeof learnToolsAspectSchema>;
@@ -131,6 +136,13 @@ export const createLearnToolsTool = (
       message: learnToolsResult.message,
       result: { tools: learnToolsResult.tools },
     };
+
+    if (
+      Buffer.byteLength(JSON.stringify(spillCandidate)) <=
+      LEARN_TOOLS_MAX_INLINE_BYTES
+    ) {
+      return learnToolsResult;
+    }
 
     const spillOutcome = await toolRegistry.spillToolOutputIfTooLarge(
       spillCandidate,
