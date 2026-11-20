@@ -59,6 +59,28 @@ describe('skill library', () => {
     }
   });
 
+  it('should leave no provider marker when every provider is enabled', () => {
+    for (const skillName of PROVIDER_FILTERED_SKILL_NAMES) {
+      const filtered = filterSearchSkillContent(
+        getSkillContent(skillName),
+        ALL_SEARCH_TOOLS_ENABLED,
+      );
+
+      expect(filtered).not.toMatch(/<!-- [a-z0-9-]+:(start|end) -->/);
+    }
+  });
+
+  it('should keep the section markers the section splitter reads', () => {
+    const filtered = filterSearchSkillContent(
+      getSkillContent('sourcing'),
+      ALL_SEARCH_TOOLS_ENABLED,
+    );
+
+    expect(
+      selectSkillSections(filtered).availableSections.length,
+    ).toBeGreaterThan(0);
+  });
+
   it.each(Object.keys(ALL_SEARCH_TOOLS_ENABLED))(
     'should change the skill text when %s is disabled',
     (flag) => {

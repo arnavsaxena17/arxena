@@ -20,6 +20,34 @@ const readString = (data: Record<string, unknown>, key: string): string => {
   return typeof value === 'string' ? value : '';
 };
 
+// Bright Data person fields that can carry a specialty a generic title hides:
+// a "Consultant Physician" whose headline, about, skills or degree says
+// nephrology is a nephrologist
+export const PERSON_PROFILE_TEXT_FIELDS = [
+  'position',
+  'about',
+  'skills',
+  'skill',
+  'certification_names',
+  'education_details',
+  'past_job_titles',
+] as const;
+
+const toText = (value: unknown): string =>
+  typeof value === 'string'
+    ? value
+    : Array.isArray(value)
+      ? value
+          .map(toText)
+          .filter((part) => part.length > 0)
+          .join('; ')
+      : '';
+
+export const readPersonProfileText = (data: Record<string, unknown>): string =>
+  PERSON_PROFILE_TEXT_FIELDS.map((field) => toText(data[field]))
+    .filter((text) => text.length > 0)
+    .join(' | ');
+
 const readNumber = (
   data: Record<string, unknown>,
   key: string,
@@ -91,9 +119,17 @@ export const scoreRecordAgainstRubric = ({
       return false;
     }
 
-    return (
-      includes.length === 0 || includes.some((pattern) => pattern.test(title))
-    );
+    if (
+      includes.length === 0 ||
+      includes.some((pattern) => pattern.test(title))
+    ) {
+      return true;
+    }
+
+    // A generic title passes when the profile itself names the specialty
+    const profileText = readPersonProfileText(data);
+
+    return includes.some((pattern) => pattern.test(profileText));
   }
 
   const industry = readString(data, 'industry');

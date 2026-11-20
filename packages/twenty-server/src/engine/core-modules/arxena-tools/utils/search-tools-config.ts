@@ -345,5 +345,9 @@ export const filterSearchSkillContent = (
     }
   }
 
-  return filteredContent;
+  // Markers exist only to be stripped by the branches above; an enabled
+  // provider keeps its block, so drop whatever markers are left. The section
+  // markers (`<!-- skill-section:name -->`) have no `:start`, so they survive
+  // for select-skill-sections.util to split on.
+  return filteredContent.replace(/<!-- [a-z0-9-]+:(start|end) -->\n?/g, '');
 };

@@ -1,3 +1,4 @@
+import { WriteSearchRowsToProjectTabService } from 'src/engine/core-modules/tool/tools/outreach-tab-tool/write-search-rows-to-project-tab.service';
 import { type SourcingLedgerEvent } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
 import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
 import { type CompanyOutcome } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company.types';
@@ -118,7 +119,10 @@ const build = ({
   budget.getStatus.mockResolvedValue({ spentUsd: 0, exhausted: false });
   const tool = new FindPeopleByCompanyTool(
     { lookupPair } as never,
-    { execute: jest.fn().mockResolvedValue({ success: true }) } as never,
+    new WriteSearchRowsToProjectTabService(
+      { execute: jest.fn() } as never,
+      { execute: jest.fn().mockResolvedValue({ success: true }) } as never,
+    ),
     {
       resolveRoles: jest.fn().mockResolvedValue({ searchTitles: [] }),
     } as never,

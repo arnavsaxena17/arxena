@@ -15,6 +15,10 @@ import {
 } from 'src/engine/core-modules/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
 import { BRIGHT_DATA_LUDICROUS_DEFAULT_VIEW_FIELDS } from 'src/engine/core-modules/bright-data/ludicrous/constants/bright-data-ludicrous-field-registry.const';
 import {
+  specialtyPhrasesFor,
+  splitTaxonomyTitles,
+} from 'src/engine/core-modules/bright-data/ludicrous/utils/split-taxonomy-titles.util';
+import {
   brightDataLudicrousPlanLlmSchema,
   type BrightDataLudicrousPlanLlmOutput,
 } from 'src/engine/core-modules/bright-data/ludicrous/schemas/bright-data-ludicrous-plan-llm.schema';
@@ -55,6 +59,11 @@ const PLANNER_MAX_OUTPUT_TOKENS = 6_000;
 const PLANNER_ATTEMPT_TIMEOUT_MS = 45_000;
 const PLANNER_MAX_MODEL_ATTEMPTS = 3;
 const TAXONOMY_MAX_TITLES_PER_SHARD = 12;
+// A plan without title patterns keeps every taxonomy title, as before
+const EMPTY_TITLE_RUBRIC = {
+  titleIncludePatterns: [] as string[],
+  titleExcludePatterns: [] as string[],
+};
 
 export type BrightDataLudicrousEstimateInput = {
   workspaceId: string;
@@ -366,6 +375,11 @@ export class BrightDataLudicrousPlannerService {
       return;
     }
 
+    // Generic titles the taxonomy offered, with the slice they came from, so
+    // one extra slice can ask the profile text for the specialty instead
+    const genericTitles = new Set<string>();
+    let genericSource: (typeof generated.shards)[number] | undefined;
+
     for (const shard of generated.shards) {
       const { titles, booleanTitleExpression } = shard.filter;
 
@@ -378,19 +392,82 @@ export class BrightDataLudicrousPlannerService {
           titles,
           { maxTitles: TAXONOMY_MAX_TITLES_PER_SHARD },
         );
+        const split = splitTaxonomyTitles({
+          added: expansion.added,
+          rubric: generated.rubric ?? EMPTY_TITLE_RUBRIC,
+          excludeTitleWords: shard.filter.excludeTitleWords ?? [],
+        });
 
-        if (expansion.added.length > 0) {
-          shard.filter.titles = expansion.titles;
+        if (split.specific.length > 0) {
+          shard.filter.titles = [...new Set([...titles, ...split.specific])];
           this.logger.log(
-            `Shard ${shard.key}: job-title taxonomy added ${expansion.added.join(', ')}`,
+            `Shard ${shard.key}: job-title taxonomy added ${split.specific.join(', ')}`,
           );
         }
+
+        if (split.generic.length > 0 || split.excluded.length > 0) {
+          this.logger.log(
+            `Shard ${shard.key}: kept out of the title filter: generic ${split.generic.join(', ') || 'none'}; excluded ${split.excluded.join(', ') || 'none'}`,
+          );
+        }
+
+        split.generic.forEach((title) => genericTitles.add(title));
+        genericSource ??= split.generic.length > 0 ? shard : undefined;
       } catch (error) {
         this.logger.warn(
           `Job-title taxonomy expansion skipped for shard ${shard.key}: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     }
+
+    this.addGenericTitleShard(generated, genericSource, [...genericTitles]);
+  }
+
+  // A "Consultant Physician" whose profile says nephrology is a nephrologist.
+  // Generic titles are searched only together with the specialty words in the
+  // profile text, in a last slice that is fetched after the title matches and
+  // cut first when the budget runs out.
+  private addGenericTitleShard(
+    generated: BrightDataLudicrousPlanLlmOutput,
+    source: BrightDataLudicrousPlanLlmOutput['shards'][number] | undefined,
+    genericTitles: string[],
+  ): void {
+    if (
+      !isDefined(source) ||
+      genericTitles.length === 0 ||
+      generated.shards.length >= BRIGHT_DATA_LUDICROUS_MAX_SHARDS
+    ) {
+      return;
+    }
+
+    const specialtyPhrases = specialtyPhrasesFor({
+      typedTitles: source.filter.titles,
+      rubric: generated.rubric ?? EMPTY_TITLE_RUBRIC,
+    });
+
+    if (specialtyPhrases.length === 0) {
+      return;
+    }
+
+    const key = `${source.key}_generic_titles`;
+
+    generated.shards.push({
+      key,
+      rationale: `Generic titles (${genericTitles.join(', ')}) whose profile names the specialty (${specialtyPhrases.join(', ')})`,
+      priority:
+        Math.max(...generated.shards.map((shard) => shard.priority)) + 1,
+      filter: {
+        ...source.filter,
+        titles: genericTitles,
+        booleanTitleExpression: '',
+        skills: [],
+        specialtiesAny: specialtyPhrases,
+      },
+    });
+
+    this.logger.log(
+      `Shard ${key}: generic titles ${genericTitles.join(', ')} only where the profile says ${specialtyPhrases.join(' or ')}`,
+    );
   }
 
   private async resolveModel(input: {

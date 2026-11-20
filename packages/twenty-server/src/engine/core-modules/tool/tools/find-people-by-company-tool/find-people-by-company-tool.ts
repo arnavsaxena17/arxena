@@ -40,6 +40,7 @@ import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/
 import {
   computePairFunnel,
   summarizePairStates,
+  latestBriefForThread,
   type SourcingBrief,
   SOURCING_PLAN_DEFAULTS,
 } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
@@ -58,7 +59,12 @@ import {
 
 import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 
-import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
+import { WriteSearchRowsToProjectTabService } from 'src/engine/core-modules/tool/tools/outreach-tab-tool/write-search-rows-to-project-tab.service';
+import {
+  CompanyNameResolverService,
+  type ResolvedCompanyFromRawName,
+} from 'src/engine/core-modules/org-chart/services/company-name-resolver.service';
+import { buildTypedCompanyRow } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/enrich-typed-company.util';
 
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 
@@ -70,7 +76,6 @@ import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 import {
   describeTabWrite,
   type TabWriteCounts,
-  toTabWriteCounts,
 } from 'src/engine/core-modules/tool/utils/describe-tab-write.util';
 
 import {
@@ -157,8 +162,9 @@ const capCompaniesToTarget = <TCompany>(
   return companies.length <= cap ? companies : companies.slice(0, cap);
 };
 
-// count is the rows sent to the People tab; newRows and alreadyOnTab split
-// them by whether the tab already held that person
+// The run's total over every company's write: count is the rows sent to the
+// People tab, split by whether the tab already held that person. The shared
+// tab writer produces each company's numbers; this only adds them up.
 type PeopleTabWrite = TabWriteCounts & { count: number; error?: string };
 
 const EMPTY_PEOPLE_TAB_WRITE: PeopleTabWrite = {
@@ -232,7 +238,7 @@ export class FindPeopleByCompanyTool implements Tool {
 
   constructor(
     private readonly findPeopleCascadeService: FindPeopleCascadeService,
-    private readonly upsertOutreachTargetPeopleTool: UpsertOutreachTargetPeopleTool,
+    private readonly writeSearchRowsToProjectTabService: WriteSearchRowsToProjectTabService,
     private readonly titleExpansionService: TitleExpansionService,
     private readonly outreachTabService: OutreachTabService,
     private readonly outreachTableViewService: OutreachTableViewService,
@@ -245,6 +251,10 @@ export class FindPeopleByCompanyTool implements Tool {
     private readonly upsertOutreachTargetCompaniesTool?: UpsertOutreachTargetCompaniesTool,
     @Optional()
     private readonly sourcingBudgetService?: SourcingBudgetService,
+    // Fills a typed company's industry, size and LinkedIn from the company
+    // index before it is written to the Companies tab
+    @Optional()
+    private readonly companyNameResolverService?: CompanyNameResolverService,
   ) {}
 
   async execute(
@@ -273,7 +283,11 @@ export class FindPeopleByCompanyTool implements Tool {
       return this.readRun(parsed.data, context.workspaceId);
     }
 
-    const planned = await this.applyPlan(parsed.data, context.workspaceId);
+    const planned = await this.applyPlan(
+      parsed.data,
+      context.workspaceId,
+      context.threadId,
+    );
 
     if (typeof planned === 'string') {
       return {
@@ -346,7 +360,10 @@ export class FindPeopleByCompanyTool implements Tool {
 
     const input = { ...planned, companies };
     const startedAt = Date.now();
-    const { outcomes, written } = await this.processCompanies(input, context);
+    const resultSetId = WriteSearchRowsToProjectTabService.newResultSetId();
+    const { outcomes, written } = await this.processCompanies(input, context, {
+      resultSetId,
+    });
     const spentUsd = outcomes.reduce(
       (total, outcome) => total + outcome.spentUsd,
       0,
@@ -372,6 +389,7 @@ export class FindPeopleByCompanyTool implements Tool {
     }
 
     return this.reportOutcomes(input, outcomes, written, {
+      resultSetId,
       ...(isPilot && {
         pilot: {
           done: companies.length,
@@ -466,9 +484,10 @@ export class FindPeopleByCompanyTool implements Tool {
   private async applyPlan(
     input: FindPeopleByCompanyInput,
     workspaceId: string,
+    threadId?: string,
   ): Promise<(FindPeopleByCompanyInput & { plan: FindPeoplePlan }) | string> {
     const brief = isNonEmptyString(input.projectId)
-      ? await this.readBrief(workspaceId, input.projectId)
+      ? await this.readBrief(workspaceId, input.projectId, threadId)
       : undefined;
     const allowedByBrief = brief?.sources;
 
@@ -579,6 +598,34 @@ export class FindPeopleByCompanyTool implements Tool {
     return { ...input, roles, sources, plan };
   }
 
+  // One index lookup per typed company that is missing industry or size,
+  // aligned with the input. The index is free and cached, and the cascade
+  // asks it the same question, so this costs no extra spend. A failed lookup
+  // leaves the row as typed.
+  private async resolveTypedCompanies(
+    companies: FindPeopleByCompanyTarget[],
+  ): Promise<Array<ResolvedCompanyFromRawName | null>> {
+    const resolver = this.companyNameResolverService;
+
+    if (!isDefined(resolver)) {
+      return companies.map(() => null);
+    }
+
+    return Promise.all(
+      companies.map((company) =>
+        isNonEmptyString(company.industry) && isDefined(company.employees)
+          ? Promise.resolve(null)
+          : resolver.resolveFromRawCompanyName(company.name).catch((error) => {
+              this.logger.warn(
+                `find_people_by_company could not look up "${company.name}" in the company index: ${this.describe(error)}`,
+              );
+
+              return null;
+            }),
+      ),
+    );
+  }
+
   // A list the model typed has no rows, so its pair states would have nowhere
   // to live and the ledger could not report coverage. Merge it onto the tab
   // first and keep the row ids.
@@ -597,20 +644,14 @@ export class FindPeopleByCompanyTool implements Tool {
     }
 
     try {
+      const resolved = await this.resolveTypedCompanies(companies);
       const written = await this.upsertOutreachTargetCompaniesTool.execute(
         {
           projectId: input.projectId,
           mode: 'merge',
-          companies: companies.map((company) => ({
-            name: company.name,
-            ...(isNonEmptyString(company.domain) && { domain: company.domain }),
-            ...(isNonEmptyString(company.industry) && {
-              industry: company.industry,
-            }),
-            ...(isDefined(company.employees) && {
-              employees: String(company.employees),
-            }),
-          })),
+          companies: companies.map((company, index) =>
+            buildTypedCompanyRow(company, resolved[index]),
+          ),
         },
         context,
       );
@@ -638,19 +679,18 @@ export class FindPeopleByCompanyTool implements Tool {
     }
   }
 
+  // This thread's brief; an earlier chat's brief is another request's plan
   private async readBrief(
     workspaceId: string,
     projectId: string,
+    threadId?: string,
   ): Promise<SourcingBrief | undefined> {
     const events =
       (await this.sourcingLedgerService
         ?.read(workspaceId, projectId)
         .catch(() => [])) ?? [];
-    const latest = [...events]
-      .reverse()
-      .find((event) => event.kind === 'brief');
 
-    return latest?.kind === 'brief' ? latest : undefined;
+    return latestBriefForThread(events, threadId);
   }
 
   // One code path for the inline call and for every background chunk: look
@@ -659,8 +699,16 @@ export class FindPeopleByCompanyTool implements Tool {
   async processCompanies(
     input: ResolvedInput,
     context: ToolExecutionContext,
-    // Called as each company finishes, so a long chunk can show progress
-    onOutcome?: (outcome: CompanyOutcome, writtenCount: number) => void,
+    {
+      resultSetId,
+      onOutcome,
+    }: {
+      // One id per lookup (a background run uses its runId), stamped on every
+      // row it writes so the tab can tell this lookup's people from earlier ones
+      resultSetId: string;
+      // Called as each company finishes, so a long chunk can show progress
+      onOutcome?: (outcome: CompanyOutcome, writtenCount: number) => void;
+    },
   ): Promise<{
     outcomes: CompanyOutcome[];
     written: PeopleTabWrite;
@@ -703,7 +751,12 @@ export class FindPeopleByCompanyTool implements Tool {
         outcome.companyRowId = company.id;
         this.logOutcome(input, outcome);
 
-        const written = await this.persist(input, [outcome], context);
+        const written = await this.persist(
+          input,
+          [outcome],
+          context,
+          resultSetId,
+        );
 
         await this.recordPairState(input, outcome, context.workspaceId);
 
@@ -1153,16 +1206,20 @@ export class FindPeopleByCompanyTool implements Tool {
       const { outcomes, written } = await this.processCompanies(
         { ...state.input, companies: chunk },
         context,
-        (outcome, writtenCount) => {
-          progress.done += 1;
-          progress.spentUsd += outcome.spentUsd;
-          progress.written += writtenCount;
-          progress.byState[outcome.terminalState] =
-            (progress.byState[outcome.terminalState] ?? 0) + 1;
+        {
+          // Every chunk of one background run is one search
+          resultSetId: runId,
+          onOutcome: (outcome, writtenCount) => {
+            progress.done += 1;
+            progress.spentUsd += outcome.spentUsd;
+            progress.written += writtenCount;
+            progress.byState[outcome.terminalState] =
+              (progress.byState[outcome.terminalState] ?? 0) + 1;
 
-          if (progress.done - progress.saved >= 5) {
-            void saveProgress();
-          }
+            if (progress.done - progress.saved >= 5) {
+              void saveProgress();
+            }
+          },
         },
       );
       const latest = (await runService.getRun(runId)) ?? state;
@@ -1395,6 +1452,7 @@ export class FindPeopleByCompanyTool implements Tool {
     input: ResolvedInput,
     outcomes: CompanyOutcome[],
     context: ToolExecutionContext,
+    resultSetId: string,
   ): Promise<PeopleTabWrite> {
     if (!isNonEmptyString(input.projectId)) {
       return EMPTY_PEOPLE_TAB_WRITE;
@@ -1426,30 +1484,20 @@ export class FindPeopleByCompanyTool implements Tool {
       return EMPTY_PEOPLE_TAB_WRITE;
     }
 
-    const output = await runExclusivelyPerProject(input.projectId, () =>
-      this.upsertOutreachTargetPeopleTool.execute(
-        { projectId: input.projectId as string, mode: 'merge', people },
+    const write = await runExclusivelyPerProject(input.projectId, () =>
+      this.writeSearchRowsToProjectTabService.writePeople({
+        projectId: input.projectId as string,
+        people,
         context,
-      ),
+        resultSetId,
+      }),
     );
 
-    if (!output.success) {
-      return { ...EMPTY_PEOPLE_TAB_WRITE, error: output.error };
-    }
-
-    const result = (output.result ?? {}) as {
-      createdCount?: unknown;
-      updatedCount?: unknown;
-    };
-
     return {
-      count: people.length,
-      ...toTabWriteCounts({
-        createdCount:
-          typeof result.createdCount === 'number' ? result.createdCount : 0,
-        updatedCount:
-          typeof result.updatedCount === 'number' ? result.updatedCount : 0,
-      }),
+      count: write.written,
+      newRows: write.newRows,
+      alreadyOnTab: write.alreadyOnTab,
+      ...(isDefined(write.error) && { error: write.error }),
     };
   }
 

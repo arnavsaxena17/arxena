@@ -23,6 +23,7 @@ import {
 import { wrapWithErrorHandler } from 'src/engine/core-modules/tool-provider/utils/tool-error.util';
 import { sourceRefusalFor } from 'src/engine/core-modules/tool-provider/utils/sourcing-source-guard.util';
 import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
+import { latestBriefForThread } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
 import { ToolOutputSpillService } from 'src/engine/core-modules/tool/services/tool-output-spill.service';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { type RolePermissionConfig } from 'src/engine/twenty-orm/types/role-permission-config';
@@ -62,13 +63,11 @@ export class ToolRegistryService {
     const events = await this.sourcingLedgerService
       .read(context.workspaceId, projectId)
       .catch(() => []);
-    const brief = [...events].reverse().find((event) => event.kind === 'brief');
+    // Only this request's brief binds: an earlier chat's source choice must not
+    // refuse a source the user never declined here
+    const brief = latestBriefForThread(events, context.threadId);
 
-    return sourceRefusalFor(
-      toolName,
-      brief?.kind === 'brief' ? brief.sources : undefined,
-      args,
-    );
+    return sourceRefusalFor(toolName, brief?.sources, args);
   }
 
   async getCatalog(context: ToolProviderContext): Promise<ToolIndexEntry[]> {

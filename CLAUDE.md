@@ -230,3 +230,6 @@ Screenshots, browser captures, and other debug output never go in the repo root.
 - `tsconfig.base.json` - Base TypeScript configuration
 - `package.json` - Root package with workspace definitions
 - `.cursor/rules/` - Detailed development guidelines and best practices
+- `/Users/arnavsaxena/Sync` - has iterm2 logs. Use when you need to access server, front, worker logs and iterm2 has started the servers
+
+

@@ -220,6 +220,8 @@ export class FindPeopleRunService {
       byState: state.byState,
       spentUsd: Number(state.spentUsd.toFixed(4)),
       written: state.written,
+      // The run's rows carry it in otherFields.resultSetIds
+      resultSetId: state.runId,
       newRows: state.newRows ?? 0,
       alreadyOnTab: state.alreadyOnTab ?? 0,
       ...(state.deferredByBudget !== undefined &&

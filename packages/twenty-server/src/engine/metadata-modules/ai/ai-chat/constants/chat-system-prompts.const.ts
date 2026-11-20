@@ -28,11 +28,12 @@ const loadPromptSection = (fileName: string): string =>
 const SHARED_ROUTING_LINES_PLACEHOLDER = '{{SHARED_ROUTING_LINES}}';
 
 export const CHAT_SYSTEM_PROMPTS = {
-  CORE: loadPromptSection('core.md').replace(
-    SHARED_ROUTING_LINES_PLACEHOLDER,
-    SHARED_ROUTING_LINES,
-  ),
-  CHAT_UI: loadPromptSection('chat-ui.md'),
-  MCP_TRANSPORT: loadPromptSection('mcp-transport.md'),
-  RESPONSE_FORMAT: loadPromptSection('response-format.md'),
+  // CORE: loadPromptSection('core.md').replace(
+  //   SHARED_ROUTING_LINES_PLACEHOLDER,
+  //   SHARED_ROUTING_LINES,
+  // ),
+  CORE: loadPromptSection('search-core.md'),
+  // CHAT_UI: loadPromptSection('chat-ui.md'),
+  // MCP_TRANSPORT: loadPromptSection('mcp-transport.md'),
+  // RESPONSE_FORMAT: loadPromptSection('response-format.md'),
 };

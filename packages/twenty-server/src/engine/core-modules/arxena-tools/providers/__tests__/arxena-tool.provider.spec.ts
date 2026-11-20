@@ -29,10 +29,13 @@ const buildProvider = () => {
   const sourcingLedgerService = { append: jest.fn(async () => undefined) };
   const writeService = {
     write: jest.fn(async ({ rows }: { rows: unknown[]; projectId?: string }) => ({
+      resultSetId: 'result-set-1',
       written: rows.length,
       total: rows.length,
-      createdCount: rows.length,
-      updatedCount: 0,
+      newRows: rows.length,
+      alreadyOnTab: 0,
+      writtenRowIds: [],
+      summary: `${rows.length} new rows added to the people tab; 0 rows were already there. Report newRows, not the tab total.`,
     })),
   };
 
@@ -205,8 +208,9 @@ describe('ArxenaToolProvider tab routing', () => {
     const result = output.result as Record<string, unknown>;
 
     expect(writeService.write).toHaveBeenCalledTimes(1);
-    expect(result.total).toBe(5);
-    expect(result.newUnique).toBe(5);
+    expect(result.written).toBe(5);
+    expect(result.newRows).toBe(5);
+    expect(result.resultSetId).toBe('result-set-1');
     expect(result.cursor).toBe('full-cursor');
     expect(JSON.stringify(output)).not.toContain('Person 1');
     expect(JSON.stringify(output).length).toBeLessThan(1500);

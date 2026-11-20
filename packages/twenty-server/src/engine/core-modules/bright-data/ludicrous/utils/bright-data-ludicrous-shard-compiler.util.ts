@@ -117,8 +117,17 @@ const compilePeople = (
     anyOfPhrases('current_company_name', clean(filter.companyNames)),
     anyOfPhrases('current_company_industry', clean(filter.industries)),
     anyOfPhrases('skill', clean(filter.skills)),
+    // A specialty a generic title hides: any of the words in the about text,
+    // the skills or anywhere else on the profile
+    anyOfPhrasesInFields(
+      PERSON_SPECIALTY_TEXT_FIELDS,
+      clean(filter.specialtiesAny),
+    ),
   ];
 };
+
+// Bright Data people fields that hold free text about the person's work
+export const PERSON_SPECIALTY_TEXT_FIELDS = ['about', 'skill', 'all_text'];
 
 const compileCompany = (
   filter: Partial<BrightDataLudicrousShardFilter>,

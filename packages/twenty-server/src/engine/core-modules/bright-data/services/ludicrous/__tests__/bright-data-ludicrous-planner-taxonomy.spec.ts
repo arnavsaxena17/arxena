@@ -65,6 +65,62 @@ describe('BrightDataLudicrousPlannerService taxonomy titles', () => {
     ]);
   });
 
+  it('should keep a specialty slice to titles that still name the specialty', async () => {
+    const expandTitles = jest.fn(async () => ({
+      titles: [
+        'nephrologist',
+        'consultant nephrologist',
+        'consultant physician',
+        'senior consultant physician',
+        'physician assistant',
+      ],
+      added: [
+        'consultant nephrologist',
+        'consultant physician',
+        'senior consultant physician',
+        'physician assistant',
+      ],
+      taxonomyAvailable: true,
+    }));
+    const generated = {
+      ...buildGenerated({
+        titles: ['nephrologist'],
+        excludeTitleWords: ['assistant'],
+        cities: ['Mumbai'],
+        companyNames: [],
+      }),
+      rubric: {
+        titleIncludePatterns: ['nephrolog', 'nephrology'],
+        titleExcludePatterns: ['technician'],
+        industryIncludePatterns: [],
+        countryCodes: ['IN'],
+        companySizeFromBuckets: [],
+      },
+    } as unknown as BrightDataLudicrousPlanLlmOutput;
+
+    await buildService(expandTitles).addTaxonomyTitles('people', generated);
+
+    expect(generated.shards[0].filter.titles).toEqual([
+      'nephrologist',
+      'consultant nephrologist',
+    ]);
+    // Generic titles get their own last slice that needs the specialty in the
+    // profile; "physician assistant" is ruled out by the slice's own exclusion
+    expect(generated.shards).toHaveLength(2);
+    expect(generated.shards[1]).toEqual(
+      expect.objectContaining({
+        key: 'ceo_in_generic_titles',
+        priority: 2,
+        filter: expect.objectContaining({
+          titles: ['consultant physician', 'senior consultant physician'],
+          specialtiesAny: ['nephrology', 'nephrologist'],
+          cities: ['Mumbai'],
+          skills: [],
+        }),
+      }),
+    );
+  });
+
   it('should leave a user-written boolean title string alone', async () => {
     const expandTitles = jest.fn();
     const generated = buildGenerated({

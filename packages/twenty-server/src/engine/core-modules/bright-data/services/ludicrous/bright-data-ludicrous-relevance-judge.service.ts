@@ -10,12 +10,22 @@ import {
 import {
   computeRubricPrecision,
   passesRubricHardConstraints,
+  readPersonProfileText,
   scoreRecordAgainstRubric,
 } from 'src/engine/core-modules/bright-data/ludicrous/utils/bright-data-ludicrous-relevance.util';
 import { getFitmentThreshold } from 'src/engine/core-modules/candidate-sourcing/services/fitment/fitment-threshold.util';
 import { JEV_MODEL_ID } from 'src/engine/metadata-modules/ai/ai-evaluation/constants/jev.const';
 
 const RELEVANT_FIELD = 'relevant';
+
+// Enough of the about text and degrees to show a specialty, short enough that
+// a page of people stays a cheap judgement
+const PROFILE_TEXT_MAX_CHARS = 600;
+
+// Planner criteria often say "a title explicitly indicating X". A generic
+// title with the specialty in the profile is still X, so the judge is told so.
+const GENERIC_TITLE_RULE =
+  'A generic title (consultant, physician, doctor, specialist, manager, engineer) still matches when the headline, profile text, skills or degrees name the required specialty or function. Judge the person, not only the title wording.';
 
 export type BrightDataRelevanceVerdict = {
   brightId: string;
@@ -36,13 +46,21 @@ const toFilterRecord = (
   const data = document.data;
 
   if (entity === 'people') {
+    // The title alone hides a specialty behind "Consultant" or "Physician";
+    // the headline, about, skills and degrees are where it shows
+    const profileText = readPersonProfileText(data);
+
     return {
       id: document.brightId,
       name: data.name,
       title: data.current_title,
       company: data.current_company_name,
       location: data.location,
-      headline: data.current_title,
+      headline:
+        typeof data.position === 'string' && data.position.length > 0
+          ? data.position
+          : data.current_title,
+      profile: profileText.slice(0, PROFILE_TEXT_MAX_CHARS),
     };
   }
 
@@ -108,7 +126,10 @@ export class BrightDataLudicrousRelevanceJudgeService {
     const spec: FilterSpec = {
       name: 'BrightDataLudicrousRelevance',
       subject: entity === 'people' ? 'person' : 'company',
-      criteria: relevanceCriteria,
+      criteria:
+        entity === 'people'
+          ? `${relevanceCriteria}\n${GENERIC_TITLE_RULE}`
+          : relevanceCriteria,
       fields: [
         {
           name: RELEVANT_FIELD,
@@ -125,6 +146,7 @@ export class BrightDataLudicrousRelevanceJudgeService {
         'location',
         'headline',
         'industry',
+        'profile',
       ],
       concurrency: 5,
       // Relevance is a fitment judgement: it passes at the server's bar

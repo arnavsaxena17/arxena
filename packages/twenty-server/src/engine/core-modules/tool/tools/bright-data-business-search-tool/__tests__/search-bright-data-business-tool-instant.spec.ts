@@ -1,3 +1,4 @@
+import { WriteSearchRowsToProjectTabService } from 'src/engine/core-modules/tool/tools/outreach-tab-tool/write-search-rows-to-project-tab.service';
 import { SearchBrightDataBusinessTool } from 'src/engine/core-modules/tool/tools/bright-data-business-search-tool/search-bright-data-business-tool';
 
 const smita = {
@@ -48,8 +49,10 @@ const buildTool = (documents: Array<Record<string, unknown>>) => {
   const tool = new SearchBrightDataBusinessTool(
     businessSearch as never,
     ludicrous as never,
-    upsertCompanies as never,
-    upsertPeople as never,
+    new WriteSearchRowsToProjectTabService(
+      upsertCompanies as never,
+      upsertPeople as never,
+    ),
   );
 
   return {
@@ -133,7 +136,7 @@ describe('SearchBrightDataBusinessTool instant', () => {
         lookup: 'probe',
         count: 2,
         matched: 4_200,
-        ephemeralWritten: 2,
+        written: 2,
         probe: true,
         previewRows: expect.arrayContaining([
           expect.objectContaining({ name: 'Smita Jatia' }),
@@ -167,7 +170,7 @@ describe('SearchBrightDataBusinessTool instant', () => {
         lookup: 'linkedinUrl',
         linkedinUrl: 'linkedin.com/in/smita-jatia',
         count: 1,
-        ephemeralWritten: 1,
+        written: 1,
         probe: false,
       }),
     );

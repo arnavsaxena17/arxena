@@ -42,41 +42,59 @@ describe('WriteSearchRowsToProjectTabService', () => {
       entity: 'company',
       rows: [companyRow('Acme', 'acme.com')],
       context: { workspaceId: 'ws-1' },
+      resultSetId: 'search-1',
     });
 
-    expect(outcome).toEqual({
-      written: 0,
-      total: 1,
-      createdCount: 0,
-      updatedCount: 0,
-    });
+    expect(outcome).toEqual(
+      expect.objectContaining({
+        resultSetId: 'search-1',
+        written: 0,
+        total: 1,
+        newRows: 0,
+        alreadyOnTab: 0,
+      }),
+    );
     expect(upsertCompanies.execute).not.toHaveBeenCalled();
   });
 
-  it('should merge companies into the project tab', async () => {
-    const outcome = await service.write({
+  it('should stamp every row with the search it came from', async () => {
+    await service.write({
       projectId: 'proj-1',
       entity: 'company',
       rows: [companyRow('Acme', 'acme.com'), companyRow('Beta', 'beta.com')],
       context: { workspaceId: 'ws-1' },
+      resultSetId: 'search-1',
     });
 
-    expect(outcome).toEqual({
-      written: 2,
-      total: 2,
-      createdCount: 0,
-      updatedCount: 0,
-    });
     expect(upsertCompanies.execute).toHaveBeenCalledWith(
       expect.objectContaining({
         projectId: 'proj-1',
         mode: 'merge',
-        companies: expect.arrayContaining([
-          expect.objectContaining({ name: 'Acme', domain: 'acme.com' }),
-        ]),
+        companies: [
+          expect.objectContaining({
+            name: 'Acme',
+            otherFields: expect.objectContaining({
+              resultSetIds: ['search-1'],
+              firstResultSetId: 'search-1',
+            }),
+          }),
+          expect.objectContaining({ name: 'Beta' }),
+        ],
       }),
       { workspaceId: 'ws-1' },
     );
+  });
+
+  it('should give a search with no id of its own a new one', async () => {
+    const outcome = await service.write({
+      projectId: 'proj-1',
+      entity: 'company',
+      rows: [companyRow('Acme', 'acme.com')],
+      context: { workspaceId: 'ws-1' },
+    });
+
+    expect(outcome.resultSetId).toEqual(expect.any(String));
+    expect(outcome.resultSetId.length).toBeGreaterThan(0);
   });
 
   it('should return the upsert error', async () => {
@@ -92,19 +110,19 @@ describe('WriteSearchRowsToProjectTabService', () => {
       context: { workspaceId: 'ws-1' },
     });
 
-    expect(outcome).toEqual({
-      written: 0,
-      total: 1,
-      createdCount: 0,
-      updatedCount: 0,
-      error: 'tab full',
-    });
+    expect(outcome).toEqual(
+      expect.objectContaining({ written: 0, total: 1, error: 'tab full' }),
+    );
   });
 
-  it('should return the new and already-known row counts', async () => {
+  it('should split the written rows into new and already on the tab', async () => {
     upsertCompanies.execute.mockResolvedValueOnce({
       success: true,
-      result: { createdCount: 1, updatedCount: 1 },
+      result: {
+        createdCount: 1,
+        updatedCount: 1,
+        writtenRowIds: ['row-1', 'row-2'],
+      },
     });
 
     const outcome = await service.write({
@@ -114,8 +132,53 @@ describe('WriteSearchRowsToProjectTabService', () => {
       context: { workspaceId: 'ws-1' },
     });
 
-    expect(outcome.createdCount).toBe(1);
-    expect(outcome.updatedCount).toBe(1);
+    expect(outcome).toEqual(
+      expect.objectContaining({
+        written: 2,
+        newRows: 1,
+        alreadyOnTab: 1,
+        writtenRowIds: ['row-1', 'row-2'],
+      }),
+    );
+    expect(outcome.summary).toContain('1 new row added to the companies tab');
+  });
 
+  it('should write people built by a tool through the people upsert', async () => {
+    upsertPeople.execute.mockResolvedValueOnce({
+      success: true,
+      result: { createdCount: 0, updatedCount: 1 },
+    });
+
+    const outcome = await service.writePeople({
+      projectId: 'proj-1',
+      people: [
+        {
+          id: 'person-1',
+          name: 'Uma Ali',
+          title: 'Consultant Nephrologist',
+          companyName: 'Lilavati Hospital',
+          otherFields: { probe: true },
+        } as never,
+      ],
+      context: { workspaceId: 'ws-1' },
+      resultSetId: 'search-2',
+    });
+
+    expect(upsertPeople.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        people: [
+          expect.objectContaining({
+            otherFields: {
+              probe: true,
+              resultSetIds: ['search-2'],
+              firstResultSetId: 'search-2',
+            },
+          }),
+        ],
+      }),
+      { workspaceId: 'ws-1' },
+    );
+    expect(outcome.newRows).toBe(0);
+    expect(outcome.summary).toContain('found no one new');
   });
 });

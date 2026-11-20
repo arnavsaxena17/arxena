@@ -189,6 +189,73 @@ describe('SystemPromptBuilderService', () => {
     });
   });
 
+  describe('buildToolCatalogSection', () => {
+    it('puts categories in prompt order and drops empty ones', () => {
+      const service = buildService();
+      const externalTools = Array.from({ length: 16 }, (_, index) => ({
+        name: `postman__tool_${index}`,
+        label: `postman ${index}`,
+        description: 'external tool',
+        category: ToolCategory.EXTERNAL_MCP,
+        executionRef: {} as never,
+      }));
+
+      const section = service.buildToolCatalogSection(
+        [crudCompany, arxenaSearch, codeInterpreter, ...externalTools],
+        ['search_help_center'],
+      );
+
+      expect(section).toContain('### Pre-loaded Tools');
+      expect(section).toContain('### How to Use Tools');
+
+      const crudIndex = section.indexOf('Database Tools (CRUD operations)');
+      const arxenaIndex = section.indexOf('People and company search');
+      const actionIndex = section.indexOf('Action Tools');
+      const externalIndex = section.indexOf('Connected apps');
+
+      expect(crudIndex).toBeLessThan(arxenaIndex);
+      expect(arxenaIndex).toBeLessThan(actionIndex);
+      expect(actionIndex).toBeLessThan(externalIndex);
+      expect(section).not.toContain('Workflow Tools');
+      expect(section).not.toContain('Webhook Tools');
+    });
+
+    it('lists CRUD operations once, the grammar with an example, and a standalone tool', () => {
+      const service = buildService();
+      const standaloneCrudTool = {
+        ...crudCompany,
+        name: 'search_records',
+        objectName: undefined,
+        operation: undefined,
+      };
+
+      const section = service.buildToolCatalogSection(
+        [
+          crudCompany,
+          {
+            ...crudCompany,
+            name: 'find_one_company',
+            operation: 'find_one',
+          },
+          {
+            ...crudCompany,
+            name: 'delete_many_companies',
+            operation: 'delete_many',
+          },
+          standaloneCrudTool,
+        ],
+        ['search_records'],
+      );
+
+      expect(section.match(/- `find_many_\{object\}`/g)).toHaveLength(1);
+      expect(section.match(/- `companies`/g)).toHaveLength(1);
+      expect(section).toContain(
+        'e.g. `find_many_companies` / `find_one_company`',
+      );
+      expect(section).toContain('- `search_records` ✓');
+    });
+  });
+
   describe('large category summaries', () => {
     const buildExternalTool = (
       slug: string,

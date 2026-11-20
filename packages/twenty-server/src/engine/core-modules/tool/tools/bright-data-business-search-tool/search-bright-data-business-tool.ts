@@ -1,5 +1,7 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 
+import { createHash } from 'crypto';
+
 import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 
@@ -28,21 +30,19 @@ import {
   SearchBrightDataBusinessToolInputZodSchema,
   type SearchBrightDataBusinessToolInput,
 } from 'src/engine/core-modules/tool/tools/bright-data-business-search-tool/search-bright-data-business-tool-input.type';
-import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
 import { BrightDataPersonFitFilterService } from 'src/engine/core-modules/bright-data/services/bright-data-person-fit-filter.service';
 import {
   buildDeprioritisationFields,
   type DeprioritisationReason,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-people-deprioritisation.util';
-import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
+import {
+  type WriteSearchRowsToProjectTabResult,
+  WriteSearchRowsToProjectTabService,
+} from 'src/engine/core-modules/tool/tools/outreach-tab-tool/write-search-rows-to-project-tab.service';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
-import {
-  describeTabWrite,
-  toTabWriteCounts,
-} from 'src/engine/core-modules/tool/utils/describe-tab-write.util';
 
 // Kept rows stay the chat count. The tab gets every paid row so the Jev
 // verdict can be Yes or No in otherFields.relevant.
@@ -93,6 +93,25 @@ const documentsForPlanSamples = (
 // OutreachCompaniesCacheService / OutreachPeopleCacheService keep this many
 const MAX_ROWS_PER_PROJECT_TAB = OUTREACH_TAB_MAX_ROWS;
 
+// One Bright Data search keeps one id: its estimate samples and its fetch
+// share it, and asking the same thing again on the project is the same set
+const brightDataResultSetId = (
+  input: SearchBrightDataBusinessToolInput,
+): string =>
+  `bright-data:${input.entity}:${createHash('sha1')
+    .update(input.query.trim().toLowerCase())
+    .digest('hex')
+    .slice(0, 16)}`;
+
+// What every Bright Data result says about the tab write, in one shape
+const tabWriteFields = (write: WriteSearchRowsToProjectTabResult) => ({
+  resultSetId: write.resultSetId,
+  written: write.written,
+  newRows: write.newRows,
+  alreadyOnTab: write.alreadyOnTab,
+  writtenRowIds: write.writtenRowIds,
+});
+
 const INSTANT_LOOKUP_DEFAULT_LIMIT = 20;
 // A probe is a look, not a fetch: 25 rows cost at most $0.05
 const INSTANT_PROBE_DEFAULT_LIMIT = 10;
@@ -117,8 +136,7 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
   constructor(
     private readonly brightDataBusinessSearchService: BrightDataBusinessSearchService,
     private readonly brightDataLudicrousSearchService: BrightDataLudicrousSearchService,
-    private readonly upsertOutreachTargetCompaniesTool: UpsertOutreachTargetCompaniesTool,
-    private readonly upsertOutreachTargetPeopleTool: UpsertOutreachTargetPeopleTool,
+    private readonly writeSearchRowsToProjectTabService: WriteSearchRowsToProjectTabService,
     @Optional()
     private readonly personFitFilterService?: BrightDataPersonFitFilterService,
     @Optional()
@@ -218,16 +236,13 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
             })
           : undefined;
 
-      const tabWrite = toTabWriteCounts(ephemeral);
-      const tabName = input.entity === 'company' ? 'companies' : 'people';
-
       return {
         success: true,
         message: `${
           lookup.kind === 'domain'
             ? `Found ${documents.length} company record(s) for domain ${lookup.domainHost}`
             : `Found ${documents.length} ${input.entity} record(s) for LinkedIn URL ${lookup.linkedinUrlKey}`
-        }. ${describeTabWrite(tabWrite, tabName)}`,
+        }. ${ephemeral.summary}`,
         result: {
           entity: input.entity,
           mode: search.mode,
@@ -239,13 +254,7 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
           reqId: search.reqId,
           matched: search.matched,
           count: documents.length,
-          ephemeralWritten: ephemeral.written,
-          writtenRowIds: ephemeral.writtenRowIds,
-          createdCount: ephemeral.createdCount,
-          updatedCount: ephemeral.updatedCount,
-          newUnique: ephemeral.createdCount,
-          alreadyKnown: ephemeral.updatedCount,
-          ...tabWrite,
+          ...tabWriteFields(ephemeral),
           probe: false,
           ...(runBudget?.runCapUsd !== undefined && { runBudget }),
           totalCountHint:
@@ -301,7 +310,7 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
 
       return {
         success: true,
-        message: `Instant probe returned ${search.documents.length} ${input.entity} record(s); written to the tab as probe rows`,
+        message: `Instant probe returned ${search.documents.length} ${input.entity} record(s); written to the tab as probe rows. ${ephemeral.summary}`,
         result: {
           entity: input.entity,
           mode: search.mode,
@@ -312,8 +321,7 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
           matched: search.matched,
           count: search.documents.length,
           spentUsd: search.costUsd,
-          ephemeralWritten: ephemeral.written,
-          writtenRowIds: ephemeral.writtenRowIds,
+          ...tabWriteFields(ephemeral),
           probe: true,
           previewRows: this.buildPreviewRows(previewInput, search),
         },
@@ -462,13 +470,8 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
 
       // The estimate already paid for the samples; write them before the user
       // chooses a budget. A failure here must not hide the estimate.
-      let probes: {
-        written: number;
-        total: number;
-        createdCount: number;
-        updatedCount: number;
-        error?: string;
-      } = { written: 0, total: 0, createdCount: 0, updatedCount: 0 };
+      let probes: WriteSearchRowsToProjectTabResult | undefined;
+      let probeWriteError: string | undefined;
 
       try {
         const plan = await this.brightDataLudicrousSearchService.getPlan({
@@ -477,23 +480,26 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
           entity: input.entity,
         });
 
-        probes = await this.persistPlanProbes(input, plan, context);
+        probes = await this.persistEphemeral(
+          input,
+          documentsForPlanSamples(plan),
+          context,
+          { probe: true },
+        );
+        probeWriteError = probes.error;
       } catch (error) {
+        probeWriteError =
+          error instanceof Error ? error.message : String(error);
         this.logger.warn(
-          `Could not write Bright Data probe samples: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
+          `Could not write Bright Data probe samples: ${probeWriteError}`,
         );
       }
-
-      const probeTabWrite = toTabWriteCounts(probes);
-      const probeTabName = input.entity === 'company' ? 'companies' : 'people';
 
       return {
         success: true,
         message:
-          probes.written > 0
-            ? `${summary.message} Sample rows: ${describeTabWrite(probeTabWrite, probeTabName)}`
+          isDefined(probes) && probes.written > 0
+            ? `${summary.message} Sample rows: ${probes.summary}`
             : summary.message,
         result: {
           mode: 'ludicrous',
@@ -502,13 +508,14 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
           nextStep:
             'Show the user the slices, counts and cost options, then call again with execute: true and the maxBudgetUsd they choose. The sampled rows are already on the tab with otherFields.probe=true.',
           ...summary,
-          probeRowsWritten: probes.written,
-          probeRowsTotal: probes.total,
-          // The sampled rows only; the fetch reports its own newRows
-          ...probeTabWrite,
-          ...(probes.error !== undefined
-            ? { probeWriteError: probes.error }
-            : {}),
+          // The sampled rows only; the fetch reports its own newRows under the
+          // same resultSetId
+          resultSetId: probes?.resultSetId ?? brightDataResultSetId(input),
+          probeRowsWritten: probes?.written ?? 0,
+          probeRowsTotal: probes?.total ?? 0,
+          newRows: probes?.newRows ?? 0,
+          alreadyOnTab: probes?.alreadyOnTab ?? 0,
+          ...(probeWriteError !== undefined ? { probeWriteError } : {}),
         },
       };
     } catch (error) {
@@ -546,8 +553,8 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
         query: input.query.trim(),
         fetched: documents.length,
         duplicates,
-        newUnique: ephemeral.createdCount,
-        alreadyKnown: ephemeral.updatedCount,
+        newUnique: ephemeral.newRows,
+        alreadyKnown: ephemeral.alreadyOnTab,
         spentUsd: run.spentUsd,
       });
     }
@@ -564,13 +571,11 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
             projectId,
           );
 
-    const tabWrite = toTabWriteCounts(ephemeral);
-
     // Records never go back to the model. They are in the project tab and in
     // the dataset store for this project, so the conversation only gets counts.
     return {
       success: true,
-      message: `${reused ? 'Reused' : 'Fetched'} ${run.documents.length} relevant of ${documents.length} ${input.entity} record(s)${reused ? ' already paid for' : ` for $${run.spentUsd.toFixed(3)} (budget $${run.budgetUsd.toFixed(2)})`}. ${describeTabWrite(tabWrite, input.entity === 'company' ? 'companies' : 'people')} The project tab lists every fetched row; otherFields.relevant is the Jev verdict.`,
+      message: `${reused ? 'Reused' : 'Fetched'} ${run.documents.length} relevant of ${documents.length} ${input.entity} record(s)${reused ? ' already paid for' : ` for $${run.spentUsd.toFixed(3)} (budget $${run.budgetUsd.toFixed(2)})`}. ${ephemeral.summary} The project tab lists every fetched row; otherFields.relevant is the Jev verdict.`,
       result: {
         entity: input.entity,
         mode: 'ludicrous',
@@ -581,11 +586,7 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
         ...(runBudget?.runCapUsd !== undefined && { runBudget }),
         count: run.documents.length,
         fetchedCount: documents.length,
-        ephemeralWritten: ephemeral.written,
-        writtenRowIds: ephemeral.writtenRowIds,
-        createdCount: ephemeral.createdCount,
-        updatedCount: ephemeral.updatedCount,
-        ...tabWrite,
+        ...tabWriteFields(ephemeral),
         ...(ephemeral.error
           ? {
               ephemeralError: `Could not write to the project tab: ${ephemeral.error}. The rows are kept for this project; retry with execute: true.`,
@@ -602,50 +603,6 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
         summary: aggregateBrightDataDocuments(input.entity, run.documents),
       },
     };
-  }
-
-  // Estimate samples are already paid for. Write them before the user decides
-  // on a budget, so a slice the planner later drops is still on the tab.
-  private async persistPlanProbes(
-    input: SearchBrightDataBusinessToolInput,
-    plan: BrightDataLudicrousPlan,
-    context: ToolExecutionContext,
-  ): Promise<{
-    written: number;
-    total: number;
-    createdCount: number;
-    updatedCount: number;
-    error?: string;
-  }> {
-    const documents = documentsForPlanSamples(plan);
-
-    if (documents.length === 0) {
-      return { written: 0, total: 0, createdCount: 0, updatedCount: 0 };
-    }
-
-    try {
-      const ephemeral = await this.persistEphemeral(input, documents, context, {
-        probe: true,
-      });
-
-      return {
-        written: ephemeral.written,
-        total: documents.length,
-        createdCount: ephemeral.createdCount,
-        updatedCount: ephemeral.updatedCount,
-        ...(ephemeral.error ? { error: ephemeral.error } : {}),
-      };
-    } catch (error) {
-      this.logger.error('Failed to persist Bright Data probe samples', error);
-
-      return {
-        written: 0,
-        total: documents.length,
-        createdCount: 0,
-        updatedCount: 0,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
   }
 
   // Likely-fake profiles and people who do not fit the query are still
@@ -719,89 +676,26 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
     }));
   }
 
-  // The project tabs hold MAX_ROWS_PER_PROJECT_TAB rows and the upsert tools
-  // reject a larger batch outright, so only that many are sent. A failed upsert
-  // is reported, never counted as written.
+  // Turns Bright Data documents into tab rows; the shared writer does the
+  // merge, the counts and the resultSetId stamp
   private async persistEphemeral(
     input: SearchBrightDataBusinessToolInput,
     documents: BrightDataBusinessSearchDocument[],
     context: ToolExecutionContext,
     { probe = false }: { probe?: boolean } = {},
-  ): Promise<{
-    written: number;
-    total: number;
-    writtenRowIds: string[];
-    createdCount: number;
-    updatedCount: number;
-    error?: string;
-  }> {
-    if (!isNonEmptyString(input.projectId) || !context.workspaceId) {
-      return {
-        written: 0,
-        total: 0,
-        writtenRowIds: [],
-        createdCount: 0,
-        updatedCount: 0,
-      };
-    }
-
-    const projectId = input.projectId;
-    const emptyWrite = {
-      writtenRowIds: [] as string[],
-      createdCount: 0,
-      updatedCount: 0,
-    };
-    const readWriteMeta = (output: {
-      success: boolean;
-      result?: unknown;
-      error?: string;
-    }) => {
-      const result =
-        typeof output.result === 'object' && output.result !== null
-          ? (output.result as Record<string, unknown>)
-          : {};
-      const writtenRowIds = Array.isArray(result.writtenRowIds)
-        ? result.writtenRowIds.filter(
-            (id): id is string => typeof id === 'string',
-          )
-        : [];
-
-      return {
-        writtenRowIds,
-        createdCount:
-          typeof result.createdCount === 'number' ? result.createdCount : 0,
-        updatedCount:
-          typeof result.updatedCount === 'number' ? result.updatedCount : 0,
-      };
-    };
+  ): Promise<WriteSearchRowsToProjectTabResult> {
+    const projectId = isNonEmptyString(input.projectId) ? input.projectId : '';
+    const resultSetId = brightDataResultSetId(input);
 
     if (input.entity === 'company') {
-      const companies = documents
-        .map(mapBrightDataCompanyToEphemeral)
-        .filter((company) => company !== null);
-      const batch = companies.slice(0, MAX_ROWS_PER_PROJECT_TAB);
-
-      if (batch.length === 0) {
-        return { written: 0, total: companies.length, ...emptyWrite };
-      }
-
-      const output = await this.upsertOutreachTargetCompaniesTool.execute(
-        { projectId, mode: 'merge', companies: batch },
+      return this.writeSearchRowsToProjectTabService.writeCompanies({
+        projectId,
+        companies: documents
+          .map(mapBrightDataCompanyToEphemeral)
+          .filter((company) => company !== null),
         context,
-      );
-
-      return output.success
-        ? {
-            written: batch.length,
-            total: companies.length,
-            ...readWriteMeta(output),
-          }
-        : {
-            written: 0,
-            total: companies.length,
-            ...emptyWrite,
-            error: output.error,
-          };
+        resultSetId,
+      });
     }
 
     // A probe is a look, not a qualification: skip the person-fit model calls
@@ -811,28 +705,12 @@ Ludicrous results never contain the records, only counts and a summary. Do not c
           .map(mapBrightDataPersonToEphemeral)
           .filter((person) => person !== null)
       : await this.markDeprioritised(input, documents, context.workspaceId);
-    const batch = people.slice(0, MAX_ROWS_PER_PROJECT_TAB);
 
-    if (batch.length === 0) {
-      return { written: 0, total: people.length, ...emptyWrite };
-    }
-
-    const output = await this.upsertOutreachTargetPeopleTool.execute(
-      { projectId, mode: 'merge', people: batch },
+    return this.writeSearchRowsToProjectTabService.writePeople({
+      projectId,
+      people,
       context,
-    );
-
-    return output.success
-      ? {
-          written: batch.length,
-          total: people.length,
-          ...readWriteMeta(output),
-        }
-      : {
-          written: 0,
-          total: people.length,
-          ...emptyWrite,
-          error: output.error,
-        };
+      resultSetId,
+    });
   }
 }

@@ -7,7 +7,7 @@
 `returns` is a ceiling, not a promise: any field can be null on any row. A row
 without a `linkedinUrl` cannot be deduped, saved to the CRM or profile-fetched.
 
-**One key chains the sources: `linkedinUrl`.** A step is worth running only if it
+**One key chains the sources:** `linkedinUrl`**.** A step is worth running only if it
 yields a key the next step consumes. Google search gives the URL but not the
 profile, so a SERP row needs `fetch_profiles` before it can be scored; Bright Data
 people returns the profile and the URL in one call, so for scoring it is usually
@@ -18,7 +18,7 @@ there first: it is free and it can filter on `linkedinUrl` itself.
 
 {{sources: capabilities people}}
 
-A population is this section: a title, a skill, an industry or a city; do not look up each person at each company. **If the companies are named, including a set you confirmed with the user (an `ask_questions` answer), switch to `people-by-company` and call `find_people_by_company`.** Never list employers in a Bright Data people query.
+A population is this section: a title, a skill, an industry or a city; do not look up each person at each company. **Companies named, a set the user confirmed, or a known set ("top hospitals"): switch to** `people-by-company` **and call** `find_people_by_company`**.** Never list employers in a Bright Data people query.
 
 ### Provider map (choose by intent)
 
@@ -30,15 +30,17 @@ Do not `create_candidate` on Find or on Save to CRM. Write and Save to CRM follo
 
 {{sources: learn-tools people}}
 
-<!-- search-find-candidate-internal-learn-tools-line:start -->
+
+
 `find_candidate_in_arxena_internal` looks up one existing person. It does not create a record.
-<!-- search-find-candidate-internal-learn-tools-line:end -->
+
+
 
 The server dedupes on one key per row: public LinkedIn URL (never Sales Navigator), else name plus company. `against: "lists"` checks every list in the workspace. The CRM check uses the LinkedIn URL only: a row without one counts as new and `save_outreach_targets_to_crm` skips it.
 
 ### People constraints
 
-- On Outreach People tab, a Find must write the tab before ending. Do not end on a chat-only list. Do not `create_candidate` on Find or on Save to CRM.
+- On Outreach People tab, a Find must write the tab before ending. Do not end on a chat-only list.
 - Present results with name, title, company, location, and source; note when Recruiter results hide public identifiers.
 - Save to CRM: `save_outreach_targets_to_crm` with `target: "people"`. Start outreach only after, and only when asked: `load_skills(["outreach"])`.
 

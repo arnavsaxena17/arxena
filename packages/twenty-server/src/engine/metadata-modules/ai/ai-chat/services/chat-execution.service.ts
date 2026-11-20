@@ -88,6 +88,10 @@ import {
   formatMessagesForLog,
   formatToolSetForLog,
 } from 'src/engine/metadata-modules/ai/ai-chat/utils/format-messages-for-log.util';
+import { compactHistoryForModel } from 'src/engine/metadata-modules/ai/ai-chat/utils/compact-history-for-model.util';
+import { shouldIncludeOutreachActionRules } from 'src/engine/metadata-modules/ai/ai-chat/utils/should-include-outreach-action-rules.util';
+import { OUTREACH_ACTION_RULES } from 'src/engine/metadata-modules/ai/ai-chat/constants/outreach-action-rules.const';
+import { CAMPAIGN_FIND_RULES } from 'src/engine/metadata-modules/ai/ai-chat/constants/campaign-find-rules.const';
 import { injectMessageTimestamps } from 'src/engine/metadata-modules/ai/ai-chat/utils/inject-message-timestamps.util';
 import {
   getCacheProviderOptions,
@@ -314,7 +318,9 @@ export class ChatExecutionService {
       `[AI_CHAT] directTools count=${Object.keys(directTools).length} ` +
         `names=[${Object.keys(directTools).join(', ')}]\n${formatToolSetForLog(directTools)}`,
     );
-
+    this.logger.log(
+      `[AI_CHAT] directTools count=${directTools.length} names=[${Object.keys(directTools).join(', ')}]`,
+    );
     // ToolSet is constant for the entire conversation — no mutation.
     // learn_tools returns schemas as text; execute_tool dispatches via the registry.
     const coreTools = buildCoreToolSet({
@@ -338,24 +344,50 @@ export class ChatExecutionService {
       outputOptions: { compactOutput: true, spillLargeOutput: true },
     });
 
+    // this.logger.log(
+    //   `[AI_CHAT] coreTools count=${Object.keys(coreTools).length} ` +
+    //     `names=[${Object.keys(coreTools).join(', ')}]\n${formatToolSetForLog(coreTools)}`,
+    // );
+
+    // const activeTools: ToolSet = {
+    //   ...directTools,
+    //   [ASK_QUESTIONS_TOOL_NAME]: createAskQuestionsTool(),
+    //   // The prompt tells the model to browse with get_tool_catalog, so Ask AI
+    //   // must expose it like the MCP endpoint does.
+    //   [GET_TOOL_CATALOG_TOOL_NAME]: {
+    //     ...createGetToolCatalogTool(this.toolRegistry, workspace.id, roleId, {
+    //       userId,
+    //       userWorkspaceId,
+    //       excludeTools: disabledSearchToolNames,
+    //     }),
+    //     inputSchema: zodSchema(getToolCatalogInputSchema),
+    //   },
+    //   [LEARN_TOOLS_TOOL_NAME]: coreTools.learnTools,
+    //   [EXECUTE_TOOL_TOOL_NAME]: coreTools.executeTool,
+    //   [LOAD_SKILL_TOOL_NAME]: coreTools.loadSkills,
+    // };
+
+    const getToolCatalogTool = {
+      ...createGetToolCatalogTool(this.toolRegistry, workspace.id, roleId, {
+        userId,
+        userWorkspaceId,
+        excludeTools: disabledSearchToolNames,
+      }),
+      inputSchema: zodSchema(getToolCatalogInputSchema),
+    };
+
     this.logger.log(
-      `[AI_CHAT] coreTools count=${Object.keys(coreTools).length} ` +
-        `names=[${Object.keys(coreTools).join(', ')}]\n${formatToolSetForLog(coreTools)}`,
+      `[AI_CHAT] getToolCatalogTool\n${formatToolSetForLog(getToolCatalogTool)}`,
     );
 
+    // Direct tools is the search help center tool.
+
     const activeTools: ToolSet = {
-      ...directTools,
+      // ...directTools,
       [ASK_QUESTIONS_TOOL_NAME]: createAskQuestionsTool(),
       // The prompt tells the model to browse with get_tool_catalog, so Ask AI
       // must expose it like the MCP endpoint does.
-      [GET_TOOL_CATALOG_TOOL_NAME]: {
-        ...createGetToolCatalogTool(this.toolRegistry, workspace.id, roleId, {
-          userId,
-          userWorkspaceId,
-          excludeTools: disabledSearchToolNames,
-        }),
-        inputSchema: zodSchema(getToolCatalogInputSchema),
-      },
+      [GET_TOOL_CATALOG_TOOL_NAME]: getToolCatalogTool,
       [LEARN_TOOLS_TOOL_NAME]: coreTools.learnTools,
       [EXECUTE_TOOL_TOOL_NAME]: coreTools.executeTool,
       [LOAD_SKILL_TOOL_NAME]: coreTools.loadSkills,
@@ -403,9 +435,16 @@ export class ChatExecutionService {
     );
 
     if (isDefined(browsingContext)) {
+      const lastUserMessage = [...processedMessages]
+        .reverse()
+        .find((message) => message.role === 'user');
+      const lastUserText = (lastUserMessage?.parts ?? [])
+        .map((part) => (part.type === 'text' ? part.text : ''))
+        .join(' ');
       const contextString = this.buildContextFromBrowsingContext(
         workspace,
         browsingContext,
+        lastUserText,
       );
 
       this.logger.log(
@@ -467,9 +506,24 @@ export class ChatExecutionService {
         `roles=[${rawModelMessages.map((message) => message.role).join(', ')}]`,
     );
 
+    // Earlier requests' reasoning, superseded or routing-only skill sections,
+    // and schemas of tools never called are dropped once, here, so every step
+    // of this request starts from the smaller history
+    const compaction = compactHistoryForModel({
+      messages: rawModelMessages,
+      skillCatalog,
+    });
+
+    this.logger.log(
+      `[AI_CHAT] historyCompaction reasoningPartsDropped=${compaction.stats.reasoningPartsDropped} ` +
+        `skillSectionsDropped=${compaction.stats.skillSectionsDropped} ` +
+        `toolSchemasDropped=${compaction.stats.toolSchemasDropped} ` +
+        `chars=${compaction.stats.charsBefore}->${compaction.stats.charsAfter}`,
+    );
+
     const pruningResult =
       this.messagePruningService.pruneIfOverContextWindowLimit(
-        rawModelMessages,
+        compaction.messages,
         modelConfig.contextWindowTokens,
         conversationSizeTokens,
       );
@@ -956,12 +1010,20 @@ export class ChatExecutionService {
     }
 
     const lastUserMessage = messages[lastUserIndex];
+    // const note =
+    //   browsingContextType === 'outreachCommand'
+    //     ? 'When the user asks to find/fetch/add/build target companies or people for this campaign, follow the rules below and the search skill write contract: pass projectId on every Find search so results write the ephemeral Companies or People tab. A project is required: never run a Find without one. Never create CRM Candidates until the user confirms Add to CRM / Enroll. Do not stop at a chat-only list. When the companies are named, including a set you confirmed with the user, find people with find_people_by_company (sourcing section people-by-company), not a people search. If projectId is missing or none, ask_questions which project — never guess from a similar name.'
+    //     : browsingContextType === 'orgChart'
+    //       ? 'When the user asks to find, show, or highlight people or teams on this org chart, load org-structure-insights and call highlight_org_chart for this companyId. Only use this context if the user asks about the current chart.'
+    //       : 'Only use this if the user explicitly asks about the current page, record, or view. Do not call any tools based on this context.';
+
     const note =
       browsingContextType === 'outreachCommand'
-        ? 'When the user asks to find/fetch/add/build target companies or people for this campaign, follow the rules below and the search skill write contract: pass projectId on every Find search so results write the ephemeral Companies or People tab. A project is required: never run a Find without one. Never create CRM Candidates until the user confirms Add to CRM / Enroll. Do not stop at a chat-only list. When the companies are named, including a set you confirmed with the user, find people with find_people_by_company (sourcing section people-by-company), not a people search. If projectId is missing or none, ask_questions which project — never guess from a similar name.'
+        ? ''
         : browsingContextType === 'orgChart'
-          ? 'When the user asks to find, show, or highlight people or teams on this org chart, load org-structure-insights and call highlight_org_chart for this companyId. Only use this context if the user asks about the current chart.'
-          : 'Only use this if the user explicitly asks about the current page, record, or view. Do not call any tools based on this context.';
+          ? ''
+          : '';
+
     const browsingContextPart = {
       type: 'text' as const,
       text: `<browsing_context note="${note}">\n${contextString}\n</browsing_context>`,
@@ -980,6 +1042,9 @@ export class ChatExecutionService {
   private buildContextFromBrowsingContext(
     workspace: WorkspaceEntity,
     browsingContext: BrowsingContextType,
+    // The user's latest words, so the campaign page sends the outreach rules
+    // only when they ask to act on the rows
+    lastUserText = '',
   ): string {
     if (browsingContext.type === 'recordPage') {
       return this.buildRecordPageContext(
@@ -996,7 +1061,11 @@ export class ChatExecutionService {
     }
 
     if (browsingContext.type === 'outreachCommand') {
-      return this.buildOutreachCommandContext(workspace, browsingContext);
+      return this.buildOutreachCommandContext(
+        workspace,
+        browsingContext,
+        lastUserText,
+      );
     }
 
     if (browsingContext.type === 'orgChart') {
@@ -1029,62 +1098,69 @@ export class ChatExecutionService {
   private buildOutreachCommandContext(
     workspace: WorkspaceEntity,
     browsingContext: Extract<BrowsingContextType, { type: 'outreachCommand' }>,
+    lastUserText: string,
   ): string {
+    const includeOutreachActions = shouldIncludeOutreachActionRules({
+      lastUserText,
+      selectedPersonIds: browsingContext.selectedPersonIds,
+      selectedCandidateIds: browsingContext.selectedCandidateIds,
+    });
+    // Profile facts that are unset say nothing; leave them out
+    const knownFacts = (
+      [
+        ['icp', browsingContext.icpName],
+        ['icpSpec', browsingContext.icpSpecSummary],
+        ['workspace companyName', workspace.companyName],
+        ['workspace companyDomain', workspace.companyDomain],
+        ['workspace industry', workspace.industry],
+        ['workspace summary', workspace.summary],
+        ['workspace employeeRange', workspace.employeeRange],
+        ['workspace hq', workspace.hq],
+        ['workspace icpSpec', workspace.icpSpec],
+      ] as Array<[string, unknown]>
+    )
+      .filter(([, value]) => isDefined(value) && value !== '')
+      .map(
+        ([label, value]) =>
+          `${label}: ${typeof value === 'string' ? value : JSON.stringify(value)}`,
+      );
+
     return [
       'The user is on campaign home (Find companies / people / outreach).',
       `projectId: ${browsingContext.projectId ?? 'none'}`,
       `projectName: ${browsingContext.projectName ?? 'none'}`,
-      `outreachWorkflowId: ${browsingContext.outreachWorkflowId ?? 'none'}`,
-      `sendMode: ${browsingContext.outreachSendMode}`,
       `phase: ${browsingContext.phase ?? 'live'}`,
       `activeTab: ${browsingContext.activeTab ?? 'people'} (the table the user is looking at; AI filter / enrich columns and table filters use this tab: people unless it says companies)`,
-      `selectedCompanyId: ${browsingContext.selectedCompanyId ?? 'none'}`,
-      `selectedPersonId: ${browsingContext.selectedPersonId ?? 'none'}`,
-      `selectedPersonIds: ${JSON.stringify(browsingContext.selectedPersonIds ?? [])}`,
-      `selectedCandidateIds: ${JSON.stringify(browsingContext.selectedCandidateIds ?? [])}`,
-      `icp: ${browsingContext.icpName ?? 'none'}`,
-      `icpSpec: ${browsingContext.icpSpecSummary ?? 'none'}`,
-      `workspace companyName: ${workspace.companyName ?? 'none'}`,
-      `workspace companyDomain: ${workspace.companyDomain ?? 'none'}`,
-      `workspace industry: ${workspace.industry ?? 'none'}`,
-      `workspace summary: ${workspace.summary ?? 'none'}`,
-      `workspace employeeRange: ${workspace.employeeRange ?? 'none'}`,
-      `workspace hq: ${workspace.hq ?? 'none'}`,
-      `workspace icpSpec: ${workspace.icpSpec ?? 'none'}`,
-      `channels: LinkedIn=${browsingContext.linkedinConnected} Gmail=${browsingContext.gmailConnected} WhatsApp=${browsingContext.whatsappConnected}`,
-      ...buildSeededOutreachWorkflowInventoryLines(
-        browsingContext.outreachWorkflowId,
-      ),
+      ...(isDefined(browsingContext.selectedCompanyId)
+        ? [`selectedCompanyId: ${browsingContext.selectedCompanyId}`]
+        : []),
+      ...(isDefined(browsingContext.selectedPersonId)
+        ? [`selectedPersonId: ${browsingContext.selectedPersonId}`]
+        : []),
+      ...knownFacts,
+      ...(includeOutreachActions
+        ? [
+            `outreachWorkflowId: ${browsingContext.outreachWorkflowId ?? 'none'}`,
+            `sendMode: ${browsingContext.outreachSendMode}`,
+            `selectedPersonIds: ${JSON.stringify(browsingContext.selectedPersonIds ?? [])}`,
+            `selectedCandidateIds: ${JSON.stringify(browsingContext.selectedCandidateIds ?? [])}`,
+            `channels: LinkedIn=${browsingContext.linkedinConnected} Gmail=${browsingContext.gmailConnected} WhatsApp=${browsingContext.whatsappConnected}`,
+            ...buildSeededOutreachWorkflowInventoryLines(
+              browsingContext.outreachWorkflowId,
+            ),
+          ]
+        : []),
       ...(isDefined(browsingContext.projectId)
         ? []
         : [
             'projectId is missing (none). Before any paid fetch or tab write: learn_tools find_many_projects + ask_questions, list projects, then MUST ask_questions "Which project should these results be tagged to?" with one option per project. A similar name is not enough — stop until the user answers. Use that id as projectId for the rest of the turn.',
           ]),
-      'Target companies on the Companies tab are ephemeral (Find destination), not CRM membership.',
-      'When the user asks to find/fetch/add/build target companies:',
-      '1. load_skills(["sourcing"]) with sections: ["companies"]',
-      '2. Search providers per the sourcing skill (Bright Data default)',
-      '3. Write to the Companies tab before ending the turn: pass projectId on the search (Bright Data, Apollo, LinkedIn, index, Wikidata, Exa). The search writes the tab; a project is required, so ask which project before searching if it is missing.',
-      'Do NOT create CRM Company records for the Companies tab. Only create CRM Company when Save to CRM / enrolling people.',
-      'Target people on the People tab are ephemeral (Find) until the user selects rows and confirms Add to CRM / Enroll.',
-      'When the user asks to find/fetch/search people (target titles, MD/CEO, personas) for this campaign:',
-      '1. load_skills(["sourcing"]) with sections: ["people"] (or ["people-by-company"] when employers are already named)',
-      '   If the companies are named, including a set you confirmed with the user (an ask_questions answer that picks the employers), switch to people-by-company and call find_people_by_company with those companies. Do not put employer names into a search_bright_data_business people query.',
-      '2. Search using companies from this project when relevant',
-      '3. Write to the People tab before ending the turn: pass projectId on the search. The search writes the tab; a project is required, so ask which project before searching if it is missing.',
-      'Do NOT create_candidate / create_one_person / create_one_candidate for the People tab. CRM Candidate writes only after explicit user confirmation.',
-      'When the user confirms they want the Companies / People tab rows saved to the CRM (not enrolled): learn_tools({toolNames:["save_outreach_targets_to_crm"]}) then save_outreach_targets_to_crm({ projectId, target: "companies" | "people" | "both", companyIds?, personIds? }). Omit ids to save the whole tab; pass selectedPersonIds / selected company ids for selected rows. It creates Company / Person records only, never a Candidate.',
-      'When the user says "start outreach" (selected people, a named person, or the whole table) and the prospects are already enrolled:',
-      '1. learn_tools({toolNames:["start_outreach"]}) then execute_tool with a JSON-object arguments field — do NOT load workflow-building or edit/activate workflows for this',
-      '2. Selected rows: start_outreach({ projectId, candidateIds: selectedCandidateIds }); if selectedCandidateIds is empty use personIds: selectedPersonIds',
-      '3. Whole table (nothing selected, user said everyone/all): start_outreach({ projectId, startAllQueuedInProject: true })',
-      '4. Report startedCandidates. If 0 and rows were selected, the people are not enrolled yet: enroll them (upload-profiles) with the steps below, then call start_outreach with the new candidate ids',
-      'When the user asks to enroll / set up the sequencer / send connection requests and the sequencer or candidates do not exist yet:',
-      '1. load_skills(["outreach", "workflow-building"]) — treat that ask as execute authorization for enrollment',
-      '2. Prefer Project outreachWorkflowId / name "Outreach — Candidate Sequencer"; clone via create_draft_from_workflow_version before editing; do not rebuild from scratch',
-      '3. Person Links field is linkedinLink.primaryLinkUrl (not Candidate linkedinUrl) — load Person after Candidate and wire SEND_* / fetch-linkedin inputs from the person FIND',
-      '4. Activate the draft, then create Candidates for ephemeral People with projectId=projectId, outreachSequenceStage=QUEUED, linkedinUrl set',
-      '5. list_workflow_runs for outreachWorkflowId and summarize — do not end the turn stuck on metadata or parse retries',
+      ...CAMPAIGN_FIND_RULES,
+      ...(includeOutreachActions
+        ? OUTREACH_ACTION_RULES
+        : [
+            'Saving to the CRM, starting outreach and enrollment have their own rules: they are sent when the user asks for one of those.',
+          ]),
     ].join('\n');
   }
 

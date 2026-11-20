@@ -41,6 +41,22 @@ describe('outreach table layout', () => {
     );
   });
 
+  it('should never show the result set bookkeeping as columns', () => {
+    const rows = [
+      {
+        otherFields: {
+          confidence: 'high',
+          firstResultSetId: 'bright-data:people:abc',
+          resultSetIds: ['bright-data:people:abc'],
+        },
+      },
+    ];
+
+    expect(
+      collectRawJsonColumnIds(rows, ['otherFields.firstResultSetId']),
+    ).toEqual(['otherFields.confidence']);
+  });
+
   it('hides, reorders, and filters columns', () => {
     const rows = [
       { name: 'Ada', title: 'VP', location: 'Riyadh' },

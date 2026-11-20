@@ -43,7 +43,7 @@ Learn `generate_linkedin_query_set` and `search_linkedin_parameters` with the se
 - **Named Sales Navigator account list:** `search_linkedin_parameters({ parameterType: "ACCOUNT_LISTS", limit: 100 })`, pick the matching `id`, then `search_linkedin_companies` with `searchType: "sales_navigator"` and `account_lists: { include: ["<id>"] }`.
 - **Pasted company search URL** (`/sales/search/company?...` or `/search/results/companies?...`): `search_linkedin_companies({ "url": "<exact pasted URL>", "limit": 100 })`. No `searchType` or `searchParameters`, and do not parse the URL.
 - **Fetch all results.** Use `limit: 100` (the page maximum). Repeat `search_linkedin_continue({ "cursor": "<cursor>", "limit": 100 })` until no `cursor` comes back or the list `total` reaches `paging.total_count`. Say the total up front ("808 companies, 9 pages") and do not stop after the first page when the user asked for all.
-- Each page writes the Companies tab. Report fetched, added, duplicate and `ephemeralWritten` counts.
+- Each page writes the Companies tab. Report `fetched`, `newRows` and `duplicates`.
 
 ### Hand edits
 

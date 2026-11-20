@@ -75,7 +75,7 @@ describe('OutreachPeopleCacheService', () => {
       'project-1',
       expect.objectContaining({
         projectId: 'project-1',
-        people: [person],
+        people: [expect.objectContaining({ id: person.id })],
       }),
     );
     // No written rows given, so listeners refetch instead of applying a delta
@@ -152,6 +152,28 @@ describe('OutreachPeopleCacheService', () => {
         people: [expect.objectContaining({ id: 'harvest-row' })],
       }),
     );
+  });
+
+  it('should stamp Added on first write and keep it on later ones', async () => {
+    await service.set('workspace-1', 'project-1', [person]);
+
+    const firstWrite = backupWrite.mock.calls[0][3] as {
+      people: Array<{ createdAt?: string }>;
+    };
+    const stored = firstWrite.people[0];
+
+    expect(typeof stored.createdAt).toBe('string');
+
+    // The client PUT and the merge both send the row back as they read it
+    await service.set('workspace-1', 'project-1', [
+      { ...person, ...stored, name: 'Ada Lovelace-Byron' },
+    ]);
+
+    const secondWrite = backupWrite.mock.calls[1][3] as {
+      people: Array<{ createdAt?: string }>;
+    };
+
+    expect(secondWrite.people[0].createdAt).toBe(stored.createdAt);
   });
 
   it('should clear Redis and S3 on delete', async () => {

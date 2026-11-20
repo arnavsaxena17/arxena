@@ -381,15 +381,12 @@ export class ArxenaToolProvider implements ToolProvider {
         ),
       );
       const duplicates = Math.max(0, rows.length - uniqueKeys.size);
-      const tab =
-        rows.length === 0
-          ? { written: 0, total: 0, createdCount: 0, updatedCount: 0 }
-          : await this.writeSearchRowsToProjectTabService.write({
-              projectId,
-              entity: normalized.entity,
-              rows,
-              context: { workspaceId },
-            });
+      const tab = await this.writeSearchRowsToProjectTabService.write({
+        projectId,
+        entity: normalized.entity,
+        rows,
+        context: { workspaceId },
+      });
 
       await this.sourcingLedgerService.append(workspaceId, projectId, {
         kind: 'search',
@@ -399,8 +396,8 @@ export class ArxenaToolProvider implements ToolProvider {
         query: normalized.label || toolName,
         fetched: rows.length,
         duplicates,
-        newUnique: tab.createdCount,
-        alreadyKnown: tab.updatedCount,
+        newUnique: tab.newRows,
+        alreadyKnown: tab.alreadyOnTab,
         spentUsd: normalized.spentUsd ?? 0,
       });
 
@@ -408,22 +405,21 @@ export class ArxenaToolProvider implements ToolProvider {
       const nextStep = emptyResult
         ? 'The search returned no rows. It is recorded for coverage; the tab is unchanged.'
         : tab.error === undefined
-          ? 'Records were written to the project tab. To create CRM records call save_outreach_targets_to_crm with the same projectId. Use get_outreach_tab to read the tab.'
+          ? `${tab.summary} To create CRM records call save_outreach_targets_to_crm with the same projectId. Use get_outreach_tab to read the tab.`
           : `The search returned rows but the tab write failed: ${tab.error}. Retry the search.`;
 
       return {
         entity: normalized.entity,
         source: normalized.source,
         fetched: rows.length,
-        added: tab.written,
         duplicates,
+        resultSetId: tab.resultSetId,
+        written: tab.written,
         // Rows new to the project tab vs rows that merged into one already
-        // there: the overlap with earlier queries in the same run
-        newUnique: tab.createdCount,
-        alreadyKnown: tab.updatedCount,
+        // there: only newRows are this search's finds
+        newRows: tab.newRows,
+        alreadyOnTab: tab.alreadyOnTab,
         ...(emptyResult && { emptyResult: true }),
-        total: tab.written,
-        ephemeralWritten: tab.written,
         ...(normalized.spentUsd !== undefined
           ? { costUsd: normalized.spentUsd }
           : {}),

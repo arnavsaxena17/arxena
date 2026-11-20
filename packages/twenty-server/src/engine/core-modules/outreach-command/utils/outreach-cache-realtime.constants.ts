@@ -77,6 +77,8 @@ export type OutreachCachePersonRow = {
   email: string;
   connectionDegree?: number;
   personaPriorityScore?: number;
+  // When the row first landed on the tab; a later write never overwrites it
+  createdAt?: string;
   otherFields?: Record<string, unknown>;
 };
 

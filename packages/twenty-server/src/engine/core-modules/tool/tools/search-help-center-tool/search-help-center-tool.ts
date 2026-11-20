@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { isNonEmptyString } from '@sniptt/guards';
 import { isAxiosError } from 'axios';
 
 import { SecureHttpClientService } from 'src/engine/core-modules/secure-http-client/secure-http-client.service';
@@ -8,16 +9,49 @@ import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.ty
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
-import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
+
+// ponytail: undocumented Mintlify endpoint, the same one docs.arxena.com itself
+// searches through. It needs no credentials; if Mintlify changes it, swap this
+// constant for the documented Discovery API (api-dsc.mintlify.com + API key).
+const MINTLIFY_SEARCH_URL = 'https://leaves.mintlify.com/api/search/arxena';
+const DOCS_BASE_URL = 'https://docs.arxena.com';
+const MAX_RESULTS = 8;
+
+type MintlifySearchHit = {
+  page?: string;
+  header?: string;
+  content?: string;
+  metadata?: {
+    title?: string;
+  };
+};
+
+type HelpCenterArticle = {
+  title: string;
+  url: string;
+  content?: string;
+};
+
+const isEnglishHit = (
+  hit: MintlifySearchHit,
+): hit is MintlifySearchHit & { page: string } =>
+  isNonEmptyString(hit.page) && hit.page.startsWith('l/') === false;
+
+const toArticle = (
+  hit: MintlifySearchHit & { page: string },
+): HelpCenterArticle => ({
+  title: hit.metadata?.title ?? hit.header ?? hit.page,
+  url: `${DOCS_BASE_URL}/${hit.page}`,
+  content: hit.content,
+});
 
 @Injectable()
 export class SearchHelpCenterTool implements Tool {
   description =
-    'Search Twenty documentation and help center to find information about features, setup, usage, and troubleshooting. Documentation only; do not use it to find companies or people.';
+    'Search the Arxena documentation and help center for information about features, setup, usage, and troubleshooting. Documentation only; do not use it to find companies or people.';
   inputSchema = SearchHelpCenterInputZodSchema;
 
   constructor(
-    private readonly twentyConfigService: TwentyConfigService,
     private readonly secureHttpClientService: SecureHttpClientService,
   ) {}
 
@@ -28,32 +62,26 @@ export class SearchHelpCenterTool implements Tool {
     const { query } = parameters;
 
     try {
-      const MINTLIFY_API_KEY = this.twentyConfigService.get('MINTLIFY_API_KEY');
-      const MINTLIFY_SUBDOMAIN =
-        this.twentyConfigService.get('MINTLIFY_SUBDOMAIN');
-
-      const useDirectApi = MINTLIFY_API_KEY && MINTLIFY_SUBDOMAIN;
-
-      const endpoint = useDirectApi
-        ? `https://api-dsc.mintlify.com/v1/search/${MINTLIFY_SUBDOMAIN}`
-        : 'https://twenty-help-search.com/search/twenty';
-
-      const headers = {
-        'Content-Type': 'application/json',
-        ...(useDirectApi && { Authorization: `Bearer ${MINTLIFY_API_KEY}` }),
-      };
-
       const httpClient = this.secureHttpClientService.getHttpClient();
 
       const response = await httpClient.post(
-        endpoint,
-        { query, pageSize: 10 },
-        { headers },
+        MINTLIFY_SEARCH_URL,
+        { query, pageSize: MAX_RESULTS * 3 },
+        { headers: { 'Content-Type': 'application/json' } },
       );
 
-      const results = response.data;
+      const hits: MintlifySearchHit[] = Array.isArray(response.data?.results)
+        ? response.data.results
+        : [];
 
-      if (results.length === 0) {
+      // Every translated locale is indexed under l/<language>/ and crowds out
+      // the English pages an agent should quote.
+      const articles: HelpCenterArticle[] = hits
+        .filter(isEnglishHit)
+        .slice(0, MAX_RESULTS)
+        .map(toArticle);
+
+      if (articles.length === 0) {
         return {
           success: true,
           message: `No help center articles found for "${query}"`,
@@ -63,8 +91,8 @@ export class SearchHelpCenterTool implements Tool {
 
       return {
         success: true,
-        message: `Found ${results.length} relevant help center article${results.length === 1 ? '' : 's'} for "${query}"`,
-        result: results,
+        message: `Found ${articles.length} relevant help center article${articles.length === 1 ? '' : 's'} for "${query}"`,
+        result: articles,
       };
     } catch (error) {
       const errorDetail = isAxiosError(error)

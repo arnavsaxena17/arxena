@@ -164,8 +164,9 @@ Prefer mode=merge. Pass projectId from the outreachCommand browsing context.`;
             : ownKey;
         const previous = byKey.get(key);
 
+        // undefined only for a new row; an existing row with no fields is {}
         const otherFields = mergeOutreachOtherFields(
-          previous?.otherFields,
+          previous === undefined ? undefined : (previous.otherFields ?? {}),
           company.otherFields,
         );
 

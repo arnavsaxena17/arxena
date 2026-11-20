@@ -22,6 +22,10 @@ describe('buildBrightDataLudicrousPlannerSystemPrompt', () => {
     expect(prompt).toContain('Leave empty: organizationTypes');
     expect(prompt).toContain('past_job_titles');
     expect(prompt).not.toContain('offices_country_codes');
-    expect(prompt).not.toContain('specialtiesAny →');
+    // People use specialtiesAny for a specialty that a generic title hides
+    expect(prompt).toContain(
+      'specialtiesAny → about / skill / any profile text',
+    );
+    expect(prompt).toContain('Only skills the user named');
   });
 });

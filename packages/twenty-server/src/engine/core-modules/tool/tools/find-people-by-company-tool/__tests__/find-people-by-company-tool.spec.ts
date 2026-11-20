@@ -1,3 +1,4 @@
+import { WriteSearchRowsToProjectTabService } from 'src/engine/core-modules/tool/tools/outreach-tab-tool/write-search-rows-to-project-tab.service';
 import { isDefined } from 'twenty-shared/utils';
 
 import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
@@ -287,7 +288,10 @@ const buildTool = ({
   );
   const tool = new FindPeopleByCompanyTool(
     cascade,
-    { execute: upsert } as never,
+    new WriteSearchRowsToProjectTabService(
+      { execute: jest.fn() } as never,
+      { execute: upsert } as never,
+    ),
     taxonomy as never,
     {
       writeOtherFields,

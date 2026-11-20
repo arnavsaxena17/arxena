@@ -2,6 +2,7 @@ import { Injectable, Optional } from '@nestjs/common';
 
 import { randomUUID } from 'crypto';
 
+import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
 
@@ -12,6 +13,8 @@ import {
   computePairFunnel,
   computeSourcingFrontier,
   computeSourcingFunnel,
+  latestBriefForThread,
+  latestBriefFromOtherThread,
   mergeSourcingBrief,
   normalizeSourcingBriefDraft,
   type SourcingBrief,
@@ -268,21 +271,27 @@ export class GetSourcingLedgerTool implements Tool {
       const funnel = computeSourcingFunnel(rows);
 
       if (briefDraft !== undefined) {
-        const previousEvent = [
-          ...(await this.sourcingLedgerService.read(workspaceId, projectId)),
-        ]
-          .reverse()
-          .find((event) => event.kind === 'brief');
-        const previousBrief: SourcingBrief | undefined =
-          previousEvent?.kind === 'brief' ? previousEvent : undefined;
-        const merged = mergeSourcingBrief(previousBrief, briefDraft);
+        // Only this thread's brief is refined; another thread's is another
+        // request and must not lend it sources, roles or assumptions
+        const previousBrief: SourcingBrief | undefined = latestBriefForThread(
+          await this.sourcingLedgerService.read(workspaceId, projectId),
+          context.threadId,
+        );
+        const merged: SourcingBrief = {
+          ...mergeSourcingBrief(previousBrief, briefDraft),
+          ...(isNonEmptyString(context.threadId) && {
+            threadId: context.threadId,
+          }),
+        };
         const previousRunCap = previousBrief?.capsUsd?.run;
         const nextRunCap = merged.capsUsd?.run;
 
         // Only a new run gets a fresh budget window. Raising a cap mid-run
-        // keeps the spend already recorded, so the new cap is still a ceiling
+        // keeps the spend already recorded, so the new cap is still a ceiling.
+        // A thread's first brief is a new run.
         const startsNewRun =
           newRun === true ||
+          previousBrief === undefined ||
           (nextRunCap !== undefined && previousRunCap === undefined) ||
           (nextRunCap !== undefined &&
             merged.coverage === 'exhaustive' &&
@@ -325,13 +334,17 @@ export class GetSourcingLedgerTool implements Tool {
         workspaceId,
         projectId,
       );
-      const latestEvent = [...events]
-        .reverse()
-        .find((event) => event.kind === 'brief');
-      const latestBrief =
-        latestEvent?.kind === 'brief' ? latestEvent : undefined;
+      const latestBrief = latestBriefForThread(events, context.threadId);
+      const otherThreadBrief = isDefined(latestBrief)
+        ? undefined
+        : latestBriefFromOtherThread(events, context.threadId);
       const roleSet = parsed.data.roles ?? latestBrief?.roles;
-      const pairFunnel = computePairFunnel(companyRows, { roles: roleSet });
+      // Bright Data estimate samples are a look at a query, not companies the
+      // run is working through; counting them made "13 of 48 pairs" of 20
+      const pairFunnel = computePairFunnel(
+        companyRows.filter((row) => row.otherFields?.probe !== true),
+        { roles: roleSet },
+      );
       const searchEvents = ledgerEvents.filter(
         (event): event is Extract<SourcingLedgerEvent, { kind: 'search' }> =>
           event.kind === 'search',
@@ -476,6 +489,11 @@ export class GetSourcingLedgerTool implements Tool {
         message: messageParts.join(' '),
         result: {
           ...(latestBrief ? { brief: latestBrief } : {}),
+          // An earlier request's brief is named, not shown: its sources and
+          // assumptions are not this request's plan
+          ...(isDefined(otherThreadBrief) && {
+            earlierRequestBrief: `${otherThreadBrief.who} (${otherThreadBrief.at.slice(0, 10)}, another chat). Not this request's plan: write a new brief.`,
+          }),
           funnel,
           ...(companyRows.length > 0 ? { pairs: pairFunnel } : {}),
           ...(latestBrief?.coverage !== undefined || frontier !== undefined
@@ -502,7 +520,14 @@ export class GetSourcingLedgerTool implements Tool {
               .reduce((sum, event) => sum + event.spentUsd, 0)
               .toFixed(3),
           ),
-          events: events.slice(-MAX_EVENTS),
+          events: events
+            .filter(
+              (event) =>
+                event.kind !== 'brief' ||
+                !isNonEmptyString(context.threadId) ||
+                event.threadId === context.threadId,
+            )
+            .slice(-MAX_EVENTS),
         },
       };
     } catch (error) {

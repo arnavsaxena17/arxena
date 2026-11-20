@@ -131,8 +131,9 @@ const mergePerson = (
 
   // otherFields are never dropped: a merge only adds keys and refreshes the
   // ones that are not answers written by an AI column
+  // base is a row already on the tab: {} says so even when it has no fields
   const otherFields = mergeOutreachOtherFields(
-    base.otherFields,
+    base.otherFields ?? {},
     incoming.otherFields,
   );
 
@@ -140,6 +141,18 @@ const mergePerson = (
     merged.otherFields = otherFields;
   } else {
     delete merged.otherFields;
+  }
+
+  // First sighting wins, so the tab's Added date survives every later write;
+  // only a row that has none yet takes the incoming one
+  merged.createdAt = chooseOptionalText(
+    base.createdAt,
+    incoming.createdAt,
+    false,
+  );
+
+  if (merged.createdAt === undefined) {
+    delete merged.createdAt;
   }
 
   return merged;

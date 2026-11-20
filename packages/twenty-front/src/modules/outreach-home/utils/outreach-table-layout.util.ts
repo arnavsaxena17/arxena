@@ -277,6 +277,20 @@ export const readRawJsonCell = (row: object, columnId: string): string => {
   return String(value);
 };
 
+// Bookkeeping the server stamps on every row (which search wrote it and which
+// first added it). Tools read them; a person reading the table never needs a
+// column of ids.
+export const OUTREACH_INTERNAL_OTHER_FIELD_KEYS: ReadonlySet<string> = new Set(
+  ['resultSetIds', 'firstResultSetId'],
+);
+
+const isInternalColumnId = (columnId: string): boolean =>
+  OUTREACH_INTERNAL_OTHER_FIELD_KEYS.has(
+    columnId.startsWith('otherFields.')
+      ? columnId.slice('otherFields.'.length)
+      : '',
+  );
+
 export const collectRawJsonColumnIds = (
   rows: object[],
   extraColumnIds: string[] = [],
@@ -320,7 +334,8 @@ export const collectRawJsonColumnIds = (
     }
   }
 
-  return [...columnIds];
+  // Also drops one a saved layout still lists from before it was hidden
+  return [...columnIds].filter((columnId) => !isInternalColumnId(columnId));
 };
 
 export const getOutreachCellText = <TRow>(

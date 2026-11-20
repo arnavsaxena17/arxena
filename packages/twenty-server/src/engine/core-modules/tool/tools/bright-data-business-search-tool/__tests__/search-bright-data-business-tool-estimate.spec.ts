@@ -1,3 +1,4 @@
+import { WriteSearchRowsToProjectTabService } from 'src/engine/core-modules/tool/tools/outreach-tab-tool/write-search-rows-to-project-tab.service';
 import { SearchBrightDataBusinessTool } from 'src/engine/core-modules/tool/tools/bright-data-business-search-tool/search-bright-data-business-tool';
 
 const plan = {
@@ -102,8 +103,10 @@ const buildTool = () => {
   const tool = new SearchBrightDataBusinessTool(
     {} as never,
     ludicrous as never,
-    upsertCompanies as never,
-    { execute: jest.fn() } as never,
+    new WriteSearchRowsToProjectTabService(
+      upsertCompanies as never,
+      { execute: jest.fn() } as never,
+    ),
   );
 
   return { tool, ludicrous, upsertCompanies };

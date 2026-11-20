@@ -1,3 +1,4 @@
+import { WriteSearchRowsToProjectTabService } from 'src/engine/core-modules/tool/tools/outreach-tab-tool/write-search-rows-to-project-tab.service';
 import { SearchBrightDataBusinessTool } from 'src/engine/core-modules/tool/tools/bright-data-business-search-tool/search-bright-data-business-tool';
 
 const run = {
@@ -38,8 +39,10 @@ const buildTool = () => {
   const tool = new SearchBrightDataBusinessTool(
     {} as never,
     ludicrous as never,
-    upsertCompanies as never,
-    { execute: jest.fn() } as never,
+    new WriteSearchRowsToProjectTabService(
+      upsertCompanies as never,
+      { execute: jest.fn() } as never,
+    ),
   );
 
   return { tool, upsertCompanies, ludicrous };
@@ -81,7 +84,7 @@ describe('SearchBrightDataBusinessTool project from context', () => {
     expect(output.result).toEqual(
       expect.objectContaining({
         projectId: 'project-1',
-        ephemeralWritten: 1,
+        written: 1,
         count: 1,
       }),
     );

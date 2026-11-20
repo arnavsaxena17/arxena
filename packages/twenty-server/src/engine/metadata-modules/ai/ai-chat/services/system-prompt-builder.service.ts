@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { isNonEmptyString } from '@sniptt/guards';
 import {
   assertUnreachable,
   getValidTimeZoneOrUndefined,
@@ -25,6 +26,7 @@ import {
 import { CHAT_SYSTEM_PROMPTS } from 'src/engine/metadata-modules/ai/ai-chat/constants/chat-system-prompts.const';
 import { type FlatSkill } from 'src/engine/metadata-modules/flat-skill/types/flat-skill.type';
 import { SkillService } from 'src/engine/metadata-modules/skill/skill.service';
+import { introLead } from 'src/engine/metadata-modules/ai/ai-chat/constants/campaign-find-rules.const';
 
 export type SystemPromptSection = {
   title: string;
@@ -50,6 +52,63 @@ const estimateTokenCount = (text: string): number => Math.ceil(text.length / 4);
 
 // Categories above this size are summarized instead of listing every tool name
 const LARGE_CATEGORY_TOOL_LIST_THRESHOLD = 15;
+
+// Prompt order: the two hand-written catalogs first (CRUD grammar, Arxena
+// skills), then every remaining category in declaration order.
+const CATEGORIES_IN_PROMPT_ORDER: ToolCategory[] = Object.values(
+  ToolCategory,
+).filter(
+  (category) =>
+    category !== ToolCategory.DATABASE_CRUD && category !== ToolCategory.ARXENA,
+);
+
+const groupToolsByCategory = (
+  tools: ToolIndexEntry[],
+): Map<ToolCategory, ToolIndexEntry[]> =>
+  tools.reduce<Map<ToolCategory, ToolIndexEntry[]>>((accumulator, tool) => {
+    const categoryTools = accumulator.get(tool.category) ?? [];
+
+    categoryTools.push(tool);
+    accumulator.set(tool.category, categoryTools);
+
+    return accumulator;
+  }, new Map<ToolCategory, ToolIndexEntry[]>());
+
+// CRUD tools are named {operation}_{object}; the prompt prints the grammar once
+// and lists the operations and objects it applies to
+const splitDatabaseCrudTools = (
+  tools: ToolIndexEntry[],
+): {
+  operationNames: string[];
+  objectNames: string[];
+  standaloneTools: ToolIndexEntry[];
+} => {
+  const operationNames: string[] = [];
+  const objectNames: string[] = [];
+  const standaloneTools: ToolIndexEntry[] = [];
+
+  for (const tool of tools) {
+    if (!tool.objectName || !tool.operation) {
+      standaloneTools.push(tool);
+
+      continue;
+    }
+
+    if (!operationNames.includes(tool.operation)) {
+      operationNames.push(tool.operation);
+    }
+
+    if (!objectNames.includes(tool.objectName)) {
+      objectNames.push(tool.objectName);
+    }
+  }
+
+  return {
+    operationNames,
+    objectNames: objectNames.sort(),
+    standaloneTools,
+  };
+};
 
 @Injectable()
 export class SystemPromptBuilderService {
@@ -81,6 +140,14 @@ export class SystemPromptBuilderService {
     );
 
     const skillCatalog = await this.skillService.findAllFlatSkills(workspaceId);
+
+    // this.logger.log(
+    //   `[SYSTEM_PROMPT_BUILDER] toolCatalog\n${JSON.stringify(toolCatalog)}`,
+    // );
+
+    // this.logger.log(
+    //   `[SYSTEM_PROMPT_BUILDER] skillCatalog\n${JSON.stringify(skillCatalog)}`,
+    // );
 
     const sections: SystemPromptSection[] = [];
 
@@ -465,59 +532,6 @@ export class SystemPromptBuilderService {
     });
   }
 
-  private buildGenericCategoryCatalogSection(
-    category: ToolCategory,
-    tools: ToolIndexEntry[],
-    preloadedSet: Set<string>,
-  ): string {
-    const categoryLabel = this.getCategoryLabel(category);
-
-    if (tools.length <= LARGE_CATEGORY_TOOL_LIST_THRESHOLD) {
-      return `
-      #### ${categoryLabel} (${tools.length} tools)
-      ${tools
-        .map((tool) => {
-          const status = preloadedSet.has(tool.name) ? ' ✓' : '';
-
-          return `- \`${tool.name}\`${status}`;
-        })
-        .join('\n')}`;
-    }
-
-    if (category === ToolCategory.EXTERNAL_MCP) {
-      const countsBySlug = new Map<string, number>();
-
-      for (const tool of tools) {
-        const slug = getExternalMcpServerSlug(tool.name) ?? 'other';
-
-        countsBySlug.set(slug, (countsBySlug.get(slug) ?? 0) + 1);
-      }
-
-      const serverLines = [...countsBySlug.entries()]
-        .sort((first, second) => second[1] - first[1])
-        .map(
-          ([slug, count]) =>
-            `- \`${slug}\` (${count} tools) → \`${GET_TOOL_CATALOG_TOOL_NAME}({server: "${slug}"})\``,
-        )
-        .join('\n');
-
-      return `
-      #### ${categoryLabel} (${tools.length} tools across ${countsBySlug.size} connected servers)
-      Tool names are not listed here. Browse a server, then \`${LEARN_TOOLS_TOOL_NAME}\` only the tools you will run. Use \`${GET_TOOL_CATALOG_TOOL_NAME}({query: "..."})\` to search by keyword.
-      ${serverLines}`;
-    }
-
-    return `
-      #### ${categoryLabel} (${tools.length} tools)
-      Tool names are not listed here. Browse with \`${GET_TOOL_CATALOG_TOOL_NAME}({categories: ["${category}"]})\` or search with \`${GET_TOOL_CATALOG_TOOL_NAME}({query: "..."})\`.`;
-  }
-
-  private buildArxenaCatalogSection(toolCount: number): string {
-    return `
-      #### ${this.getCategoryLabel(ToolCategory.ARXENA)} (${toolCount} tools)
-      Names come from the loaded skill. If the skill does not name the tool, search with \`${GET_TOOL_CATALOG_TOOL_NAME}({query: "..."})\`.`;
-  }
-
   buildToolCatalogSection(
     toolCatalog: ToolIndexEntry[],
     preloadedTools: string[],
@@ -529,142 +543,200 @@ export class SystemPromptBuilderService {
     const excludeTools = options?.excludeTools;
     const intro = options?.intro ?? 'chat';
 
-    const filteredCatalog = excludeTools
+    const visibleTools = excludeTools
       ? toolCatalog.filter((entry) => !excludeTools.has(entry.name))
       : toolCatalog;
-    const filteredPreloaded = excludeTools
+
+    const visiblePreloadedTools = excludeTools
       ? preloadedTools.filter((name) => !excludeTools.has(name))
       : preloadedTools;
 
-    const preloadedSet = new Set(filteredPreloaded);
-    const toolsByCategory = new Map<string, ToolIndexEntry[]>();
+    const preloadedSet = new Set(visiblePreloadedTools);
 
-    for (const tool of filteredCatalog) {
-      const existing = toolsByCategory.get(tool.category) ?? [];
-
-      existing.push(tool);
-      toolsByCategory.set(tool.category, existing);
-    }
-
-    const preloadedList =
-      filteredPreloaded.length > 0
-        ? filteredPreloaded.map((toolName) => `- \`${toolName}\` ✓`).join('\n')
-        : '(none)';
-
-    const introLead =
-      intro === 'mcp'
-        ? `You have access to ${filteredCatalog.length} tools via \`learn_tools\` / \`execute_tool\`. They are NOT bound as top-level MCP tools.
-      Construct CRUD names from the grammar below. Load a skill for GTM/workflow/metadata tool names.`
-        : `You have access to ${filteredCatalog.length} tools. Some are pre-loaded and ready to use immediately.
-      To use any other tool, first call \`${LEARN_TOOLS_TOOL_NAME}\` to learn its schema, then call \`${EXECUTE_TOOL_TOOL_NAME}\` to run it.`;
-
-    const sections: string[] = [
-      `
-      ## Available Tools
-
-      ${introLead}
-
-      ### Pre-loaded Tools (ready to use now)
-      ${preloadedList}${
-        intro === 'chat' ? '\n\n      ### Tool Catalog by Category' : ''
-      }`,
-    ];
-
-    const crudTools = toolsByCategory.get(ToolCategory.DATABASE_CRUD);
-
-    if (crudTools && crudTools.length > 0) {
-      sections.push(
-        this.buildDatabaseCrudCatalogSection(
-          crudTools,
-          preloadedSet,
-          this.getCategoryLabel(ToolCategory.DATABASE_CRUD),
-        ),
-      );
-    }
-
-    const arxenaTools = toolsByCategory.get(ToolCategory.ARXENA);
-
-    if (arxenaTools && arxenaTools.length > 0) {
-      sections.push(this.buildArxenaCatalogSection(arxenaTools.length));
-    }
-
-    const categoryOrder = Object.values(ToolCategory).filter(
-      (category) =>
-        category !== ToolCategory.DATABASE_CRUD &&
-        category !== ToolCategory.ARXENA,
+    const toolsByCategory = groupToolsByCategory(visibleTools);
+    const availableToolsSection = this.buildAvailableToolsSection(
+      visiblePreloadedTools,
+      intro,
     );
 
-    for (const category of categoryOrder) {
-      const tools = toolsByCategory.get(category);
+    const databaseCrudCatalogSection = this.buildDatabaseCrudCatalogSection(
+      toolsByCategory.get(ToolCategory.DATABASE_CRUD) ?? [],
+      preloadedSet,
+    );
 
-      if (!tools || tools.length === 0) {
-        continue;
-      }
+    const arxenaCatalogSection = this.buildArxenaCatalogSection(
+      toolsByCategory.get(ToolCategory.ARXENA) ?? [],
+    );
 
-      sections.push(
-        this.buildGenericCategoryCatalogSection(category, tools, preloadedSet),
-      );
-    }
+    const genericCategoryCatalogSections = CATEGORIES_IN_PROMPT_ORDER.map(
+      (category) =>
+        this.buildGenericCategoryCatalogSection(
+          category,
+          toolsByCategory.get(category) ?? [],
+          preloadedSet,
+        ),
+    );
 
-    sections.push(`
+    const toolUsageFooter = this.buildToolUsageFooter();
+
+    this.logger.log(
+      `[SYSTEM_PROMPT_BUILDER] availableToolsSection\n${availableToolsSection}`,
+    );
+    this.logger.log(
+      `[SYSTEM_PROMPT_BUILDER] databaseCrudCatalogSection\n${databaseCrudCatalogSection}`,
+    );
+    this.logger.log(
+      `[SYSTEM_PROMPT_BUILDER] arxenaCatalogSection\n${arxenaCatalogSection}`,
+    );
+    this.logger.log(
+      `[SYSTEM_PROMPT_BUILDER] genericCategoryCatalogSections\n${genericCategoryCatalogSections.join('\n')}`,
+    );
+    this.logger.log(
+      `[SYSTEM_PROMPT_BUILDER] toolUsageFooter\n${toolUsageFooter}`,
+    );
+
+    const sections = [
+      availableToolsSection,
+      // databaseCrudCatalogSection,
+      arxenaCatalogSection,
+      // ...genericCategoryCatalogSections,
+      toolUsageFooter,
+    ];
+    const filteredSections = sections.filter(isNonEmptyString).join('\n');
+
+    this.logger.log(
+      `[SYSTEM_PROMPT_BUILDER] final prompt\n${filteredSections}`,
+    );
+
+    return filteredSections;
+  }
+
+  private buildAvailableToolsSection(
+    preloadedTools: string[],
+    intro: 'chat' | 'mcp',
+  ): string {
+    const preloadedList =
+      preloadedTools.length > 0
+        ? preloadedTools.map((toolName) => `- \`${toolName}\` ✓`).join('\n')
+        : '(none)';
+    const catalogHeading =
+      intro === 'chat' ? '\n\n      ### Tool Catalog by Category' : '';
+
+    return `
+## Available Tools
+
+${introLead}
+
+      ### Pre-loaded Tools (ready to use now)
+      ${preloadedList}${catalogHeading}`;
+  }
+
+  private buildToolUsageFooter(): string {
+    return `
       ### How to Use Tools
       1. **Pre-loaded tools** (marked with ✓): Use directly
-      2. **Other tools**: First call \`${LEARN_TOOLS_TOOL_NAME}({toolNames: ["tool_name"]})\` to learn the schema, then call \`${EXECUTE_TOOL_TOOL_NAME}({toolName: "tool_name", arguments: {...}})\` to run it`);
+      2. **Other tools**: First call \`${LEARN_TOOLS_TOOL_NAME}({toolNames: ["tool_name"]})\` to learn the schema, then call \`${EXECUTE_TOOL_TOOL_NAME}({toolName: "tool_name", arguments: {...}})\` to run it`;
+  }
 
-    return sections.join('\n');
+  private buildArxenaCatalogSection(tools: ToolIndexEntry[]): string {
+    if (tools.length === 0) {
+      return '';
+    }
+
+    return `
+      #### ${this.getCategoryLabel(ToolCategory.ARXENA)} (${tools.length} tools)
+      Names come from the loaded skill. If the skill does not name the tool, search with \`${GET_TOOL_CATALOG_TOOL_NAME}({query: "..."})\`.`;
+  }
+
+  private buildGenericCategoryCatalogSection(
+    category: ToolCategory,
+    tools: ToolIndexEntry[],
+    preloadedSet: Set<string>,
+  ): string {
+    if (tools.length === 0) {
+      return '';
+    }
+
+    if (tools.length > LARGE_CATEGORY_TOOL_LIST_THRESHOLD) {
+      return category === ToolCategory.EXTERNAL_MCP
+        ? this.buildConnectedMcpServersCatalogSection(tools)
+        : this.buildLargeCategoryCatalogSection(category, tools);
+    }
+
+    return `
+      #### ${this.getCategoryLabel(category)} (${tools.length} tools)
+      ${tools
+        .map((tool) => {
+          const status = preloadedSet.has(tool.name) ? ' ✓' : '';
+
+          return `- \`${tool.name}\`${status}`;
+        })
+        .join('\n')}`;
+  }
+
+  private buildLargeCategoryCatalogSection(
+    category: ToolCategory,
+    tools: ToolIndexEntry[],
+  ): string {
+    return `
+      #### ${this.getCategoryLabel(category)} (${tools.length} tools)
+      Tool names are not listed here. Browse with \`${GET_TOOL_CATALOG_TOOL_NAME}({categories: ["${category}"]})\` or search with \`${GET_TOOL_CATALOG_TOOL_NAME}({query: "..."})\`.`;
+  }
+
+  private buildConnectedMcpServersCatalogSection(
+    tools: ToolIndexEntry[],
+  ): string {
+    const countsBySlug = tools.reduce<Map<string, number>>(
+      (accumulator, tool) => {
+        const slug = getExternalMcpServerSlug(tool.name) ?? 'other';
+
+        accumulator.set(slug, (accumulator.get(slug) ?? 0) + 1);
+
+        return accumulator;
+      },
+      new Map<string, number>(),
+    );
+
+    const serverLines = [...countsBySlug.entries()]
+      .sort((first, second) => second[1] - first[1])
+      .map(
+        ([slug, count]) =>
+          `- \`${slug}\` (${count} tools) → \`${GET_TOOL_CATALOG_TOOL_NAME}({server: "${slug}"})\``,
+      )
+      .join('\n');
+
+    return `
+      #### ${this.getCategoryLabel(ToolCategory.EXTERNAL_MCP)} (${tools.length} tools across ${countsBySlug.size} connected servers)
+      Tool names are not listed here. Browse a server, then \`${LEARN_TOOLS_TOOL_NAME}\` only the tools you will run. Use \`${GET_TOOL_CATALOG_TOOL_NAME}({query: "..."})\` to search by keyword.
+      ${serverLines}`;
   }
 
   private buildDatabaseCrudCatalogSection(
     tools: ToolIndexEntry[],
     preloadedSet: Set<string>,
-    categoryLabel: string,
   ): string {
-    const operationOrder: string[] = [];
-    const seenOps = new Set<string>();
-
-    const objectToolsMap = new Map<string, string[]>();
-    const standaloneTools: ToolIndexEntry[] = [];
-
-    for (const tool of tools) {
-      if (tool.objectName && tool.operation) {
-        const ops = objectToolsMap.get(tool.objectName) ?? [];
-
-        ops.push(tool.operation);
-        objectToolsMap.set(tool.objectName, ops);
-
-        if (!seenOps.has(tool.operation)) {
-          seenOps.add(tool.operation);
-          operationOrder.push(tool.operation);
-        }
-      } else {
-        standaloneTools.push(tool);
-      }
+    if (tools.length === 0) {
+      return '';
     }
 
-    const lines: string[] = [`\n#### ${categoryLabel} (${tools.length} tools)`];
+    const { operationNames, objectNames, standaloneTools } =
+      splitDatabaseCrudTools(tools);
 
-    if (objectToolsMap.size > 0) {
-      const objectNames = [...objectToolsMap.keys()].sort();
+    const lines: string[] = [
+      `\n#### ${this.getCategoryLabel(ToolCategory.DATABASE_CRUD)} (${tools.length} tools)`,
+    ];
 
+    if (objectNames.length > 0) {
       lines.push(`Operations per object:`);
-      lines.push(...operationOrder.map((op) => `- \`${op}_{object}\``));
+      lines.push(
+        ...operationNames.map((operation) => `- \`${operation}_{object}\``),
+      );
 
       lines.push(`\nObjects (${objectNames.length}):`);
       lines.push(...objectNames.map((name) => `- \`${name}\``));
 
-      const findManyExample = tools.find((t) => t.operation === 'find_many');
-      const findOneExample = tools.find(
-        (t) =>
-          t.operation === 'find_one' &&
-          t.objectName === findManyExample?.objectName,
-      );
-      const examplePart =
-        findManyExample && findOneExample
-          ? ` e.g. \`${findManyExample.name}\` / \`${findOneExample.name}\``
-          : '';
-
       lines.push(
-        `\nTool name = operation + object name. *_many_* operations use the plural form, *_one_* use the singular form.${examplePart}`,
+        `\nTool name = operation + object name. *_many_* operations use the plural form, *_one_* use the singular form.${this.buildDatabaseCrudExample(tools)}`,
       );
     }
 
@@ -675,6 +747,21 @@ export class SystemPromptBuilderService {
     }
 
     return lines.join('\n');
+  }
+
+  private buildDatabaseCrudExample(tools: ToolIndexEntry[]): string {
+    const findManyExample = tools.find(
+      (tool) => tool.operation === 'find_many',
+    );
+    const findOneExample = tools.find(
+      (tool) =>
+        tool.operation === 'find_one' &&
+        tool.objectName === findManyExample?.objectName,
+    );
+
+    return findManyExample && findOneExample
+      ? ` e.g. \`${findManyExample.name}\` / \`${findOneExample.name}\``
+      : '';
   }
 
   private getCategoryLabel(category: ToolCategory): string {

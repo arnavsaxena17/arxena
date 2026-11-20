@@ -39,5 +39,7 @@ export const outreachRowToEphemeralPerson = (
   warmPath: '—',
   stage: 'queued',
   email: row.email,
+  // Keeps the moment the search found the person, not the moment it was written
+  createdAt: row.addedAt,
   ...(row.otherFields ? { otherFields: row.otherFields } : {}),
 });

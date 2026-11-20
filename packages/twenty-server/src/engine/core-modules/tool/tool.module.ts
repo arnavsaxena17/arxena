@@ -42,7 +42,6 @@ import { TitleTaxonomyModule } from 'src/engine/core-modules/title-taxonomy/titl
 import { TheOfficialBoardModule } from 'src/engine/core-modules/theofficialboard/theofficialboard.module';
 import { TheOrgModule } from 'src/engine/core-modules/theorg/theorg.module';
 import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
-import { CandidateJudgeService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/candidate-judge.service';
 import { FindPeopleCascadeService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-cascade.service';
 import { UnipileCompanyUrlResolverService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/unipile-company-url-resolver.service';
 import { FindPeopleRunService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-run.service';
@@ -179,7 +178,6 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     FindPeopleGoogleSearchService,
     FindPeopleSerpSourcesService,
     GoogleResultExtractionService,
-    CandidateJudgeService,
     LinkedinProfileResolverService,
     GetOutreachTabTool,
     PreviewOutreachAiColumnTool,

@@ -100,7 +100,41 @@ export type SourcingBrief = {
   // plans, judges and stops against; read it through resolveSourcingSpec
   spec?: SourcingSpecDraft;
   version?: number;
+  // Server-set: the chat thread that wrote the brief. A brief belongs to one
+  // request; another thread starts its own (see latestBriefForThread)
+  threadId?: string;
 };
+
+type BriefEvent = { kind: 'brief'; at: string } & SourcingBrief;
+
+const isBriefEvent = (event: { kind: string }): event is BriefEvent =>
+  event.kind === 'brief';
+
+// The brief this thread is working to. A brief from another thread is another
+// request, so it is neither merged into this one nor read as its plan: an old
+// run's sources, roles and assumptions must not steer a new request. Without a
+// thread (a background chunk that lost it, MCP), the latest brief is used.
+export const latestBriefForThread = (
+  events: ReadonlyArray<{ kind: string }>,
+  threadId: string | undefined,
+): BriefEvent | undefined => {
+  const briefs = events.filter(isBriefEvent);
+
+  return [...briefs]
+    .reverse()
+    .find((brief) => threadId === undefined || brief.threadId === threadId);
+};
+
+// The latest brief another thread wrote, for a one-line mention only
+export const latestBriefFromOtherThread = (
+  events: ReadonlyArray<{ kind: string }>,
+  threadId: string | undefined,
+): BriefEvent | undefined =>
+  threadId === undefined
+    ? undefined
+    : [...events.filter(isBriefEvent)]
+        .reverse()
+        .find((brief) => brief.threadId !== threadId);
 
 export type SourcingPersona = 'sales' | 'exec_search';
 

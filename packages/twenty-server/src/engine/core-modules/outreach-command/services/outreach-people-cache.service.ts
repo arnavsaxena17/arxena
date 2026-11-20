@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
+import { isNonEmptyString } from '@sniptt/guards';
+
 import { OUTREACH_TAB_MAX_ROWS } from 'src/engine/core-modules/outreach-command/constants/outreach-tab.constants';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
@@ -24,6 +26,16 @@ export type OutreachPeopleCachePayload = {
 
 const isPlaceholderProjectId = (projectId: string): boolean =>
   projectId === 'job-id' || projectId === 'project-id';
+
+// "Added" is the first write, not the latest: a row already carrying it keeps
+// its value, so the People tab can show when discovery found the person
+const stampAddedAt = (
+  people: OutreachEphemeralPerson[],
+  now = new Date().toISOString(),
+): OutreachEphemeralPerson[] =>
+  people.map((person) =>
+    isNonEmptyString(person.createdAt) ? person : { ...person, createdAt: now },
+  );
 
 @Injectable()
 export class OutreachPeopleCacheService {
@@ -92,7 +104,7 @@ export class OutreachPeopleCacheService {
     // The cache is the single write boundary for the People tab: every writer
     // (tools, spreadsheet import, the client PUT) passes through here, so a
     // duplicate must not survive it whatever the caller sent.
-    const dedupedPeople = compactPeople(people);
+    const dedupedPeople = stampAddedAt(compactPeople(people));
     const limitedPeople =
       dedupedPeople.length > MAX_PEOPLE_PER_PROJECT
         ? dedupedPeople.slice(0, MAX_PEOPLE_PER_PROJECT)

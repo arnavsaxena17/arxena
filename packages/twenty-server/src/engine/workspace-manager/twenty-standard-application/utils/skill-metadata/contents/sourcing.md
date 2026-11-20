@@ -6,7 +6,7 @@ routes:
   - when: |-
       Find companies or people / LinkedIn / Harvest / Sales Nav / places on a map
     hint: |-
-      . Always add `for-recruiting` (candidates for a role) or `for-sales` (prospects you sell to — not a Sales Rep / AE / BDR hire), plus the type: `people` for a population where any employer will do, `companies`, `places`, `people-by-company` for a role at companies already named, or `playbook-company-first` for a role at companies the user did not name. Add `industry-search` when an industry is named, `scoring` + `playbook-shortfall` for about N, `query-planning` above 1,000 rows. A count of about 25 or fewer is small: "top 10 <role> at <industry> companies in <city>" bounds the **companies**, so bound the company list to that N instead of building the whole industry. State what the number counts before any paid call.
+      . Always add `for-recruiting` (candidates for a role) or `for-sales` (prospects you sell to — not a Sales Rep / AE / BDR hire), plus the type: `people` for a population where any employer will do, `companies`, `places`, `people-by-company` for a role at companies already named or at a known set you can name ("top hospitals in Mumbai": name up to 12, confirm, never a population search), or `playbook-company-first` for a role at companies the user did not name. Add `industry-search` when an industry is named, `scoring` + `playbook-shortfall` for about N, `query-planning` above 1,000 rows. A count of about 25 or fewer is small: "top 10 <role> at <industry> companies in <city>" bounds the **companies**, so bound the company list to that N instead of building the whole industry. State what the number counts before any paid call.
 parts:
   - companies
   - places
@@ -116,7 +116,7 @@ Pick the path and say it in one line. If that section is not in this prompt, loa
 | Mid-level or plant-level roles | `people`, and `src-naukri` when the user has the Naukri extension connected | {{source: default people}}; Naukri rows arrive on the tab |
 | Companies | `companies` | {{source: default companies}} |
 | Places on a map: outlets you can walk into | `places` | {{source: google-maps companies}} |
-| A role at companies already named or already on the project | `people-by-company` | `find_people_by_company` |
+| A role at companies named, on the project, or a known set ("top hospitals in Mumbai": name ≤12, confirm, never search) | `people-by-company` | `find_people_by_company` |
 | Companies or people in an industry, sector or segment | `industry-search` with the search type | {{source: default companies}}, then the next source that is on |
 | People filtered by their current job title | `people` (its job title search) | {{source: default people}} |
 | A role plus a company attribute — an industry, a segment, "startups", a stage, size or revenue band, a peer set — with no companies named | `playbook-company-first` (companies first, then the people) | {{source: default companies}}, then `find_people_by_company` |

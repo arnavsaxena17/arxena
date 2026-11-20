@@ -1359,7 +1359,7 @@ maybe_stream_component() {
   CURRENT_INSTANCE_ID="$(curl -s --connect-timeout 1 \
     -H "X-aws-ec2-metadata-token: $DOCS_IMDS_TOKEN" \
     http://169.254.169.254/latest/meta-data/instance-id || true)"
-    if [ "$CURRENT_INSTANCE_ID" = "i-01fa0853163833136" ]; then
+    if [ "$CURRENT_INSTANCE_ID" = "${DOCS_PROD_INSTANCE_ID:-i-0f294090da1d0956b}" ]; then
       ensure_docs_nginx_site \
         docs.arxena.com \
           "$docs_root/arxena" \

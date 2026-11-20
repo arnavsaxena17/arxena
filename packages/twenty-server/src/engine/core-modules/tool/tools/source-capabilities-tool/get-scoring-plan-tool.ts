@@ -14,7 +14,10 @@ import {
   readPersonCoverage,
   type RowCoverage,
 } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/row-coverage.util';
-import { type SourcingBrief } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
+import {
+  latestBriefForThread,
+  type SourcingBrief,
+} from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
@@ -97,7 +100,11 @@ export class GetScoringPlanTool implements Tool {
             description: criterion.description,
             mustHave: criterion.mustHave,
           }))
-        : ((await this.briefCriteria(projectId, context.workspaceId)) ?? []);
+        : ((await this.briefCriteria(
+            projectId,
+            context.workspaceId,
+            context.threadId,
+          )) ?? []);
 
     if (criteria.length === 0) {
       return {
@@ -131,9 +138,7 @@ export class GetScoringPlanTool implements Tool {
 
       for (const row of rows) {
         const coverage: RowCoverage =
-          tab === 'people'
-            ? readPersonCoverage(row)
-            : readCompanyCoverage(row);
+          tab === 'people' ? readPersonCoverage(row) : readCompanyCoverage(row);
         const plan = planScoring({
           coverage,
           criteria,
@@ -151,7 +156,8 @@ export class GetScoringPlanTool implements Tool {
           };
 
           entry.rows += 1;
-          entry.costUsd += STEP_COSTS_USD[step.step as keyof typeof STEP_COSTS_USD] ?? 0;
+          entry.costUsd +=
+            STEP_COSTS_USD[step.step as keyof typeof STEP_COSTS_USD] ?? 0;
           for (const dimension of step.settles) {
             entry.settles.add(dimension);
           }
@@ -178,7 +184,10 @@ export class GetScoringPlanTool implements Tool {
       }
 
       const criteriaByKey = new Map(
-        criteria.map((criterion, index) => [`c${index}`, criterion.description]),
+        criteria.map((criterion, index) => [
+          `c${index}`,
+          criterion.description,
+        ]),
       );
 
       return {
@@ -212,23 +221,25 @@ export class GetScoringPlanTool implements Tool {
     }
   }
 
+  // Criteria from this thread's brief; an earlier chat's brief is another
+  // request
   private async briefCriteria(
     projectId: string,
     workspaceId: string,
+    threadId?: string,
   ): Promise<ScoringCriterion[] | undefined> {
     const events =
       (await this.sourcingLedgerService
         ?.read(workspaceId, projectId)
         .catch(() => [])) ?? [];
-    const briefEvent = [...events]
-      .reverse()
-      .find((event) => event.kind === 'brief');
+    const brief: SourcingBrief | undefined = latestBriefForThread(
+      events,
+      threadId,
+    );
 
-    if (briefEvent === undefined || briefEvent.kind !== 'brief') {
+    if (brief === undefined) {
       return undefined;
     }
-
-    const brief = briefEvent as SourcingBrief;
 
     if (brief.criteria.length === 0) {
       return undefined;

@@ -51,5 +51,44 @@ export const mergeOutreachOtherFields = (
     mergeSourcingPoolFields(previousFields, incomingFields),
   );
 
+  Object.assign(
+    merged,
+    mergeResultSetFields(previous, previousFields, incomingFields),
+  );
+
   return Object.keys(merged).length > 0 ? merged : undefined;
+};
+
+const toStringList = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === 'string')
+    : [];
+
+// Every search that wrote a row stays listed on it, and the search that first
+// added it never changes: that is how "what did this search find" is answered
+// once several searches share one project tab. previous undefined is a new
+// row; any existing row, even one that predates resultSetIds, never takes the
+// incoming search as its first one.
+const mergeResultSetFields = (
+  previousOrNew: Record<string, unknown> | undefined,
+  previous: Record<string, unknown>,
+  incoming: Record<string, unknown>,
+): Record<string, unknown> => {
+  const resultSetIds = [
+    ...new Set([
+      ...toStringList(previous.resultSetIds),
+      ...toStringList(incoming.resultSetIds),
+    ]),
+  ];
+  const firstResultSetId =
+    previousOrNew === undefined
+      ? incoming.firstResultSetId
+      : previous.firstResultSetId;
+
+  return {
+    ...(resultSetIds.length > 0 && { resultSetIds }),
+    ...(typeof firstResultSetId === 'string'
+      ? { firstResultSetId }
+      : { firstResultSetId: undefined }),
+  };
 };
