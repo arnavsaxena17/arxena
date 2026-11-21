@@ -43,10 +43,10 @@ describe('mapLinkedinQuerySetToHarvestParameters', () => {
     });
   });
 
-  // Harvest's company search documents `location`; `headquarterLocations` is a
-  // people-search name, and sending it to the company endpoint drops the filter
-  // with no error
-  it('should map companies to search and location', () => {
+  // /linkedin/account-search, the endpoint search_harvest_accounts calls, takes
+  // `headquarterLocations`. `location` belongs to /linkedin/company-search, a
+  // different endpoint (name → LinkedIn URL), and would be dropped with no error
+  it('should map companies to search and headquarterLocations', () => {
     const [mapped] = mapLinkedinQuerySetToHarvestParameters({
       querySet: { search_query_set: [query] },
       category: 'companies',
@@ -54,10 +54,10 @@ describe('mapLinkedinQuerySetToHarvestParameters', () => {
 
     expect(mapped.searchParameters).toEqual({
       search: 'textile OR fabric',
-      location: ['Mumbai', 'Surat'],
+      headquarterLocations: ['Mumbai', 'Surat'],
     });
     expect(mapped.companyNames).toEqual([]);
-    expect(mapped.searchParameters).not.toHaveProperty('headquarterLocations');
+    expect(mapped.searchParameters).not.toHaveProperty('location');
   });
 
   // Harvest ANDs every parameter, so one unmet constraint zeros the search.

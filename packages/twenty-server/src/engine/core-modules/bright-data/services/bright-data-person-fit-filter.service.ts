@@ -91,7 +91,9 @@ export type CriterionVerdict = {
 
 export type PersonJudgement = {
   company: CompanyRelation;
+  companyNote: string;
   role: RoleFit;
+  roleNote: string;
   // The user's stated person criteria, read from the profile or evidence
   criteria?: CriterionVerdict[];
   // True when the person matches the search (the place, the company, the role)
@@ -445,7 +447,9 @@ export class BrightDataPersonFitFilterService {
         // its unknown criteria go to the profile fetch instead of failing.
         judgements.set(person.id, {
           company,
+          companyNote: '',
           role,
+          roleNote: '',
           fitsSearch: result.verdicts[FIT_KEY] !== 'fail',
           likelyFake: result.verdicts[FAKE_KEY] === 'pass',
           ...(criterionVerdicts.length > 0 && {

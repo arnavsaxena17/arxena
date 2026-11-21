@@ -52,7 +52,7 @@ import { FetchAndUpsertLocalBusinessesService } from 'src/engine/core-modules/ou
 import { ClassifyAndUpsertLocalPlacesService } from 'src/engine/core-modules/outreach-command/services/classify-and-upsert-local-places.service';
 import { FetchCompanyDetailsService } from 'src/engine/core-modules/outreach-command/services/fetch-company-details.service';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-messages.service';
-import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
+import { FetchLinkedinProfileService } from 'src/engine/core-modules/linkedin-profile-runtime/services/fetch-linkedin-profile.service';
 import { VisitLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/visit-linkedin-profile.service';
 import { FetchUserCommentsService } from 'src/engine/core-modules/outreach-command/services/fetch-user-comments.service';
 import { PlanLocalBusinessCityCoverageService } from 'src/engine/core-modules/outreach-command/services/plan-local-business-city-coverage.service';

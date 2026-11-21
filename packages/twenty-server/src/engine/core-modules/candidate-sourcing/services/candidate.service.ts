@@ -28,7 +28,7 @@ import {
 } from 'twenty-shared';
 import { NameProcessor } from '../../workspace-modifications/object-apis/data/nameProcessor';
 
-import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
+import { DataProcessingUtils } from 'src/engine/core-modules/candidate-data-sources/utils/data-processing.utils';
 import {
   generateCompleteMappings,
   mapArxCandidateToPersonNode,

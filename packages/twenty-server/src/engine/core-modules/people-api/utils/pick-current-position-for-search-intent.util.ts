@@ -1,5 +1,5 @@
 import { SALES_NAV_GRADE_TO_SENIORITIES } from 'src/engine/core-modules/candidate-search/constants/taxonomy-platform-maps';
-import { pickEmploymentPositionMatchingCompany } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-orgchart-company-match.util';
+import { pickEmploymentPositionMatchingCompany } from 'src/engine/core-modules/candidate-data-sources/utils/linkedin-orgchart-company-match.util';
 import type { LinkedInSeniorityType } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-parameter.type';
 import {
   collectCurrentPositionRecords,

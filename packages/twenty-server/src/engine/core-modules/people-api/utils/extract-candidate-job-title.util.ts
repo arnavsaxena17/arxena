@@ -1,4 +1,4 @@
-import { pickEmploymentPositionMatchingCompany } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-orgchart-company-match.util';
+import { pickEmploymentPositionMatchingCompany } from 'src/engine/core-modules/candidate-data-sources/utils/linkedin-orgchart-company-match.util';
 
 const asNonEmptyString = (value: unknown): string | null => {
   if (typeof value !== 'string') {

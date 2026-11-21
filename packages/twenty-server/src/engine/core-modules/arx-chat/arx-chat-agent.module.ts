@@ -1,11 +1,10 @@
 import { ArxWebSearchModule } from 'src/engine/core-modules/arx-web-search/arx-web-search.module';
 import { AccountRateLimitModule } from 'src/engine/core-modules/account-rate-limit/account-rate-limit.module';
-import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { EmailModule } from 'src/engine/core-modules/email/email.module';
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
@@ -35,12 +34,10 @@ import { VoiceCallController } from 'src/engine/core-modules/arx-chat/controller
 import { WhatsappUnipileController } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-unipile.controller';
 import { WorkflowApprovalController } from 'src/engine/core-modules/arx-chat/controllers/workflow-approval.controller';
 import { WorkflowFormWhatsappController } from 'src/engine/core-modules/arx-chat/controllers/workflow-form-whatsapp.controller';
-import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
 import { ExtSockWhatsappController } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.controller';
 import { WhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.job';
 import { ExtSockWhatsappService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.service';
 import { ExtSockWhatsappWhitelistProcessingService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whitelist-processing';
-import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/redis-service-ops';
 import { UnipileAccountPoolService } from 'src/engine/core-modules/arx-chat/services/unipile-account-pool.service';
 import { UnipileWebhookProcessor } from 'src/engine/core-modules/arx-chat/services/unipile-webhook.processor.job';
 import { UnipileWebhookService } from 'src/engine/core-modules/arx-chat/services/unipile-webhook.service';
@@ -52,26 +49,8 @@ import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
 import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/candidate-avatar.module';
 import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
 import { LinkedinParameterResolver } from 'src/engine/core-modules/candidate-search/utils/linkedin-parameter-resolver.util';
+import { CandidateDataSourcesModule } from 'src/engine/core-modules/candidate-data-sources/candidate-data-sources.module';
 import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
-import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
-import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
-import { DataSourceTransformerFactoryService } from 'src/engine/core-modules/candidate-sourcing/services/data-source-transformer-factory.service';
-import { ApnaDatabaseTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/apna-database-transformer.service';
-import { HiringNaukriTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/hiring-naukri-transformer.service';
-import { LinkedinPremiumJobsTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-premium-jobs-transformer.service';
-import { LinkedinPremiumTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-premium-transformer.service';
-import { LinkedinRecruiterJobsTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-recruiter-jobs-transformer.service';
-import { LinkedInSearchTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
-import { NaukriProfileDataTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/naukri-profile-data-transformer.service';
-import { ParsedCVTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/parsed-cv-transformer.service';
-import { ResdexNaukriTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/resdex-naukri-transformer.service';
-import { RmsNaukriTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/rms-naukri-transformer.service';
-import { SpreadsheetImportTwentyTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/spreadsheet-import-twenty-transformer.service';
-import { UploadedProfilesTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/uploaded-profiles-transformer.service';
-import { JDParserService } from 'src/engine/core-modules/candidate-sourcing/services/jd-parser.service';
-import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
-import { ResumeReadParseUploadService } from 'src/engine/core-modules/candidate-sourcing/services/resume-read-parse-upload.service';
-import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { ContactEnrichmentModule } from 'src/engine/core-modules/contact-enrichment/contact-enrichment.module';
 import { FeatureFlagEntity } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
 import { GoogleContactsModule } from 'src/engine/core-modules/google-contacts/google-contacts.module';
@@ -79,7 +58,6 @@ import { GoogleConnectedAccountAuthModule } from 'src/engine/core-modules/google
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
-import { LLMChatModelModule } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module';
 import { IcpExtractionService } from 'src/engine/core-modules/org-chart-outreach/icp-extraction.service';
 import { IcpOutreachMessageService } from 'src/engine/core-modules/org-chart-outreach/icp-outreach-message.service';
 import { LinkedinOutreachOpenerService } from 'src/engine/core-modules/org-chart-outreach/linkedin-outreach-opener.service';
@@ -98,12 +76,12 @@ import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-s
 import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
-import { LinkedinSalesNavigatorTransformerService } from '../candidate-sourcing/services/data-sources/linkedin-sales-navigator-transformer.service';
 import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
 import { FeatureFlagModule } from '../feature-flag/feature-flag.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { CandidateDataProcessorService } from './services/candidate-engagement/candidate-data-processor.service';
 import { CandidateEngagementArx } from './services/candidate-engagement/candidate-engagement';
+import { CandidateEngagementDataUpdateService } from './services/candidate-engagement/candidate-engagement-data-update.service';
 import { EngagedCandidateProcessor } from './services/candidate-engagement/engaged-candidate-processor.job';
 import { EngagedCandidateQueueService } from './services/candidate-engagement/engaged-candidate-queue.service';
 import { ExtensionUnipileConnectionStatusService } from './services/candidate-engagement/extension-unipile-connection-status.service';
@@ -120,7 +98,6 @@ import { WhatsAppMonitoringUnifiedService } from './services/whatsapp-monitoring
 import { WhatsappUnipileRequestService } from './services/whatsapp-unipile-request.service';
 import { WhatsappUnipileSyncService } from './services/whatsapp-unipile/whatsapp-unipile-sync.service';
 import { UnipilePoolModule } from './unipile-pool.module';
-import { AttachmentProcessingService } from './utils/attachment-processes';
 import { MeteredLlmModule } from 'src/engine/core-modules/metered-llm/metered-llm.module';
 
 const isWorker = process.argv[1]?.includes('queue-worker');
@@ -147,7 +124,6 @@ const conditionalImports = isWorker
     DataSourceModule,
     LinkedInSearchModule,
     WarmPathsModule,
-    LLMChatModelModule,
     WorkspaceSchemaBuilderModule,
     FeatureFlagModule,
     WorkspaceResolverBuilderModule,
@@ -159,13 +135,14 @@ const conditionalImports = isWorker
     WhatsappAgentModule,
     UnipileAttachmentModule,
     CandidateSearchModule,
-    forwardRef(() => CandidateSourcingModule),
+    CandidateSourcingModule,
+    CandidateDataSourcesModule,
     ContactEnrichmentModule,
     JwtModule,
     UnipilePoolModule,
     OutreachCommandModule,
     WorkflowApprovalModule,
-    forwardRef(() => OrgChartModule),
+    OrgChartModule,
     TypeORMModule,
     TypeOrmModule.forFeature([WorkspaceEntity]),
     TypeOrmModule.forFeature([DataSourceEntity]),
@@ -196,41 +173,18 @@ const conditionalImports = isWorker
   ],
   providers: [
     CalendarEmailService,
-    GoogleSheetsService,
-    PersonService,
-    CandidateService,
-    AttachmentProcessingService,
-    RedisService,
-    ResumeReadParseUploadService,
-    JDParserService,
-    ExtSockWhatsappMessageProcessor,
     ...conditionalImports,
     ExtSockWhatsappService,
-    ParsedCVTransformerService,
-    LinkedInSearchTransformerService,
     LinkedInSessionTrackerService,
     WebSocketGateway,
-    ProcessCandidatesService,
     WebSocketService,
     CandidateEngagementArx,
+    CandidateEngagementDataUpdateService,
     VoiceCallService,
     CandidateDataProcessorService,
     UpdateChat,
     CandidateChatControlListener,
     MessagingControls,
-    DataSourceTransformerFactoryService,
-    ResdexNaukriTransformerService,
-    HiringNaukriTransformerService,
-    LinkedinPremiumTransformerService,
-    LinkedinSalesNavigatorTransformerService,
-    SpreadsheetImportTwentyTransformerService,
-    RmsNaukriTransformerService,
-    ApnaDatabaseTransformerService,
-    NaukriProfileDataTransformerService,
-    UploadedProfilesTransformerService,
-    LinkedinRecruiterJobsTransformerService,
-    LinkedinPremiumJobsTransformerService,
-    DataProcessingUtils,
     EngagedCandidateQueueService,
     EngagedCandidateProcessor,
     GmailDraftShortlistQueueService,

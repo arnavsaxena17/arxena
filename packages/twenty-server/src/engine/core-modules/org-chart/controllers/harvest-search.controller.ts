@@ -130,7 +130,7 @@ export class HarvestSearchController {
       body?.searchParameters,
     );
 
-    await this.preferGeoIds(query);
+    await this.preferGeoIds(kind, query);
 
     // An empty filter set would page through LinkedIn at our cost
     if (Object.keys(query).length === 0) {
@@ -178,24 +178,33 @@ export class HarvestSearchController {
     }
   }
 
-  // Harvest reads `locations` as a comma-separated list, so a compound name
-  // like "Mumbai, Maharashtra, India" becomes three places and India swallows
-  // the filter. An id carries no comma, so it is preferred when one resolves.
-  private async preferGeoIds(query: Record<string, string>): Promise<void> {
-    if (query.geoIds || !query.locations) {
+  // Harvest reads `locations` (leads) and `headquarterLocations` (accounts) as
+  // comma-separated lists, so a compound name like "Mumbai, Maharashtra, India"
+  // becomes three places and India swallows the filter. An id carries no comma,
+  // so it is preferred when one resolves.
+  private async preferGeoIds(
+    kind: HarvestSearchKind,
+    query: Record<string, string>,
+  ): Promise<void> {
+    const [locationKey, geoIdKey] =
+      kind === 'leads'
+        ? (['locations', 'geoIds'] as const)
+        : (['headquarterLocations', 'headquarterGeoIds'] as const);
+
+    if (query[geoIdKey] || !query[locationKey]) {
       return;
     }
 
     const geoIds = await this.harvestLinkedinService.resolveGeoIds(
-      query.locations,
+      query[locationKey],
     );
 
     if (geoIds.length === 0) {
       return;
     }
 
-    query.geoIds = geoIds.join(',');
-    delete query.locations;
+    query[geoIdKey] = geoIds.join(',');
+    delete query[locationKey];
   }
 
   private assertConfigured(): void {

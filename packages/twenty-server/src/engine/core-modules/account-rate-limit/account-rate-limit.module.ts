@@ -14,6 +14,6 @@ import { KeyValuePairModule } from 'src/engine/core-modules/key-value-pair/key-v
     AccountRateLimitConfigService,
     AccountRateLimiterService,
   ],
-  exports: [AccountRateLimitConfigService, AccountRateLimiterService],
+  exports: [AccountRateLimitConfigService, AccountRateLimiterService, RedisService],
 })
 export class AccountRateLimitModule {}

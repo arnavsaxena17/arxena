@@ -8,7 +8,7 @@ import { In, type ObjectLiteral } from 'typeorm';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-messages.service';
-import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
+import { FetchLinkedinProfileService } from 'src/engine/core-modules/linkedin-profile-runtime/services/fetch-linkedin-profile.service';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import {
   normalizeLinkedinActivityPosts,

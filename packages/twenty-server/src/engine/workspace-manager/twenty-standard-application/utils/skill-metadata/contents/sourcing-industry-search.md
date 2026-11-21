@@ -37,7 +37,7 @@ Start at the first row whose tool you have. Go to the next step only when the po
 | Search | Do this |
 | --- | --- |
 | Companies in an industry | The steps above, with every label from the mapping, unioned and deduped |
-| People whose employer is in an industry | Build the companies first (`playbook-company-first`). Bright Data people `current_company_industry` and the Sales Navigator / Harvest industry facet also work, but they match the employer's self-chosen label. LinkedIn Classic has no reliable industry filter |
+| People whose employer is in an industry | Build the list of companies first. Bright Data people `current_company_industry` and the Sales Navigator / Harvest industry facet also work, but they match the employer's self-chosen label. LinkedIn Classic has no reliable industry filter |
 | Peers of a named company | Same label and sibling labels, similar size band and geography; then look-alikes from the about text |
 | Adjacent industries (shortfall) | Sibling labels under the same parent first, then the parent sector. Never jump sectors without saying so |
 | Industry plus size or revenue | The industry finds the pool; size and revenue are separate criteria (size from the row, revenue from a web column) |

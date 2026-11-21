@@ -12,26 +12,26 @@ import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/service
 import { BrightDataLinkedinPeopleSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-linkedin-people-search.service';
 import { BrightDataLinkedinProfileScrapeService } from 'src/engine/core-modules/bright-data/services/bright-data-linkedin-profile-scrape.service';
 import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
-import { OrgchartApifyBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-apify-build.types';
-import { OrgchartApolloBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-apollo-build.types';
-import { OrgchartLinkedinXrayBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-linkedin-xray-build.types';
-import { OrgchartMultiSourceBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-multisource-build.types';
-import { OrgchartUnipileBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-unipile-build.types';
+import { OrgchartApifyBuildJobData } from 'src/engine/core-modules/org-chart/services/orgchart-apify-build.types';
+import { OrgchartApolloBuildJobData } from 'src/engine/core-modules/org-chart/services/orgchart-apollo-build.types';
+import { OrgchartLinkedinXrayBuildJobData } from 'src/engine/core-modules/org-chart/services/orgchart-linkedin-xray-build.types';
+import { OrgchartMultiSourceBuildJobData } from 'src/engine/core-modules/org-chart/services/orgchart-multisource-build.types';
+import { OrgchartUnipileBuildJobData } from 'src/engine/core-modules/org-chart/services/orgchart-unipile-build.types';
 import {
   ApolloIoRestService,
   ApolloPeopleSearchParams,
   isApolloOrganizationId,
 } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { ApolloPeopleSearchTransformerService } from 'src/engine/core-modules/candidate-search/services/apollo-people-search-transformer.service';
-import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
+import { OrgChartSearchService } from 'src/engine/core-modules/org-chart/services/orgchart-search.service';
 import { PythonQueryGenerationService } from 'src/engine/core-modules/candidate-search/services/python-query-generation.service';
 import { ResultValidationService } from 'src/engine/core-modules/candidate-search/services/result-validation.service';
 import { extractApiToken } from 'src/engine/core-modules/candidate-search/utils/auth.utils';
 import { CandidateDataService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-data.service';
-import { CandidateTableRow } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
-import { LinkedinXrayTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-xray-transformer.service';
+import { CandidateTableRow } from 'src/engine/core-modules/candidate-data-sources/services/data-sources/linkedin-search-transformer.service';
+import { LinkedinXrayTransformerService } from 'src/engine/core-modules/candidate-data-sources/services/data-sources/linkedin-xray-transformer.service';
 import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
-import { linkedInPeopleSearchResultMatchesTargetCompany } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-orgchart-company-match.util';
+import { linkedInPeopleSearchResultMatchesTargetCompany } from 'src/engine/core-modules/candidate-data-sources/utils/linkedin-orgchart-company-match.util';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {

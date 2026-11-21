@@ -9,7 +9,7 @@ import {
   LinkedInSearchResult,
 } from '../../../linkedin-search/types/linkedin-search-response.type';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
-import { pickEmploymentPositionMatchingCompany } from '../../utils/linkedin-orgchart-company-match.util';
+import { pickEmploymentPositionMatchingCompany } from 'src/engine/core-modules/candidate-data-sources/utils/linkedin-orgchart-company-match.util';
 import { pickCurrentPositionForSearchIntent } from 'src/engine/core-modules/people-api/utils/pick-current-position-for-search-intent.util';
 import { isValidUuid } from 'twenty-shared/utils';
 import {

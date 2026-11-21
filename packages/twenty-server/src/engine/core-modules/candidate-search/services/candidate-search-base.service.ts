@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { LinkedinUnipileSessionService } from '../../arx-chat/services/linkedin-unipile-session.service';
 import { WorkspaceMemberUnipileService } from '../../arx-chat/services/workspace-member-unipile.service';
-import { LinkedInSearchTransformerService } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import { LinkedInSearchTransformerService } from '../../candidate-data-sources/services/data-sources/linkedin-search-transformer.service';
 import { ResumeReadParseUploadService } from '../../candidate-sourcing/services/resume-read-parse-upload.service';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';

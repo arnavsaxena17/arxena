@@ -18,7 +18,7 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-messages.service';
-import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
+import { FetchLinkedinProfileService } from 'src/engine/core-modules/linkedin-profile-runtime/services/fetch-linkedin-profile.service';
 import { VisitLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/visit-linkedin-profile.service';
 import { OutreachFakeProfileDetectorService } from 'src/engine/core-modules/outreach-command/services/outreach-fake-profile-detector.service';
 import { OutreachFilterProfilesService } from 'src/engine/core-modules/outreach-command/services/outreach-filter-profiles.service';

@@ -65,15 +65,11 @@ import {
 } from 'src/engine/core-modules/cache-storage/constants/linkedin-provider-query-cache.const';
 import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
-import type { WorkspaceMemberUnipileService } from './workspace-member-unipile.service';
+import { WorkspaceMemberUnipileService } from './workspace-member-unipile.service';
 
 const getMemberLinkedinUnipileConnectionService = () =>
   require('./member-linkedin-unipile-connection.service')
     .MemberLinkedinUnipileConnectionService as typeof import('./member-linkedin-unipile-connection.service').MemberLinkedinUnipileConnectionService;
-
-const getWorkspaceMemberUnipileService = () =>
-  require('./workspace-member-unipile.service')
-    .WorkspaceMemberUnipileService as typeof import('./workspace-member-unipile.service').WorkspaceMemberUnipileService;
 
 type LinkedinUnipileAccountItem = Record<string, unknown> & {
   id?: string;
@@ -108,7 +104,7 @@ export class LinkedinUnipileRequestService {
     @Inject(forwardRef(getMemberLinkedinUnipileConnectionService))
     private readonly memberLinkedinUnipileConnectionService?: MemberLinkedinUnipileConnectionService,
     @Optional()
-    @Inject(forwardRef(getWorkspaceMemberUnipileService))
+    @Inject(WorkspaceMemberUnipileService)
     private readonly workspaceMemberUnipileService?: WorkspaceMemberUnipileService,
     @Optional()
     private readonly providerQueryCache?: ProviderQueryCacheService,

@@ -1,6 +1,6 @@
 import { PersonCandidateDraft } from 'twenty-shared';
 
-import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
+import { DataProcessingUtils } from 'src/engine/core-modules/candidate-data-sources/utils/data-processing.utils';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 

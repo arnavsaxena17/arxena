@@ -57,7 +57,7 @@ import { ToolRegistryService } from './services/tool-registry.service';
     forwardRef(() => AiAgentExecutionModule),
     // The source guard reads the project's brief; OutreachCommand reaches
     // back here through ToolModule, hence the forwardRef
-    forwardRef(() => OutreachCommandModule),
+    OutreachCommandModule,
     ObjectMetadataModule,
     FieldMetadataModule,
     PermissionsModule,

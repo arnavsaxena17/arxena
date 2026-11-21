@@ -8,7 +8,7 @@ import { type ObjectLiteral } from 'typeorm';
 import {
   LinkedInSearchTransformerService,
   type CandidateTableRow,
-} from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+} from 'src/engine/core-modules/candidate-data-sources/services/data-sources/linkedin-search-transformer.service';
 import { EnsureOutreachProjectService } from 'src/engine/core-modules/outreach-command/services/ensure-outreach-project.service';
 import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
 import { OutreachWorkspaceAuthTokenService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-auth-token.service';

@@ -13,7 +13,7 @@ Break the request into queries before the first search, then measure before you 
    | an industry and a city | the title | industry, city |
    | a title and no company | the title | city |
 
-   Expand titles with the synonym ladders in `playbook-shortfall`. State the cities you expand to ("tier 1 = Mumbai, Delhi NCR, Bangalore, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad").
+   Expand titles with the synonym ladders. State the cities you expand to ("tier 1 = Mumbai, Delhi NCR, Bangalore, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad").
    `industry` is a label; `keywords` is a bag over about and specialties. Label for the sector, keywords only for a segment the label cannot express ("oncology"); never the same word in both.
    Two broad facets: run two queries and intersect on `linkedinUrl` — an AND loses rows silently, an OR floods.
 3. **Slice a big request** by city and title band so each slice stays under the source's cap (see its "Limits and exhaustion").
@@ -46,8 +46,7 @@ About 1,000 rows or more. One query will not reach it, and rows keep arriving wh
 3. Launch the independent slices in the same step. Never one call per row or per person.
 4. Score each batch at the snapshot stage as it lands, with one column. Fetch profiles only for rows that passed or are unknown, and only as many as the target needs.
 5. After each round report one line per slice: rows, the pass-or-unknown share, duplicates, spend. Drop a slice whose share is far below the others and give its budget to the best one.
-6. Stop on the rules in `playbook-shortfall` (a source's cap, duplicates above 80%, flat rounds, the spend cap) or when the target is met at the fitment threshold. Never lower the threshold or a must-have for speed.
-7. If the probe says 5,000 is not reachable, say so before the full spend and offer the choices.
+6. If the probe says 5,000 is not reachable, say so before the full spend and offer the choices.
 
 ### Keep the aggregate clean
 

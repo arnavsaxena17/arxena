@@ -26,7 +26,11 @@ export type CapabilityField = {
   values?: string[];
   unit?: string;
   // Where the ids or labels come from, when they are not in `values`
-  valuesFrom?: 'linkedin-industries' | 'industry-labels' | 'linkedin-locations' | 'title-taxonomy';
+  valuesFrom?:
+    | 'linkedin-industries'
+    | 'industry-labels'
+    | 'linkedin-locations'
+    | 'title-taxonomy';
   note?: string;
 };
 
@@ -254,7 +258,16 @@ export const SOURCE_CAPABILITIES: readonly SourceCapability[] = [
         why: 'Bright Data does not say whether the company is hiring',
       },
     ],
-    returns: ['name', 'domain', 'linkedinUrl', 'employees', 'industry', 'hqCity', 'hqCountry', 'about'],
+    returns: [
+      'name',
+      'domain',
+      'linkedinUrl',
+      'employees',
+      'industry',
+      'hqCity',
+      'hqCountry',
+      'about',
+    ],
   },
   {
     key: 'bright-data',
@@ -294,7 +307,11 @@ export const SOURCE_CAPABILITIES: readonly SourceCapability[] = [
   {
     key: 'serp',
     entity: 'person',
-    searchable: [PERSON_FIELDS.currentTitle, PERSON_FIELDS.currentCompany, PERSON_FIELDS.location],
+    searchable: [
+      PERSON_FIELDS.currentTitle,
+      PERSON_FIELDS.currentCompany,
+      PERSON_FIELDS.location,
+    ],
     returns: ['name', 'title', 'company', 'linkedinUrl', 'snippet'],
   },
   {
@@ -308,7 +325,15 @@ export const SOURCE_CAPABILITIES: readonly SourceCapability[] = [
       COMPANY_FIELDS.departmentHeadcount,
       COMPANY_FIELDS.hiring,
     ],
-    returns: ['name', 'linkedinUrl', 'employees', 'annualRevenue', 'industry', 'hqLocation', 'departmentHeadcount'],
+    returns: [
+      'name',
+      'linkedinUrl',
+      'employees',
+      'annualRevenue',
+      'industry',
+      'hqLocation',
+      'departmentHeadcount',
+    ],
   },
   {
     key: 'linkedin',
@@ -331,25 +356,14 @@ export const SOURCE_CAPABILITIES: readonly SourceCapability[] = [
       COMPANY_FIELDS.employees,
       COMPANY_FIELDS.industry,
       COMPANY_FIELDS.hqLocation,
+      COMPANY_FIELDS.annualRevenue,
+      COMPANY_FIELDS.departmentHeadcount,
+      COMPANY_FIELDS.hiring,
     ],
-    // Verified against the Harvest company search reference: its only filters
-    // are search, location, geoId, companySize and industryId
-    notSearchable: [
-      {
-        field: 'annualRevenue',
-        nearest: 'employees',
-        why: 'The Harvest company search has no revenue filter (filters: search, location, geoId, companySize, industryId)',
-      },
-      {
-        field: 'departmentHeadcount',
-        nearest: 'employees',
-        why: 'The Harvest company search filters total company size, not function headcount',
-      },
-      {
-        field: 'hiring',
-        why: 'The Harvest company search has no hiring filter',
-      },
-    ],
+    // /linkedin/account-search is the endpoint search_harvest_accounts calls; it
+    // has revenue, department headcount and hiring facets. The earlier
+    // notSearchable list here came from /linkedin/company-search, a different
+    // endpoint we only use to resolve a company name to its LinkedIn URL.
     returns: ['name', 'linkedinUrl', 'employees', 'industry', 'hqLocation'],
   },
   {
@@ -419,7 +433,15 @@ export const SOURCE_CAPABILITIES: readonly SourceCapability[] = [
       COMPANY_FIELDS.hqLocation,
       COMPANY_FIELDS.keywords,
     ],
-    returns: ['name', 'domain', 'linkedinUrl', 'employees', 'annualRevenue', 'industry', 'hqLocation'],
+    returns: [
+      'name',
+      'domain',
+      'linkedinUrl',
+      'employees',
+      'annualRevenue',
+      'industry',
+      'hqLocation',
+    ],
   },
   {
     key: 'apollo',
@@ -445,77 +467,3 @@ export const SOURCE_CAPABILITIES: readonly SourceCapability[] = [
     returns: ['name', 'websiteUrl', 'industry', 'employees', 'hqLocation'],
   },
 ];
-
-// One source's output that another source accepts as an input. Code fills these
-// in; the model never has to know that Harvest wants `currentCompanies` or that
-// Sales Navigator wants facet ids.
-export type SourceHandoff = {
-  from: string;
-  field: string;
-  to: string;
-  toField: string;
-  note: string;
-};
-
-export const SOURCE_HANDOFFS: readonly SourceHandoff[] = [
-  {
-    from: 'bright-data',
-    field: 'linkedinUrl',
-    to: 'harvest',
-    toField: 'currentCompanies',
-    note: 'Harvest lead search takes the company LinkedIn URL directly',
-  },
-  {
-    from: 'bright-data',
-    field: 'linkedinUrl',
-    to: 'linkedin',
-    toField: 'company',
-    note: 'Resolve the URL to a company id with generate_linkedin_query_set',
-  },
-  {
-    from: 'bright-data',
-    field: 'domain',
-    to: 'bright-data',
-    toField: 'companySite',
-    note: 'The website reads a leadership page and confirms a namesake',
-  },
-  {
-    from: 'bright-data',
-    field: 'industry',
-    to: 'harvest',
-    toField: 'industryIds',
-    note: 'The label maps to a Sales Navigator industry id via search_linkedin_parameters',
-  },
-  {
-    from: 'bright-data',
-    field: 'name',
-    to: 'raw-name-resolver',
-    toField: 'rawName',
-    note: 'Resolve a messy or uploaded name to a domain before any spend',
-  },
-  {
-    from: 'bright-data',
-    field: 'linkedinUrl',
-    to: 'bright-data',
-    toField: 'personProfile',
-    note: 'A person LinkedIn URL fetches the full profile',
-  },
-];
-
-// The searchable stand-in when a source has no such field, used to build the
-// "which of these instead" question
-export const CAPABILITY_PROXIES: Readonly<Record<string, string>> = {
-  annualRevenue: 'employees',
-  departmentHeadcount: 'employees',
-  hiring: 'keywords',
-  yearsExperience: 'seniority',
-};
-
-export const findCapability = (
-  sourceKey: string,
-  entity: 'company' | 'person',
-): SourceCapability | undefined =>
-  SOURCE_CAPABILITIES.find(
-    (capability) =>
-      capability.key === sourceKey && capability.entity === entity,
-  );

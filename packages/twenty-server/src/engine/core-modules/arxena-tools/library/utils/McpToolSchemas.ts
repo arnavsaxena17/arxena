@@ -1467,7 +1467,7 @@ export const SEARCH_HARVEST_LEADS_INPUT_DESCRIPTOR: readonly McpInputFieldDescri
       key: 'searchParameters',
       type: 'object',
       description:
-        'Harvest lead-search filters, usually one queries[i].searchParameters from generate_linkedin_query_set with provider harvest. Text: search, currentJobTitles, locations, companyHeadquarterLocations. Ids or URLs: currentCompanies, industryIds, seniorityLevelIds, functionIds, companyHeadcount. Lists may be arrays. salesNavUrl runs a pasted Sales Navigator people URL.',
+        'Harvest lead-search filters: pass one queries[i].searchParameters from generate_linkedin_query_set with provider harvest, unchanged. Text: search (LinkedIn operators), currentJobTitles, pastJobTitles, locations, companyHeadquarterLocations, schools, firstNames, lastNames, profileLanguages. Ids: industryIds, seniorityLevelIds, functionIds, yearsAtCurrentCompanyIds, yearsOfExperienceIds, companyHeadcount, geoIds. LinkedIn company URLs: currentCompanies, pastCompanies. Booleans: recentlyChangedJobs, postedOnLinkedin. Every filter has an exclude twin (excludeCurrentJobTitles, excludeLocations, excludeCurrentCompanies, excludeIndustryIds, excludeSeniorityLevelIds, excludeFunctionIds, excludeSchools, excludeCompanyHeadquarterLocations, excludeGeoIds, excludePastCompanies, excludePastJobTitles). salesNavUrl runs a pasted Sales Navigator people URL. Lists may be arrays. Unknown keys are dropped and reported in ignoredParameters.',
       required: true,
     },
     ...HARVEST_SEARCH_PAGING_FIELDS,
@@ -1480,7 +1480,7 @@ export const SEARCH_HARVEST_ACCOUNTS_INPUT_DESCRIPTOR: readonly McpInputFieldDes
       key: 'searchParameters',
       type: 'object',
       description:
-        'Harvest account-search filters, usually one queries[i].searchParameters from generate_linkedin_query_set with provider harvest and category companies. search, headquarterLocations (text), industryIds, companyHeadcount (1-10, 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10000, 10001+), companyHeadcountGrowth ("min-max"), annualRevenue ("min-max;USD", millions), departmentHeadcount ("min-max;Engineering"), jobOpportunities ("HIRING_ON_LINKEDIN"), fortune.',
+        'Harvest account-search filters: pass one queries[i].searchParameters from generate_linkedin_query_set with provider harvest and category companies, unchanged. Text: search, headquarterLocations, headquarterGeoIds (LinkedIn geo ids). Ids: industryIds. Ranges: companyHeadcount (1-10, 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10000, 10001+), companyHeadcountGrowth ("min-max"), annualRevenue ("min-max;USD", millions), departmentHeadcount ("min-max;Engineering"), departmentHeadcountGrowth, numOfFollowers. jobOpportunities ("HIRING_ON_LINKEDIN"), accountActivities, fortune. Exclude twins: excludeHeadquarterLocations, excludeHeadquarterGeoIds, excludeIndustryIds, excludeCompanyHeadcount. No lead or account lists. Unknown keys are dropped and reported in ignoredParameters.',
       required: true,
     },
     ...HARVEST_SEARCH_PAGING_FIELDS,

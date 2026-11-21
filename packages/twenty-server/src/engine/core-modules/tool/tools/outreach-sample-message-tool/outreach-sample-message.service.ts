@@ -13,7 +13,7 @@ import {
   validateOutreachOpenerMessage,
 } from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-messages.service';
-import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
+import { FetchLinkedinProfileService } from 'src/engine/core-modules/linkedin-profile-runtime/services/fetch-linkedin-profile.service';
 import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
 import {
   type OutreachSampleMessageDraft,

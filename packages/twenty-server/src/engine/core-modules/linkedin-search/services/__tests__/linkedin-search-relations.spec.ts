@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
-import { ApifyLinkedInCompanyProfileTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/apify-linkedin-company-profile-transformer.service';
+import { ApifyLinkedInCompanyProfileTransformerService } from 'src/engine/core-modules/candidate-data-sources/services/data-sources/apify-linkedin-company-profile-transformer.service';
 import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';

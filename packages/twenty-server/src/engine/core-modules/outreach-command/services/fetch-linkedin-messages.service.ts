@@ -9,7 +9,7 @@ import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account
 import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
-import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
+import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/linkedin-profile-runtime/services/linkedin-provider-id.store';
 import { type ChatTurnOrigin } from 'src/engine/core-modules/outreach-command/utils/chat-message-turns.util';
 import {
   isClassicLinkedInProviderId,

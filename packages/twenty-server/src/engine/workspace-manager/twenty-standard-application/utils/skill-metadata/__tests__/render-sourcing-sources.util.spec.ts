@@ -12,7 +12,6 @@ import {
 } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/render-sourcing-sources.util';
 import {
   getSkillContent,
-  getSkillFrontMatter,
 } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/skill-library';
 import {
   SOURCING_ALWAYS_LEARNED_TOOLS,
@@ -63,7 +62,7 @@ describe('renderSourcingSources', () => {
 
   it('should name the top-ranked source as the default', () => {
     expect(renderSourcingSources('{{source: default people}}')).toBe(
-      'Bright Data (`src-bright-data-people`)',
+      'Bright Data',
     );
     expect(renderSourcingSources('{{source: google-maps companies}}')).toBe(
       'Google Maps',
@@ -109,16 +108,6 @@ describe('sourcing source registry', () => {
     const keys = SOURCING_SOURCES.map((source) => source.key);
 
     expect(new Set(keys).size).toBe(keys.length);
-  });
-
-  it('should link only to sections of the sourcing skill', () => {
-    const parts = getSkillFrontMatter('sourcing')?.parts ?? [];
-
-    for (const use of SOURCE_USES) {
-      if (use.section !== undefined) {
-        expect(parts).toContain(use.section);
-      }
-    }
   });
 
   it('should give every ranked source an order label for each entity it has', () => {

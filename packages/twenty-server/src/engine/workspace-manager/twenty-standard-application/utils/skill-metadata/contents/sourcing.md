@@ -6,46 +6,16 @@ routes:
   - when: |-
       Find companies or people / LinkedIn / Harvest / Sales Nav / places on a map
     hint: |-
-      . Always add `for-recruiting` (candidates for a role) or `for-sales` (prospects you sell to — not a Sales Rep / AE / BDR hire), plus the type: `people` for a population where any employer will do, `companies`, `places`, `people-by-company` for a role at companies already named or at a known set you can name ("top hospitals in Mumbai": name up to 12, confirm, never a population search), or `playbook-company-first` for a role at companies the user did not name. Add `industry-search` when an industry is named, `scoring` + `playbook-shortfall` for about N, `query-planning` above 1,000 rows. A count of about 25 or fewer is small: "top 10 <role> at <industry> companies in <city>" bounds the **companies**, so bound the company list to that N instead of building the whole industry. State what the number counts before any paid call.
+      . Always add the section: `people` for a population where any employer will do, `companies` for a role at companies already named or at a known set you can name ("top hospitals in Mumbai": name up to 12, confirm, never a population search), or for a role at companies the user did not name. Add `industry-search` when an industry is named, `scoring` for about N, `query-planning` above 1,000 rows. A count of about 25 or fewer is small: "top 10 <role> at <industry> companies in <city>" bounds the **companies**, so bound the company list to that N instead of building the whole industry. State what the number counts before any paid call.
 parts:
   - companies
-  - places
   - people
-  - people-by-company
-  - run-edge
   - industry-search
   - industry-labels
-  - playbook-company-first
-  - playbook-shortfall
   - requirements
   - scoring
-  - for-recruiting
-  - for-sales
   - rubrics
   - query-planning
-  - inbound-applicants
-  - src-bright-data-people
-  - src-bright-data-companies
-  - src-linkedin
-  - src-harvest
-  - src-serp
-  - src-apollo
-  - src-exa
-  - src-wikidata
-  - src-naukri
-  - intent-glossary
-  - source-profiles
-requires:
-  companies: [src-bright-data-companies]
-  people: [src-bright-data-people]
-  places: [src-bright-data-companies]
-  requirements: [intent-glossary]
-  playbook-company-first:
-    [requirements, intent-glossary, people-by-company, playbook-shortfall, industry-search]
-  query-planning: [playbook-shortfall]
-  for-recruiting: [rubrics]
-  for-sales: [rubrics]
-  inbound-applicants: [scoring]
 defaultSections:
   - people
   - companies
@@ -85,7 +55,7 @@ Sort every open point before asking.
 
 ### Intake gate
 
-Before the first paid call, sort the request. What a client's word usually means is in `intent-glossary`.
+Before the first paid call, sort the request.
 
 | | Cheap (one reading free, or a small estimate) | Expensive (a large estimate, or a paid fetch follows) |
 | --- | --- | --- |
@@ -113,26 +83,21 @@ Pick the path and say it in one line. If that section is not in this prompt, loa
 | Request | Section | Default source |
 | --- | --- | --- |
 | A population: a title or skill in a city, or in an industry when any employer will do | `people` | {{source: default people}} |
-| Mid-level or plant-level roles | `people`, and `src-naukri` when the user has the Naukri extension connected | {{source: default people}}; Naukri rows arrive on the tab |
+| Mid-level or plant-level roles | `people` | {{source: default people}}; Naukri rows arrive on the tab when the extension is connected |
 | Companies | `companies` | {{source: default companies}} |
-| Places on a map: outlets you can walk into | `places` | {{source: google-maps companies}} |
-| A role at companies named, on the project, or a known set ("top hospitals in Mumbai": name ≤12, confirm, never search) | `people-by-company` | `find_people_by_company` |
+| Places on a map: outlets you can walk into | `companies` | {{source: google-maps companies}} |
+| A role at companies named, on the project, or a known set ("top hospitals in Mumbai": name ≤12, confirm, never search) |`people` | `find_people_by_company` |
 | Companies or people in an industry, sector or segment | `industry-search` with the search type | {{source: default companies}}, then the next source that is on |
 | People filtered by their current job title | `people` (its job title search) | {{source: default people}} |
-| A role plus a company attribute — an industry, a segment, "startups", a stage, size or revenue band, a peer set — with no companies named | `playbook-company-first` (companies first, then the people) | {{source: default companies}}, then `find_people_by_company` |
-| About N rows that must clear a rubric | `scoring` and `playbook-shortfall` (the loop is in `scoring`) | The search type's |
+| A role plus a company attribute — an industry, a segment, "startups", a stage, size or revenue band, a peer set — with no companies named | (search companies first, then the people) | {{source: default companies}}, then `find_people_by_company` |
+| About N rows that must clear a rubric | `scoring` (the loop is in `scoring`) | The search type's |
 | Complete coverage: "all", "every", "no gaps", MECE | the search type, plus `requirements` with `coverage: "exhaustive"` and a run cap | The search type's |
-| About 1,000 rows or more | `query-planning` (its large-list steps; brings `playbook-shortfall`) | The search type's |
-| Applicants to a job posting | `inbound-applicants` | None: the rows are on the People tab |
-| Candidates for a role (Sales Rep, AE, BDR, field sales included) | `for-recruiting`, then `rubrics` | — |
-| Prospects you sell to (not hiring a salesperson) | `for-sales`, then `rubrics` | — |
-| Queries, variants, a dipstick or probe before a big run | `query-planning` (brings `playbook-shortfall`) | — |
-| What a client's word means | `intent-glossary` | — |
-| What a source covers, costs and gets wrong | `source-profiles` | — |
-| Fewer results than asked for | `playbook-shortfall` | — |
+| About 1,000 rows or more | `query-planning` (its large-list steps) | The search type's |
+| Applicants to a job posting | `people` | None: the rows are on the People tab |
+| Queries, variants, a dipstick or probe before a big run | `query-planning` | — |
 | The request lacks a target, criteria or destination | `requirements` | — |
 
-Sections that are not search types: `intent-glossary`, `source-profiles`, `scoring` (fitment, profile reading, worthiness, climb and approvals), and one `src-*` section per source. Load a `src-*` section only for a source you will call. A role at companies already named is never the scored-list loop.
+Sections that are not search types: `scoring` (fitment, profile reading, worthiness, climb and approvals), and `industry-labels`. A role at companies already named is never the scored-list loop.
 
 The destination (Find, Save to CRM, Start outreach) comes from the system prompt. Find: the search writes the tab (**Write contract**). Save to CRM: `save_outreach_targets_to_crm`. Never `create_candidate` or `create_one_company` on Find or on Save to CRM.
 
@@ -148,9 +113,9 @@ Follow the loaded section, then these rules.
 
 ### Provider
 
-Use the default source in the Plan table unless the user names another provider (Apollo, LinkedIn / Sales Navigator, Harvest, Exa, a pasted Sales Navigator or LinkedIn search URL) or the request needs a feature only that provider has (a named Sales Nav list, facet ids). The Bright Data `src-*` sections say which mode to use: ludicrous for a described set, instant for a website or LinkedIn URL lookup or a quick probe of a short literal. Apollo is last-resort here even though it is listed first. Fall back only if the default errors or returns nothing, and say so.
+Use the default source in the Plan table unless the user names another provider (Apollo, LinkedIn / Sales Navigator, Harvest, Exa, a pasted Sales Navigator or LinkedIn search URL) or the request needs a feature only that provider has (a named Sales Nav list, facet ids). Bright Data takes two modes: ludicrous for a described set, instant for a website or LinkedIn URL lookup or a quick probe of a short literal. Apollo is last-resort here even though it is listed first. Fall back only if the default errors or returns nothing, and say so.
 
-`people-by-company` is one `find_people_by_company` call for the whole company list — no estimate and no provider question. The tool searches every company and returns the matching people, so hand it the list once.
+`find_people_by_company` call for the whole company list — no estimate and no provider question. The tool searches every company and returns the matching people, so hand it the list once.
 
 
 
@@ -162,7 +127,6 @@ The order we prefer, not a list to try in turn. Use the first source that has th
 
 {{sources: source-order}}
 
-Exa (`src-exa`) and Wikidata (`src-wikidata`) are for niche public people and for company look-ups the sources above do not cover. Naukri (`src-naukri`) is not in the order: the user runs it from the extension and its rows arrive on the tab.
 
 ### Results
 

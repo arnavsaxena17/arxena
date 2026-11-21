@@ -15,7 +15,7 @@ import {
     LinkedinParameterResolver,
     ParameterSanitizer,
 } from 'src/engine/core-modules/candidate-search/utils';
-import { LinkedInSearchTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import { LinkedInSearchTransformerService } from 'src/engine/core-modules/candidate-data-sources/services/data-sources/linkedin-search-transformer.service';
 import { ResumeReadParseUploadService } from 'src/engine/core-modules/candidate-sourcing/services/resume-read-parse-upload.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';

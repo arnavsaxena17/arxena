@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
@@ -24,8 +24,6 @@ import { ResolveLinkedinUrlTool } from 'src/engine/core-modules/tool/tools/resol
 import { WriteLinkedinUrlTool } from 'src/engine/core-modules/tool/tools/write-linkedin-url-tool/write-linkedin-url-tool';
 import { GetProjectCostsTool } from 'src/engine/core-modules/tool/tools/project-costs-tool/get-project-costs-tool';
 import { GetSourcingLedgerTool } from 'src/engine/core-modules/tool/tools/sourcing-ledger-tool/get-sourcing-ledger-tool';
-import { GetSourceCapabilitiesTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-source-capabilities-tool';
-import { GetScoringPlanTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-scoring-plan-tool';
 import {
   GetOutreachTabTool,
   PreviewOutreachAiColumnTool,
@@ -115,18 +113,18 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     NavigationMenuItemModule,
     WorkspaceManyOrAllFlatEntityMapsCacheModule,
     UnipilePoolModule,
-    forwardRef(() => BrightDataModule),
+    BrightDataModule,
     LocalBusinessDataModule,
     OrgChartModule,
     // Unipile's LinkedIn parameter search, used to resolve a company's
     // LinkedIn URL before paying Harvest's company search for it
-    forwardRef(() => LinkedInSearchModule),
+    LinkedInSearchModule,
     // TheOrg / The Official Board people for the SERP-side sources; both read
     // BrightDataModule, which already refers back here
-    forwardRef(() => TheOrgModule),
-    forwardRef(() => TheOfficialBoardModule),
+    TheOrgModule,
+    TheOfficialBoardModule,
     // WorkflowRunner → executor actions → ToolModule → OutreachCommand (cycle)
-    forwardRef(() => OutreachCommandModule),
+    OutreachCommandModule,
   ],
   providers: [
     HttpTool,
@@ -169,8 +167,6 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     WriteLinkedinUrlTool,
     GetProjectCostsTool,
     GetSourcingLedgerTool,
-    GetSourceCapabilitiesTool,
-    GetScoringPlanTool,
     FindPeopleCascadeService,
     UnipileCompanyUrlResolverService,
     FindPeopleRunService,
@@ -239,8 +235,6 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     WriteLinkedinUrlTool,
     GetProjectCostsTool,
     GetSourcingLedgerTool,
-    GetSourceCapabilitiesTool,
-    GetScoringPlanTool,
     GetOutreachTabTool,
     PreviewOutreachAiColumnTool,
     RunOutreachAiColumnTool,

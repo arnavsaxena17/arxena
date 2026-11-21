@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { NameProcessor } from '../../workspace-modifications/object-apis/data/nameProcessor';
-import { CleanPhoneNumbers } from './clean-phone-numbers';
+import { CleanPhoneNumbers } from 'src/engine/core-modules/candidate-data-sources/utils/clean-phone-numbers';
 
 export interface NameProcessorResult {
   first_name: string;

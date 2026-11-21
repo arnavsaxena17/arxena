@@ -1,4 +1,4 @@
-import { DataProcessingUtils } from '../../../utils/data-processing.utils';
+import { DataProcessingUtils } from 'src/engine/core-modules/candidate-data-sources/utils/data-processing.utils';
 import { LinkedInSearchTransformerService } from '../linkedin-search-transformer.service';
 
 describe('LinkedInSearchTransformerService Unipile Sales Nav fields', () => {

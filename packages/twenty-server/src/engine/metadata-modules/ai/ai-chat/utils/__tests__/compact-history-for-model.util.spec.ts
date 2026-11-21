@@ -8,9 +8,6 @@ const SOURCING = [
   '<!-- skill-section:people -->',
   '## People',
   'People search rules.',
-  '<!-- skill-section:for-sales -->',
-  '## For sales',
-  'Prospects you sell to.',
   '<!-- skill-section:people-by-company -->',
   '## People by company',
   'Role at named companies.',
@@ -88,11 +85,10 @@ describe('compactHistoryForModel', () => {
     const loaded = [
       '# Sourcing\nAlways-on overview of how sourcing works.',
       '## People by company\nRole at named companies.',
-      '## For sales\nProspects you sell to.',
     ].join('\n\n');
     const { messages } = compactHistoryForModel({
       messages: [
-        loadSkillsCall('load', ['people-by-company', 'for-sales']),
+        loadSkillsCall('load', ['people-by-company']),
         loadSkillsResult('load', loaded),
         executeCall('run', 'find_people_by_company'),
       ],
@@ -105,17 +101,12 @@ describe('compactHistoryForModel', () => {
 
     expect(content).toContain('Role at named companies.');
     expect(content).not.toContain('Prospects you sell to.');
-    expect(content).toContain('for-sales');
   });
 
   it('should keep a routing section while the plan is still being set', () => {
-    const loaded =
-      '# Sourcing\nAlways-on overview of how sourcing works.\n\n## For sales\nProspects you sell to.';
+    const loaded = '# Sourcing\nAlways-on overview of how sourcing works.';
     const { messages } = compactHistoryForModel({
-      messages: [
-        loadSkillsCall('load', ['for-sales']),
-        loadSkillsResult('load', loaded),
-      ],
+      messages: [loadSkillsCall('load', []), loadSkillsResult('load', loaded)],
       skillCatalog,
     });
 

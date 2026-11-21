@@ -10,9 +10,9 @@ import * as pdfParse from 'pdf-parse';
 import { MeteredLlmService } from 'src/engine/core-modules/metered-llm/metered-llm.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { ProcessCandidatesService } from '../jobs/process-candidates.service';
-import { DataProcessingUtils } from '../utils/data-processing.utils';
+import { DataProcessingUtils } from 'src/engine/core-modules/candidate-data-sources/utils/data-processing.utils';
 import { CandidateService } from './candidate.service';
-import { ParsedCVData, ParsedCVTransformerService } from './data-sources/parsed-cv-transformer.service';
+import { ParsedCVData, ParsedCVTransformerService } from 'src/engine/core-modules/candidate-data-sources/services/data-sources/parsed-cv-transformer.service';
 
 export type ResumeContent = {
   text: string;

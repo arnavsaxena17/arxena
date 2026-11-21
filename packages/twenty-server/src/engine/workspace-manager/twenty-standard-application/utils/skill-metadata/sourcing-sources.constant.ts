@@ -41,9 +41,8 @@ export type SourcingSourceUse = {
   // The provider flag strips `<prefix>-provider-row` and
   // `<prefix>-learn-tools-line` (search-tools-config.ts). None means always on.
   markerPrefix?: string;
-  // Name in the Source order table, linked to the source's section
+  // Name in the Source order table
   orderLabel?: string;
-  section?: string;
 };
 
 export type SourcingSourceProfile = {
@@ -70,12 +69,8 @@ export type SourcingSource = {
 export const SOURCING_ALWAYS_LEARNED_TOOLS: Readonly<
   Record<SourcingEntity, readonly string[]>
 > = {
-  people: ['get_outreach_tab', 'get_source_capabilities', 'get_scoring_plan'],
-  companies: [
-    'get_outreach_tab',
-    'get_source_capabilities',
-    'get_scoring_plan',
-  ],
+  people: ['get_outreach_tab'],
+  companies: ['get_outreach_tab'],
 };
 
 export const SOURCING_SOURCES: readonly SourcingSource[] = [
@@ -98,7 +93,6 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
       learnTools: [SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME],
       markerPrefix: 'search-bright-data-people',
       orderLabel: 'Bright Data people',
-      section: 'src-bright-data-people',
     },
     companies: {
       tools: `\`${SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME}\` (\`entity: "company"\`)`,
@@ -108,7 +102,6 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
       learnTools: [SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME],
       markerPrefix: 'search-bright-data-companies',
       orderLabel: 'Bright Data companies',
-      section: 'src-bright-data-companies',
     },
     profile: {
       name: 'Bright Data people / companies',
@@ -132,7 +125,6 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
       learnTools: [SEARCH_SERP_TOOL_NAME],
       markerPrefix: 'search-serp-people',
       orderLabel: 'Google SERP people results',
-      section: 'src-serp',
     },
     companies: {
       tools: `\`${SEARCH_SERP_TOOL_NAME}\``,
@@ -142,7 +134,6 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
       learnTools: [SEARCH_SERP_TOOL_NAME],
       markerPrefix: 'search-serp-companies',
       orderLabel: 'Google SERP',
-      section: 'src-serp',
     },
     profile: {
       name: 'Google SERP',
@@ -161,7 +152,6 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
       requires: 'Connected LinkedIn Unipile account',
       learnTools: [SEARCH_LINKEDIN_PEOPLE_TOOL_NAME],
       orderLabel: 'LinkedIn via Unipile',
-      section: 'src-linkedin',
     },
     companies: {
       tools: `\`${SEARCH_LINKEDIN_COMPANIES_TOOL_NAME}\``,
@@ -174,7 +164,6 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
         GENERATE_LINKEDIN_QUERY_SET_TOOL_NAME,
       ],
       orderLabel: 'LinkedIn via Unipile',
-      section: 'src-linkedin',
     },
     profile: {
       name: 'LinkedIn (Unipile)',
@@ -193,7 +182,6 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
       requires: 'Harvest configured',
       learnTools: [],
       orderLabel: 'Harvest',
-      section: 'src-harvest',
     },
     companies: {
       tools: `\`${SEARCH_HARVEST_ACCOUNTS_TOOL_NAME}\``,
@@ -202,7 +190,6 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
       requires: 'Harvest configured',
       learnTools: [],
       orderLabel: 'Harvest',
-      section: 'src-harvest',
     },
     profile: {
       name: 'Harvest',
@@ -223,7 +210,6 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
       learnTools: [SEARCH_APOLLO_PEOPLE_TOOL_NAME],
       markerPrefix: 'search-apollo-people',
       orderLabel: 'Apollo',
-      section: 'src-apollo',
     },
     companies: {
       tools: `\`${SEARCH_APOLLO_COMPANIES_TOOL_NAME}\``,
@@ -233,7 +219,6 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
       learnTools: [SEARCH_APOLLO_COMPANIES_TOOL_NAME],
       markerPrefix: 'search-apollo-companies',
       orderLabel: 'Apollo',
-      section: 'src-apollo',
     },
     profile: {
       name: 'Apollo',
@@ -314,7 +299,7 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
       tools:
         '`plan-local-business-city-coverage`, `fetch-and-upsert-local-businesses`',
       bestFor:
-        'Outlets you can walk into across a city (hotels, restaurants, clinics, stores); Bright Data Google Maps, about {{fact: google-maps.costPerThousand}} per 1,000 records. Load `places`',
+        'Outlets you can walk into across a city (hotels, restaurants, clinics, stores); Bright Data Google Maps, about {{fact: google-maps.costPerThousand}} per 1,000 records. See "Places on a map" in `companies`',
       requires: '`BRIGHT_DATA_API_KEY` set',
       learnTools: [],
     },

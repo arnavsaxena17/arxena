@@ -4,13 +4,11 @@ import {
   Get,
   HttpException,
   HttpStatus,
-  Inject,
   Post,
   Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
-  forwardRef,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
@@ -72,7 +70,7 @@ import {
 } from 'src/engine/core-modules/candidate-sourcing/utils/project-id.utils';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 import { hydrateLinkedinPremiumCandidates } from 'src/engine/core-modules/candidate-sourcing/utils/hydrate-linkedin-premium-from-fetch.util';
-import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
+import { FetchLinkedinProfileService } from 'src/engine/core-modules/linkedin-profile-runtime/services/fetch-linkedin-profile.service';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { DEFAULT_PROJECT_PROMPTS } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
@@ -118,7 +116,6 @@ export class CandidateSourcingController {
     private readonly candidateWorkspaceGraphQLService: CandidateWorkspaceGraphQLService,
     private readonly otherFieldsService: OtherFieldsService,
     private readonly fileStorageService: FileStorageService,
-    @Inject(forwardRef(() => FetchLinkedinProfileService))
     private readonly fetchLinkedinProfileService: FetchLinkedinProfileService,
   ) {}
 

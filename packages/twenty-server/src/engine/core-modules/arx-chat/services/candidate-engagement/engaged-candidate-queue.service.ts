@@ -21,19 +21,22 @@ import {
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 import { WorkspaceMemberArxService } from '../workspace-member-arx.service';
+import { CandidateEngagementDataUpdateService } from './candidate-engagement-data-update.service';
 import { EngagedCandidateJobData } from './engaged-candidate-processor.job';
 import { FilterCandidates } from './filter-candidates';
 
 @Injectable()
-export class EngagedCandidateQueueService {
+export class EngagedCandidateQueueService extends CandidateEngagementDataUpdateService {
   constructor(
-    private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly staticGraphQLService: StaticGraphQLService,
+    workspaceQueryService: WorkspaceQueryService,
+    staticGraphQLService: StaticGraphQLService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly engagedCandidateMessageQueueService?: MessageQueueService,
     @InjectMessageQueue(MessageQueue.googleContactsQueue) private readonly googleContactsMessageQueueService?: MessageQueueService,
     private readonly googleContactsService?: GoogleContactsService,
     private readonly workspaceMemberUnipileService?: WorkspaceMemberUnipileService,
-  ) {}
+  ) {
+    super(workspaceQueryService, staticGraphQLService);
+  }
   async queueCandidateForEngagement(
     candidateId: string,
     workspaceId: string,
@@ -335,12 +338,7 @@ export class EngagedCandidateQueueService {
       };
 
       // Step 7: Update candidate engagement data in table
-      // Use dynamic import to avoid circular dependency with UpdateChat
-      const { UpdateChat } = await import('./update-chat');
-      await new UpdateChat(
-        this.workspaceQueryService,
-        this.staticGraphQLService,
-      ).updateCandidateEngagementDataInTable(candidateProfileDataNodeObj, whatappUpdateMessageObj, apiToken);
+      await this.updateCandidateEngagementDataInTable(candidateProfileDataNodeObj, whatappUpdateMessageObj, apiToken);
 
       // Step 8: For incoming messages, we don't set engagementStatus to false
       // because incoming messages should trigger engagement processing, not prevent it

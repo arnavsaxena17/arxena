@@ -5,11 +5,11 @@ import { LinkedinUnipileSessionService } from 'src/engine/core-modules/arx-chat/
 import { resolveEffectiveLinkedinSearchType } from 'src/engine/core-modules/arx-chat/utils/resolve-effective-linkedin-search-type.util';
 import { CandidateAvatarStorageService } from 'src/engine/core-modules/candidate-avatar/services/candidate-avatar-storage.service';
 import { OrgChartIntentService } from 'src/engine/core-modules/candidate-search/services/org-chart-intent.service';
-import { LinkedInRecruiterPeopleTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-recruiter-people-transformer.service';
+import { LinkedInRecruiterPeopleTransformerService } from 'src/engine/core-modules/candidate-data-sources/services/data-sources/linkedin-recruiter-people-transformer.service';
 import {
   LinkedInSearchTransformerService,
   type CandidateTableRow,
-} from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+} from 'src/engine/core-modules/candidate-data-sources/services/data-sources/linkedin-search-transformer.service';
 import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import type { LinkedInSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
@@ -63,26 +63,26 @@ import {
   applyAsOfSnapshotToCandidates,
   applyEntireCompanyExperienceTitlesToCandidates,
   companyTenureFromDerivedExperience,
-} from '../../org-chart/utils/orgchart-asof-snapshot.util';
-import { extractLinkedinProfileUrlFromOrgChartCandidateRow } from '../../org-chart/utils/orgchart-candidate-linkedin-url.util';
+} from 'src/engine/core-modules/org-chart/utils/orgchart-asof-snapshot.util';
+import { extractLinkedinProfileUrlFromOrgChartCandidateRow } from 'src/engine/core-modules/org-chart/utils/orgchart-candidate-linkedin-url.util';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import { expandStrategiesWithOrgchartUnipileShards } from '../utils/apply-orgchart-unipile-shard.util';
-import type { PeopleSearchStrategyResult } from '../utils/extract-strategies.util';
-import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
-import { mergeFilters } from '../utils/org-chart-filters-merge.util';
-import { constructSearchParamKey } from '../utils/search-parameter.utils';
-import { buildTitleTaxonomyResolvedIntent } from '../utils/title-taxonomy-resolved-intent.util';
-import { CandidateSearchBaseService } from './candidate-search-base.service';
+import { expandStrategiesWithOrgchartUnipileShards } from 'src/engine/core-modules/candidate-search/utils/apply-orgchart-unipile-shard.util';
+import type { PeopleSearchStrategyResult } from 'src/engine/core-modules/candidate-search/utils/extract-strategies.util';
+import { LinkedinParameterResolver } from 'src/engine/core-modules/candidate-search/utils/linkedin-parameter-resolver.util';
+import { mergeFilters } from 'src/engine/core-modules/candidate-search/utils/org-chart-filters-merge.util';
+import { constructSearchParamKey } from 'src/engine/core-modules/candidate-search/utils/search-parameter.utils';
+import { buildTitleTaxonomyResolvedIntent } from 'src/engine/core-modules/candidate-search/utils/title-taxonomy-resolved-intent.util';
+import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
 import {
   OrgchartLinkedInQueryRouterService,
   type OrgchartQueryGeneratorPreference,
-} from './orgchart-linkedin-query-router.service';
+} from 'src/engine/core-modules/candidate-search/services/orgchart-linkedin-query-router.service';
 import {
   OrgChartIncrementalBuildCacheService,
   type OrgchartUnipileUnlimitedProgress,
 } from 'src/engine/core-modules/org-chart/services/orgchart-incremental-build-cache.service';
-import { OrgchartUnipileShardPlannerService } from './orgchart-unipile-shard-planner.service';
-import { SearchExecutionService } from './search-execution.service';
+import { OrgchartUnipileShardPlannerService } from 'src/engine/core-modules/candidate-search/services/orgchart-unipile-shard-planner.service';
+import { SearchExecutionService } from 'src/engine/core-modules/candidate-search/services/search-execution.service';
 
 type OrgChartCandidateInput = CandidateTableRow | Record<string, unknown>;
 

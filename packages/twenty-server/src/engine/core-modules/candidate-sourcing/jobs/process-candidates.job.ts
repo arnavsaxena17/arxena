@@ -1,12 +1,11 @@
-import { Inject, forwardRef } from '@nestjs/common';
 import { ProcessCandidatesJobData } from 'twenty-shared';
 
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { ExtSockWhatsappWhitelistProcessingService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whitelist-processing';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
-import { DataSourceTransformerFactoryService } from 'src/engine/core-modules/candidate-sourcing/services/data-source-transformer-factory.service';
+import { DataSourceTransformerFactoryService } from 'src/engine/core-modules/candidate-data-sources/services/data-source-transformer-factory.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
-import { UploadProfilesWorkflowResumeService } from 'src/engine/core-modules/outreach-command/services/upload-profiles-workflow-resume.service';
+import { UploadProfilesWorkflowResumeService } from 'src/engine/core-modules/linkedin-profile-runtime/services/upload-profiles-workflow-resume.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
@@ -17,14 +16,12 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 @Processor(MessageQueue.candidateQueue)
 export class CandidateQueueProcessor {
   constructor(
-    @Inject(forwardRef(() => CandidateService))
     private readonly candidateService: CandidateService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly whitelistProcessingService: ExtSockWhatsappWhitelistProcessingService,
     private readonly dataSourceTransformerFactory: DataSourceTransformerFactoryService,
     private readonly uploadProgressPubSubService: UploadProgressPubSubService,
-    @Inject(forwardRef(() => UploadProfilesWorkflowResumeService))
     private readonly uploadProfilesWorkflowResumeService: UploadProfilesWorkflowResumeService,
   ) {
     console.log('CandidateQueueProcessor initialized');

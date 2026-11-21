@@ -12,7 +12,7 @@ import { LinkedinUnipileEstimateAccountService } from 'src/engine/core-modules/a
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
-import type { ParsedCVData } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/parsed-cv-transformer.service';
+import type { ParsedCVData } from 'src/engine/core-modules/candidate-data-sources/services/data-sources/parsed-cv-transformer.service';
 import { ResumeReadParseUploadService } from 'src/engine/core-modules/candidate-sourcing/services/resume-read-parse-upload.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import type {

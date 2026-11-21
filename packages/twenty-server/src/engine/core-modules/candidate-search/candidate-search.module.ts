@@ -1,4 +1,4 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { CandidateScoringService } from 'src/engine/core-modules/candidate-search/services/candidate-scoring.service';
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
@@ -12,28 +12,18 @@ import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin
 import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
 import { UnipilePoolModule } from '../arx-chat/unipile-pool.module';
 import { CandidateAvatarModule } from '../candidate-avatar/candidate-avatar.module';
+import { CandidateDataSourcesModule } from '../candidate-data-sources/candidate-data-sources.module';
 import { CandidateSourcingModule } from '../candidate-sourcing/candidate-sourcing.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { LinkedInSearchModule } from '../linkedin-search/linkedin-search.module';
-import { OrgChartModule } from '../org-chart/org-chart.module';
-import { OrgChartProfileDataSourceMapperService } from '../org-chart/services/org-chart-profile-data-source-mapper.service';
-import { PythonOrgChartService } from '../org-chart/services/python-org-chart.service';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 import { ApolloSearchController } from './controllers/apollo-search.controller';
 // import { CandidateSearchPipelineController } from './controllers/candidate-search-pipeline.controller';
 import { CandidateSearchController } from './controllers/candidate-search.controller';
-import { OrgchartApifyBuildProcessor } from './jobs/orgchart-apify-build.processor';
-import { OrgchartApolloBuildProcessor } from './jobs/orgchart-apollo-build.processor';
-import { OrgchartHarvestBuildProcessor } from './jobs/orgchart-harvest-build.processor';
-import { OrgchartLinkedinXrayBuildProcessor } from './jobs/orgchart-linkedin-xray-build.processor';
-import { OrgchartMultiSourceBuildProcessor } from './jobs/orgchart-multisource-build.processor';
-import { OrgchartSuperImposeBuildProcessor } from './jobs/orgchart-super-impose-build.processor';
-import { OrgchartUnipileBuildProcessor } from './jobs/orgchart-unipile-build.processor';
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
 import { ApolloIoRestService } from './services/apollo-io-rest.service';
 import { ApolloPeopleSearchTransformerService } from './services/apollo-people-search-transformer.service';
 import { BooltreeHintService } from './services/booltree-hint.service';
-import { CandidateSearchHandlerService } from './services/candidate-search-handler.service';
 import { ClassifyMessageService } from './services/classify-message.service';
 import { CleanupService } from './services/cleanup.service';
 import { CompanyExpanderService } from './services/company-expander.service';
@@ -41,7 +31,6 @@ import { JobDescriptionService } from './services/job-description.service';
 import { JobTitleExpanderService } from './services/job-title-expander.service';
 import { OrgChartIntentService } from './services/org-chart-intent.service';
 import { OrgchartLinkedInQueryRouterService } from './services/orgchart-linkedin-query-router.service';
-import { OrgChartSearchService } from './services/orgchart-search.service';
 import { PythonQueryGenerationService } from './services/python-query-generation.service';
 import { QueryConstructorService } from './services/query-constructor.service';
 import { RequirementAnalyzerService } from './services/requirement-analyzer.service';
@@ -62,6 +51,7 @@ import { OrgchartUnipileShardPlannerService } from './services/orgchart-unipile-
     TitleTaxonomyModule,
     BillingModule,
     CandidateAvatarModule,
+    CandidateDataSourcesModule,
     EnvironmentModule,
     LinkedInSearchModule,
     UnipilePoolModule,
@@ -69,9 +59,8 @@ import { OrgchartUnipileShardPlannerService } from './services/orgchart-unipile-
     WorkspaceCacheStorageModule,
     AiBillingModule,
     AiModelsModule,
-    forwardRef(() => CandidateSourcingModule),
+    CandidateSourcingModule,
     GraphQLExecutionModule,
-    forwardRef(() => OrgChartModule),
   ],
   controllers: [
     CandidateSearchController,
@@ -80,7 +69,6 @@ import { OrgchartUnipileShardPlannerService } from './services/orgchart-unipile-
   ],
   providers: [
     CandidateSearchBaseService,
-    CandidateSearchHandlerService,
     StreamProcessingService,
     SearchParameterGenerationService,
     CandidateDataService,
@@ -113,22 +101,20 @@ import { OrgchartUnipileShardPlannerService } from './services/orgchart-unipile-
     OrgChartIntentService,
     OrgchartLinkedInQueryRouterService,
     OrgchartUnipileShardPlannerService,
-    OrgChartSearchService,
-    OrgchartApifyBuildProcessor,
-    OrgchartApolloBuildProcessor,
-    OrgchartUnipileBuildProcessor,
-    OrgchartLinkedinXrayBuildProcessor,
-    OrgchartHarvestBuildProcessor,
-    OrgchartMultiSourceBuildProcessor,
-    OrgchartSuperImposeBuildProcessor,
     // Executive search enhancement services
-    PythonOrgChartService,
-    OrgChartProfileDataSourceMapperService,
   ],
   exports: [
     CandidateSearchBaseService,
-    CandidateSearchHandlerService,
-    OrgChartSearchService,
+    SearchExecutionService,
+    SearchParameterGenerationService,
+    RequirementAnalyzerService,
+    SearchIntentRouterService,
+    SearchResponseBuilderService,
+    StrategyExecutionService,
+    OrgchartLinkedInQueryRouterService,
+    OrgchartUnipileShardPlannerService,
+    JobDescriptionService,
+    LinkedinQueryGenerationService,
     ResultValidationService,
     StreamProcessingService,
     ApolloIoRestService,

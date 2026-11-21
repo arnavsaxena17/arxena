@@ -23,7 +23,7 @@ import {
   PageInfo,
   WorkspaceMemberArxGraphqlNode,
   resolveIsOrgChartEnabledFromWorkspace,
-  whatappUpdateMessageObjType
+  whatappUpdateMessageObjType,
 } from 'twenty-shared';
 
 import {
@@ -49,6 +49,7 @@ import {
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { v4 as uuidv4 } from 'uuid';
 import { WorkspaceMemberArxService } from '../workspace-member-arx.service';
+import { CandidateEngagementDataUpdateService } from './candidate-engagement-data-update.service';
 import { FilterCandidates } from './filter-candidates';
 
 @Injectable()
@@ -57,7 +58,8 @@ export class CandidateEngagementArx {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    @Optional() private readonly updateChat?: any, // UpdateChat type to avoid circular dependency
+    @Optional()
+    private readonly dataUpdateService?: CandidateEngagementDataUpdateService,
     @Optional()
     private readonly workspaceMemberUnipileService?: WorkspaceMemberUnipileService,
     @Optional()
@@ -75,7 +77,6 @@ export class CandidateEngagementArx {
     staticGraphQLService: StaticGraphQLService,
     workspaceMemberUnipileService?: WorkspaceMemberUnipileService,
   ): CandidateEngagementArx {
-    // Create instance without UpdateChat dependency to avoid circular import
     const instance = new CandidateEngagementArx(
       workspaceQueryService,
       staticGraphQLService,
@@ -98,22 +99,20 @@ export class CandidateEngagementArx {
         this.staticGraphQLService,
       ).getVideoInterviewPrompt(candidate, candidateJob, apiToken);
     } else if (chatControl.chatControlType === 'startChat') {
-      return new PromptingAgents(this.workspaceQueryService, this.staticGraphQLService).getStartChatPrompt(
-        candidate,
-        candidateJob,
-        apiToken,
-      );
+      return new PromptingAgents(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      ).getStartChatPrompt(candidate, candidateJob, apiToken);
     } else if (chatControl.chatControlType === 'startMeetingSchedulingChat') {
       return new PromptingAgents(
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).getStartMeetingSchedulingPrompt(candidate, candidateJob, apiToken);
     } else {
-      return new PromptingAgents(this.workspaceQueryService, this.staticGraphQLService).getStartChatPrompt(
-        candidate,
-        candidateJob,
-        apiToken,
-      );
+      return new PromptingAgents(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      ).getStartChatPrompt(candidate, candidateJob, apiToken);
     }
   }
 
@@ -128,9 +127,7 @@ export class CandidateEngagementArx {
     chatFlowConfigObj: Record<string, ChatFlowConfig>,
   ) {
     const config = chatFlowConfigObj[chatReply].templateConfig;
-    const isFirstMessage =
-      candidate?.chatMessages
-        ?.edges.length === 0;
+    const isFirstMessage = candidate?.chatMessages?.edges.length === 0;
     const messageSetup = config.messageSetup(isFirstMessage);
     const chatHistory = sortedMessagesList[0]?.messageObj || [];
     if (messageSetup.requiresSystemPrompt) {
@@ -145,10 +142,9 @@ export class CandidateEngagementArx {
     chatHistory.push({ role: 'user', content: messageSetup.userContent });
 
     const whatsappTemplate =
-      candidate?.whatsappProvider ||
-      config.defaultTemplate;
+      candidate?.whatsappProvider || config.defaultTemplate;
 
-    let messageFrom:string = '';
+    let messageFrom: string = '';
     if (
       messagingChannelEquals(
         candidate?.messagingChannel,
@@ -158,7 +154,8 @@ export class CandidateEngagementArx {
     ) {
       messageFrom = candidate?.people?.linkedinLink?.primaryLinkUrl ?? '';
     } else if (candidate?.people?.phones?.primaryPhoneNumber) {
-      messageFrom = candidate.people.phones.primaryPhoneNumber.length == 10
+      messageFrom =
+        candidate.people.phones.primaryPhoneNumber.length == 10
           ? '91' + candidate.people.phones.primaryPhoneNumber
           : candidate.people.phones.primaryPhoneNumber;
     } else {
@@ -181,9 +178,14 @@ export class CandidateEngagementArx {
       messageTo = workspaceMember.phoneNumber ?? '';
     }
 
-
-    console.log("This is the messaging channel ::", candidate?.messagingChannel)
-    console.log("This is the whatsapp provider ::", candidate?.whatsappProvider)
+    console.log(
+      'This is the messaging channel ::',
+      candidate?.messagingChannel,
+    );
+    console.log(
+      'This is the whatsapp provider ::',
+      candidate?.whatsappProvider,
+    );
 
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       id: uuidv4(),
@@ -225,23 +227,27 @@ export class CandidateEngagementArx {
         MessagingChannel.LINKEDIN_CONNECT,
       )
     ) {
-      console.log('Phone number from is empty, returning empty candidate profile object');
+      console.log(
+        'Phone number from is empty, returning empty candidate profile object',
+      );
       return;
     }
 
-    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(
-      candidateJob as Project,
-      apiToken,
-    );
+    const workspaceMember = await new WorkspaceMemberArxService(
+      this.staticGraphQLService,
+    ).getByProject(candidateJob as Project, apiToken);
     if (!workspaceMember) {
       console.warn('Workspace member not found for job, skipping chat');
       return;
     }
 
     const candidateId = candidate?.id || '';
-    console.log("candidateId::", candidateId)
+    console.log('candidateId::', candidateId);
     if (candidateId && chatReply === 'startChat') {
-      const companyName = getCandidateCustomField(candidate, 'job_company_name');
+      const companyName = getCandidateCustomField(
+        candidate,
+        'job_company_name',
+      );
       const jobTitle = getCandidateCustomField(candidate, 'job_name');
       console.log('companyName in google contacts::', companyName);
       console.log('jobTitle in google contacts::', jobTitle);
@@ -252,9 +258,10 @@ export class CandidateEngagementArx {
       this.workspaceQueryService,
       this.staticGraphQLService,
     ).fetchAllChatMessages(candidateId, apiToken);
-    console.log("messagesList::", messagesList)
+    console.log('messagesList::', messagesList);
     const sortedMessagesList: MessageNode[] = messagesList.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
     const whatappUpdateMessageObj = await this.getChatTemplateFromChatControls(
       chatControl,
@@ -267,14 +274,17 @@ export class CandidateEngagementArx {
       chatFlowConfigObj,
     );
 
-    if (this.updateChat) {
-      await this.updateChat.updateCandidateEngagementDataInTable(candidate, whatappUpdateMessageObj,  apiToken);
-    } else {
-      // Fallback to direct instantiation if UpdateChat is not injected
-      const { UpdateChat } = await import('./update-chat');
-      const updateChat = UpdateChat.create(this.workspaceQueryService, this.staticGraphQLService);
-      await updateChat.updateCandidateEngagementDataInTable(candidate, whatappUpdateMessageObj,  apiToken);
-    }
+    await (
+      this.dataUpdateService ??
+      new CandidateEngagementDataUpdateService(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      )
+    ).updateCandidateEngagementDataInTable(
+      candidate,
+      whatappUpdateMessageObj,
+      apiToken,
+    );
   }
 
   async processCandidate(
@@ -283,7 +293,12 @@ export class CandidateEngagementArx {
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
-    console.log( 'Engagement Type for the candidate ::', candidate.name, 'for chat control::', chatControl.chatControlType, );
+    console.log(
+      'Engagement Type for the candidate ::',
+      candidate.name,
+      'for chat control::',
+      chatControl.chatControlType,
+    );
     try {
       const candidateId = candidate?.id || '';
       const messagesList: MessageNode[] = await new FilterCandidates(
@@ -291,26 +306,34 @@ export class CandidateEngagementArx {
         this.staticGraphQLService,
       ).fetchAllChatMessages(candidateId, apiToken);
 
-      console.log( 'the number of messages in the message list is::', messagesList.length, );
+      console.log(
+        'the number of messages in the message list is::',
+        messagesList.length,
+      );
       const mostRecentMessageArr: ChatHistoryItem[] = new FilterCandidates(
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).getMostRecentMessageFromMessagesList(messagesList);
 
       // if (mostRecentMessageArr?.length > 0) {
-        console.log( 'Taking MULTI Step Client for - Prompt Engineering type:', process.env.PROMPT_ENGINEERING_TYPE, 'for candidate::', candidate.name, );
-        await new OpenAIArxMultiStepClient(
-          candidate,
-          this.workspaceQueryService,
-          this.staticGraphQLService,
-          this.workspaceMemberUnipileService,
-          this.calendarEmailService,
-        ).createCompletion(
-          mostRecentMessageArr,
-          candidateJob as Project,
-          chatControl,
-          apiToken,
-        );
+      console.log(
+        'Taking MULTI Step Client for - Prompt Engineering type:',
+        process.env.PROMPT_ENGINEERING_TYPE,
+        'for candidate::',
+        candidate.name,
+      );
+      await new OpenAIArxMultiStepClient(
+        candidate,
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+        this.workspaceMemberUnipileService,
+        this.calendarEmailService,
+      ).createCompletion(
+        mostRecentMessageArr,
+        candidateJob as Project,
+        chatControl,
+        apiToken,
+      );
       // } else {
       //   console.log(
       //     'mostRecentMessageArr?.length is not greater than 0, hence no engagement:: (length)::',
@@ -353,19 +376,24 @@ export class CandidateEngagementArx {
     candidateId: string,
     apiToken: string,
   ): Promise<any> {
-
-    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
-      filter: {
-        id: {
-          eq: candidateId,
+    const response = await this.staticGraphQLService.executeGraphQL(
+      graphqlToFetchAllCandidateData,
+      {
+        filter: {
+          id: {
+            eq: candidateId,
+          },
         },
       },
-    }, apiToken);
+      apiToken,
+    );
 
-    const candidates = response?.data?.data?.candidates as {
-      edges: CandidateEdge[];
-      pageInfo: PageInfo;
-    } | undefined;
+    const candidates = response?.data?.data?.candidates as
+      | {
+          edges: CandidateEdge[];
+          pageInfo: PageInfo;
+        }
+      | undefined;
 
     return candidates?.edges[0]?.node;
   }
@@ -394,24 +422,30 @@ export class CandidateEngagementArx {
     );
     console.log('The value of endTime.toISOString()():', endTime.toISOString());
 
-    const response = await this.staticGraphQLService.executeGraphQL(graphQlToFetchChatMessages, {
-      filter: {
-        createdAt: {
-          gte: startTime.toISOString(),
-          lte: endTime.toISOString(),
+    const response = await this.staticGraphQLService.executeGraphQL(
+      graphQlToFetchChatMessages,
+      {
+        filter: {
+          createdAt: {
+            gte: startTime.toISOString(),
+            lte: endTime.toISOString(),
+          },
         },
       },
-    }, apiToken);
+      apiToken,
+    );
 
     // console.log(
     //   'Number of messages in fetchRe centMessages::',
     //   response?.data?.data?.chatMessages?.edges.length,
     // );
 
-    const messages = response?.data?.data?.chatMessages as {
-      edges: MessageNode[];
-      pageInfo: PageInfo;
-    } | undefined;
+    const messages = response?.data?.data?.chatMessages as
+      | {
+          edges: MessageNode[];
+          pageInfo: PageInfo;
+        }
+      | undefined;
 
     // console.log("This is the response from cre atedAt::", response?.data?.data?.chatMessages?.edges.map((message) => message.node.createdAt));
     return messages?.edges || [];
@@ -475,7 +509,7 @@ export class CandidateEngagementArx {
         const projectIds = await new FilterCandidates(
           this.workspaceQueryService,
           this.staticGraphQLService,
-          ).getProjectIdsFromCandidateIds(candidateIds, apiToken);
+        ).getProjectIdsFromCandidateIds(candidateIds, apiToken);
 
         console.log(
           'Number of Candidate IDs for which we are going to do updates::',
@@ -484,25 +518,28 @@ export class CandidateEngagementArx {
 
         // Update chat counts first
         let results;
-        if (this.updateChat) {
-          await this.updateChat.updateCandidatesWithChatCount(candidateIds, apiToken);
-          // Process chat statuses
-          results = await this.updateChat.processCandidatesChatsGetStatuses(apiToken, projectIds, candidateIds, "makeUpdatesonChats");
-        } else {
-          // Fallback to direct instantiation if UpdateChat is not injected
-          const { UpdateChat } = await import('./update-chat');
-          const updateChat = UpdateChat.create(this.workspaceQueryService, this.staticGraphQLService);
-          await updateChat.updateCandidatesWithChatCount(candidateIds, apiToken);
-          // Process chat statuses
-          results = await updateChat.processCandidatesChatsGetStatuses(apiToken, projectIds, candidateIds, "makeUpdatesonChats");
-        }
+        const dataUpdateService =
+          this.dataUpdateService ??
+          new CandidateEngagementDataUpdateService(
+            this.workspaceQueryService,
+            this.staticGraphQLService,
+          );
+
+        await dataUpdateService.updateCandidatesWithChatCount(
+          candidateIds,
+          apiToken,
+        );
+        // Process chat statuses
+        results = await dataUpdateService.processCandidatesChatsGetStatuses(
+          apiToken,
+          projectIds,
+          candidateIds,
+          'makeUpdatesonChats',
+        );
 
         await new GoogleSheetsService(
           this.staticGraphQLService,
-        ).updateGoogleSheetsWithChatData(
-          results,
-          apiToken,
-        );
+        ).updateGoogleSheetsWithChatData(results, apiToken);
 
         // Check stage transitions for each unique candidate only once
         for (const message of jobMessages) {
@@ -560,14 +597,20 @@ export class CandidateEngagementArx {
       return {};
     }
 
-    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
-      filter: { id: { in: candidateIds } },
-    }, apiToken);
+    const response = await this.staticGraphQLService.executeGraphQL(
+      graphqlToFetchAllCandidateData,
+      {
+        filter: { id: { in: candidateIds } },
+      },
+      apiToken,
+    );
 
-    const candidates = response?.data?.data?.candidates as {
-      edges: CandidateEdge[];
-      pageInfo: PageInfo;
-    } | undefined;
+    const candidates = response?.data?.data?.candidates as
+      | {
+          edges: CandidateEdge[];
+          pageInfo: PageInfo;
+        }
+      | undefined;
 
     console.log('Candidates array:', candidates);
 
@@ -625,7 +668,11 @@ export class CandidateEngagementArx {
         stopChat: false,
       }),
     };
-    const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariables, apiToken);
+    const response = await this.staticGraphQLService.executeGraphQL(
+      graphQltoUpdateOneCandidate,
+      graphqlVariables,
+      apiToken,
+    );
 
     if (response.data.errors) {
       console.log('Error in startChat:', response.data.errors);
@@ -657,13 +704,14 @@ export class CandidateEngagementArx {
       chatControl.chatControlType,
     );
 
-    const sortedCandidates: CandidateNode[] = sortCandidatesByLatestChatMessage(
-      candidates,
-    );
+    const sortedCandidates: CandidateNode[] =
+      sortCandidatesByLatestChatMessage(candidates);
     const config = chatFlowConfigObj[chatControl.chatControlType];
 
     if (!config) {
-      console.log( `No configuration found for chat control type: ${chatControl?.chatControlType}`, );
+      console.log(
+        `No configuration found for chat control type: ${chatControl?.chatControlType}`,
+      );
       return;
     }
 
@@ -674,18 +722,33 @@ export class CandidateEngagementArx {
       return isEligible;
     });
 
-    console.log( 'Number of filtered candidates to engage after time scheduling: ', filteredCandidatesToEngage?.length, 'for chatcontrol', chatControl.chatControlType, );
-    console.log( 'Names of filtered candidates to engage after filtering ', filteredCandidatesToEngage?.map( (candidate) => candidate.name ), 'for chatcontrol', chatControl.chatControlType, );
+    console.log(
+      'Number of filtered candidates to engage after time scheduling: ',
+      filteredCandidatesToEngage?.length,
+      'for chatcontrol',
+      chatControl.chatControlType,
+    );
+    console.log(
+      'Names of filtered candidates to engage after filtering ',
+      filteredCandidatesToEngage?.map((candidate) => candidate.name),
+      'for chatcontrol',
+      chatControl.chatControlType,
+    );
 
     for (const candidate of filteredCandidatesToEngage) {
-      if (this.updateChat) {
-        await this.updateChat.setCandidateEngagementStatusToFalse( candidate?.id, apiToken );
-      } else {
-        const { UpdateChat } = await import('./update-chat');
-        const updateChat = UpdateChat.create(this.workspaceQueryService, this.staticGraphQLService);
-        await updateChat.setCandidateEngagementStatusToFalse( candidate?.id, apiToken );
-      }
-      await this.processCandidate( candidate, candidateJob, chatControl, apiToken );
+      await (
+        this.dataUpdateService ??
+        new CandidateEngagementDataUpdateService(
+          this.workspaceQueryService,
+          this.staticGraphQLService,
+        )
+      ).setCandidateEngagementStatusToFalse(candidate?.id, apiToken);
+      await this.processCandidate(
+        candidate,
+        candidateJob,
+        chatControl,
+        apiToken,
+      );
     }
   }
 
@@ -696,11 +759,18 @@ export class CandidateEngagementArx {
     chatFlowConfigObj: Record<chatControlType, ChatFlowConfig>,
     apiToken: string,
   ) {
-    console.log('This is the number of candidates in startChatControlEngagement::', candidates?.length, 'for job name::', candidateJob?.name);
+    console.log(
+      'This is the number of candidates in startChatControlEngagement::',
+      candidates?.length,
+      'for job name::',
+      candidateJob?.name,
+    );
     const config = chatFlowConfigObj[chatControl.chatControlType];
 
     if (!config) {
-      console.log( `No configuration found for chat control type: ${chatControl?.chatControlType}`, );
+      console.log(
+        `No configuration found for chat control type: ${chatControl?.chatControlType}`,
+      );
       return;
     }
 
@@ -724,21 +794,37 @@ export class CandidateEngagementArx {
           getCandidateLastEngagementChatControl(candidate) !==
           chatControl?.chatControlType
         ) {
-          const waitTime = TimeManagement?.timeDifferentials?.timeDifferentialInMinutesBeforeStartingNextStageMessaging * 60 * 1000;
+          const waitTime =
+            TimeManagement?.timeDifferentials
+              ?.timeDifferentialInMinutesBeforeStartingNextStageMessaging *
+            60 *
+            1000;
           const cutoffTime = new Date(Date.now() - waitTime).toISOString();
           if (new Date(candidate?.updatedAt).toISOString() > cutoffTime) {
-            console.log( `Stage transition waiting period not elapsed for candidate ${candidate?.name}, last engagement was ${getCandidateLastEngagementChatControl(candidate)}, last udpated was ${candidate?.updatedAt} and cutoff time is ${cutoffTime}` );
+            console.log(
+              `Stage transition waiting period not elapsed for candidate ${candidate?.name}, last engagement was ${getCandidateLastEngagementChatControl(candidate)}, last udpated was ${candidate?.updatedAt} and cutoff time is ${cutoffTime}`,
+            );
             return false;
           }
         } else {
-          console.log(`Candidate ${candidate?.name} is eligible for stage transition from startChat because its the first one`);
+          console.log(
+            `Candidate ${candidate?.name} is eligible for stage transition from startChat because its the first one`,
+          );
         }
       }
       return config.filterLogic(candidate);
     };
 
-    const filteredCandidatesToStartEngagement = candidates?.filter(filterCandidates);
-    console.log( 'Number of candidates to start chat engagement::', filteredCandidatesToStartEngagement?.length, 'for chatControl::', chatControl?.chatControlType, 'for job name::', candidateJob?.name );
+    const filteredCandidatesToStartEngagement =
+      candidates?.filter(filterCandidates);
+    console.log(
+      'Number of candidates to start chat engagement::',
+      filteredCandidatesToStartEngagement?.length,
+      'for chatControl::',
+      chatControl?.chatControlType,
+      'for job name::',
+      candidateJob?.name,
+    );
     for (const candidate of filteredCandidatesToStartEngagement) {
       const chatReply: chatControlType = chatControl.chatControlType;
       await this.createAndUpdateCandidateStartChatChatMessage(
@@ -752,12 +838,14 @@ export class CandidateEngagementArx {
     }
   }
 
-
   async fetchAllCandidatesWithAllChatControlsByProjectId(
     projectId: string,
     apiToken: string,
   ): Promise<CandidateNode[]> {
-    console.log('Fetching all candidates with chatControlType by job ID:', projectId);
+    console.log(
+      'Fetching all candidates with chatControlType by job ID:',
+      projectId,
+    );
     const allCandidates: CandidateNode[] = [];
     try {
       const timestampedFilter = {
@@ -768,13 +856,21 @@ export class CandidateEngagementArx {
       while (hasNextPage) {
         const response = await this.staticGraphQLService.executeGraphQL(
           // graphqlToFetchAllCandidateDataForTable, { lastCursor, limit: 400, filter: timestampedFilter, orderBy: [{ createdAt: 'DESC' }] },
-          graphqlToFetchAllCandidateDataWithFieldValues, { lastCursor, limit: 400, filter: timestampedFilter, orderBy: [{ createdAt: 'DESC' }] },
+          graphqlToFetchAllCandidateDataWithFieldValues,
+          {
+            lastCursor,
+            limit: 400,
+            filter: timestampedFilter,
+            orderBy: [{ createdAt: 'DESC' }],
+          },
           apiToken,
         );
-        const candidates = response?.data?.data?.candidates as {
-          edges: CandidateEdge[];
-          pageInfo: PageInfo;
-        } | undefined;
+        const candidates = response?.data?.data?.candidates as
+          | {
+              edges: CandidateEdge[];
+              pageInfo: PageInfo;
+            }
+          | undefined;
         if (!candidates) {
           console.log('No candidates found for this filter condition');
           break;
@@ -791,14 +887,15 @@ export class CandidateEngagementArx {
         }
         lastCursor = candidates.pageInfo?.endCursor;
       }
-      console.log(`Fetched ${allCandidates.length} candidates for job ID ${projectId}`);
+      console.log(
+        `Fetched ${allCandidates.length} candidates for job ID ${projectId}`,
+      );
       return allCandidates;
     } catch (error) {
       console.error('Error fetching candidates by job ID:', error);
       throw error;
     }
   }
-
 
   async fetchAllCandidatesWithAllChatControls(
     chatControlTypeValue: chatControlType,
@@ -830,10 +927,12 @@ export class CandidateEngagementArx {
           apiToken,
         );
 
-        const candidates = response?.data?.data?.candidates as {
-          edges: CandidateEdge[];
-          pageInfo: PageInfo;
-        } | undefined;
+        const candidates = response?.data?.data?.candidates as
+          | {
+              edges: CandidateEdge[];
+              pageInfo: PageInfo;
+            }
+          | undefined;
 
         if (!candidates?.edges.length) {
           break;
@@ -913,10 +1012,12 @@ export class CandidateEngagementArx {
           },
           apiToken,
         );
-        const candidates = response?.data?.data?.candidates as {
-          edges: CandidateEdge[];
-          pageInfo: PageInfo;
-        } | undefined;
+        const candidates = response?.data?.data?.candidates as
+          | {
+              edges: CandidateEdge[];
+              pageInfo: PageInfo;
+            }
+          | undefined;
 
         if (response.data.errors) {
           console.log(
@@ -959,14 +1060,13 @@ export class CandidateEngagementArx {
                   new Date(
                     new Date(timestamp).getTime() - 15 * 60 * 1000,
                   ).toISOString());
-            const matchesChatControl =
-              matchesCandidateFlagFilters(candidate, flagFilters);
+            const matchesChatControl = matchesCandidateFlagFilters(
+              candidate,
+              flagFilters,
+            );
 
             return (
-              isNew &&
-              isRecent &&
-              matchesEngagementWindow &&
-              matchesChatControl
+              isNew && isRecent && matchesEngagementWindow && matchesChatControl
             );
           });
         allCandidates.push(...newCandidates);
@@ -1000,7 +1100,8 @@ export class CandidateEngagementArx {
   }
 
   async updateCandidatesChatControls(apiToken: string) {
-    const { candidateIds, projectIds } = await this.makeUpdatesonChats(apiToken);
+    const { candidateIds, projectIds } =
+      await this.makeUpdatesonChats(apiToken);
     const candidatesByJob = await this.groupCandidatesByJob(
       candidateIds,
       apiToken,
@@ -1011,7 +1112,9 @@ export class CandidateEngagementArx {
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).fetchJobById(projectId, apiToken);
-      const chatFlowOrder = job?.chatFlowOrder || this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
+      const chatFlowOrder =
+        job?.chatFlowOrder ||
+        this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
 
       for (const candidateId of jobCandidates) {
         const candidate = await this.fetchCandidateById(candidateId, apiToken);
@@ -1033,7 +1136,9 @@ export class CandidateEngagementArx {
               { chatControlType: nextStage as chatControlType },
               apiToken,
             );
-            console.log( `Transitioned candidate ${candidateId} from ${currentStage} to ${nextStage}`, );
+            console.log(
+              `Transitioned candidate ${candidateId} from ${currentStage} to ${nextStage}`,
+            );
             break;
           }
         }
@@ -1045,7 +1150,10 @@ export class CandidateEngagementArx {
     chatControl: ChatControlsObjType,
     chatFlowConfigObj: Record<chatControlType, ChatFlowConfig>,
     apiToken: string,
-  ): Promise<{ candidates: CandidateNode[]; candidateJobs: Map<string, Project> }> {
+  ): Promise<{
+    candidates: CandidateNode[];
+    candidateJobs: Map<string, Project>;
+  }> {
     try {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
@@ -1061,13 +1169,18 @@ export class CandidateEngagementArx {
         { filter: { isActive: { eq: true } } },
         apiToken,
       );
-      const activeJobs = response?.data?.data?.projects as {
-        edges: ProjectEdge[];
-        pageInfo: PageInfo;
-      } | undefined;
+      const activeJobs = response?.data?.data?.projects as
+        | {
+            edges: ProjectEdge[];
+            pageInfo: PageInfo;
+          }
+        | undefined;
       const activeJobsEdges = activeJobs?.edges || [];
       const activeJobsIds = activeJobsEdges.map((edge) => edge.node.id);
-      console.log("activeJobs to consider::", activeJobsEdges.map((edge) => edge.node.name));
+      console.log(
+        'activeJobs to consider::',
+        activeJobsEdges.map((edge) => edge.node.name),
+      );
 
       const candidates = await this.fetchAllCandidatesWithSpecificChatControl(
         chatControl.chatControlType,
@@ -1090,7 +1203,7 @@ export class CandidateEngagementArx {
       //   this.workspaceQueryService,
       //   this.staticGraphQLService,
       // ).fetchAllPeopleByPeopleIds(candidatePeopleIds, apiToken);
-      console.log("Number of all people fetched ::", candidates.length);
+      console.log('Number of all people fetched ::', candidates.length);
       return { candidates, candidateJobs };
     } catch (error) {
       console.log(
@@ -1103,11 +1216,15 @@ export class CandidateEngagementArx {
 
   async executeCandidateEngagement(apiToken: string) {
     try {
-      console.log('Cron running and cycle started to check candidate engagement' );
+      console.log(
+        'Cron running and cycle started to check candidate engagement',
+      );
       console.log(`Execution started at: ${new Date().toISOString()}`);
 
-      const defaultChatFlowOrder = this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
-      let chatFlowConfigObj = this.chatFlowConfigBuilder.buildChatFlowConfig(defaultChatFlowOrder);
+      const defaultChatFlowOrder =
+        this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
+      let chatFlowConfigObj =
+        this.chatFlowConfigBuilder.buildChatFlowConfig(defaultChatFlowOrder);
 
       const chatFlow = Object.entries(chatFlowConfigObj)
         .filter(([, config]) => config.order > 0)
@@ -1115,10 +1232,12 @@ export class CandidateEngagementArx {
         .map(([, config]) => ({ chatControlType: config.type }));
 
       for (const chatControl of chatFlow) {
-        console.log("chatControl::", chatControl)
+        console.log('chatControl::', chatControl);
         const executionTime = new Date().toISOString();
 
-        console.log( `Starting ${chatControl.chatControlType} execution at ${executionTime}`, );
+        console.log(
+          `Starting ${chatControl.chatControlType} execution at ${executionTime}`,
+        );
 
         const { candidates, candidateJobs } =
           await this.fetchSpecificPeopleToEngageBasedOnChatControl(
@@ -1126,20 +1245,28 @@ export class CandidateEngagementArx {
             chatFlowConfigObj as Record<chatControlType, ChatFlowConfig>,
             apiToken,
           );
-          // console.log("Candidates fetched::", candidates?.map((candidate) => candidate.name));
-          console.log("Number of candidates fetched::", candidates?.length, "for chatControlType::", chatControl.chatControlType);
-          for (const [projectId, job] of candidateJobs) {
+        // console.log("Candidates fetched::", candidates?.map((candidate) => candidate.name));
+        console.log(
+          'Number of candidates fetched::',
+          candidates?.length,
+          'for chatControlType::',
+          chatControl.chatControlType,
+        );
+        for (const [projectId, job] of candidateJobs) {
           if (job?.chatFlowOrder) {
             chatFlowConfigObj = this.chatFlowConfigBuilder.buildChatFlowConfig(
               job.chatFlowOrder,
             );
           }
-          console.log("Number of candidates fetched::", candidates?.length);
+          console.log('Number of candidates fetched::', candidates?.length);
           const candidatesForJob = candidates.filter((candidate) => {
             return candidate?.project?.id === projectId;
           });
 
-          console.log("Number of candidates for job::", candidatesForJob?.length)
+          console.log(
+            'Number of candidates for job::',
+            candidatesForJob?.length,
+          );
           if (candidatesForJob.length > 0) {
             await this.startChatControlEngagement(
               candidatesForJob as CandidateNode[],
@@ -1167,23 +1294,22 @@ export class CandidateEngagementArx {
   }
 
   async fetchLinkedinSockMessages(token: string) {
-    console.log("These are the fetch linkedin sock messages")
+    console.log('These are the fetch linkedin sock messages');
     let data = JSON.stringify({});
     const arxenaSiteBaseUrl =
-    process.env.ARXENA_SITE_BASE_URL || 'http://localhost:5050';
+      process.env.ARXENA_SITE_BASE_URL || 'http://localhost:5050';
 
-
-    console.log("arxenaSiteBaseUrl::", arxenaSiteBaseUrl)
+    console.log('arxenaSiteBaseUrl::', arxenaSiteBaseUrl);
 
     let config = {
       method: 'post',
       maxBodyLength: Infinity,
-      url: arxenaSiteBaseUrl+'/get_linkedin_unread_messages',
+      url: arxenaSiteBaseUrl + '/get_linkedin_unread_messages',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
-      data: data
+      data: data,
     };
 
     try {

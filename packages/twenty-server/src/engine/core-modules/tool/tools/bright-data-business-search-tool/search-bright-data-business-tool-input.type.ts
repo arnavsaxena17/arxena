@@ -56,7 +56,7 @@ export const SearchBrightDataBusinessToolInputZodSchema = z.object({
     .max(8)
     .optional()
     .describe(
-      'Company only. Exact LinkedIn industry labels resolved with get_source_capabilities, e.g. ["Glass, Ceramics and Concrete Manufacturing"]. When set, the planner must use them instead of guessing a broader label. Do not pass made-up categories such as Fintech.',
+      'Company only. Exact LinkedIn industry labels from the industry-labels section, e.g. ["Glass, Ceramics and Concrete Manufacturing"]. When set, the planner must use them instead of guessing a broader label. Do not pass made-up categories such as Fintech.',
     ),
 });
 

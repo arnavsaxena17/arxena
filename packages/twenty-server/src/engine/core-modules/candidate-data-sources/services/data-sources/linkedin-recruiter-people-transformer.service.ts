@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { MessagingChannel, PersonCandidateDraft } from 'twenty-shared';
 import {
-    LinkedInEducation,
-    LinkedInPeopleSearchResult,
-    LinkedInSearchResult,
-    LinkedInWorkExperience,
+  LinkedInEducation,
+  LinkedInPeopleSearchResult,
+  LinkedInSearchResult,
+  LinkedInWorkExperience,
 } from '../../../linkedin-search/types/linkedin-search-response.type';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { TransformationContext } from './base-data-source-transformer.service';
 import {
-    LinkedInSearchTransformerService,
-    CandidateTableRow,
+  LinkedInSearchTransformerService,
+  CandidateTableRow,
 } from './linkedin-search-transformer.service';
 
 type RecruiterPrimaryRole = {
@@ -169,7 +169,8 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
       userProfile.jobTitle = primaryRole.role;
       userProfile.profileTitle = primaryRole.role;
       userProfile.jobCompanyName = primaryRole.company;
-      userProfile.locationName = primaryRole.location || userProfile.locationName;
+      userProfile.locationName =
+        primaryRole.location || userProfile.locationName;
     }
 
     if (candidateData.skills?.length) {
@@ -191,7 +192,9 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
 
     if (candidateData.industry) {
       userProfile.industry = candidateData.industry;
-      userProfile.industries = [{ name: candidateData.industry, is_primary: true }];
+      userProfile.industries = [
+        { name: candidateData.industry, is_primary: true },
+      ];
     }
 
     const totalMonths = this.calculateTotalExperienceMonths(candidateData);
@@ -220,8 +223,9 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
       interestLikelihood: candidateData.interestLikelihood,
       hiddenCandidate: candidateData.hiddenCandidate,
       recruiterCandidateId: candidateData.recruiter_candidate_id,
-      summary: (candidateData as LinkedInPeopleSearchResult & { summary?: string })
-        .summary,
+      summary: (
+        candidateData as LinkedInPeopleSearchResult & { summary?: string }
+      ).summary,
       certifications: candidateData.certifications ?? [],
     };
   }
@@ -243,7 +247,8 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
     }
 
     const currentExperience = candidateData.work_experience?.find(
-      (experience) => !experience.end && (experience.role || experience.company),
+      (experience) =>
+        !experience.end && (experience.role || experience.company),
     );
 
     if (currentExperience) {
@@ -264,7 +269,9 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
         name: education.school || education.school_details?.name || null,
         type: null,
         location: education.school_details?.location || null,
-        profiles: education.school_details?.url ? [education.school_details.url] : [],
+        profiles: education.school_details?.url
+          ? [education.school_details.url]
+          : [],
         website: education.school_details?.url || null,
       },
       degrees: education.degree || null,
@@ -295,7 +302,8 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
 
     return ranges.reduce((total, range) => {
       const startMonth = this.toMonthIndex(range.start);
-      const endMonth = this.toMonthIndex(range.end) ?? this.toMonthIndexFromDate(new Date());
+      const endMonth =
+        this.toMonthIndex(range.end) ?? this.toMonthIndexFromDate(new Date());
 
       if (startMonth === null || endMonth < startMonth) {
         return total;
@@ -305,7 +313,10 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
     }, 0);
   }
 
-  private formatLinkedInDate(date?: { year: number; month?: number }): string | null {
+  private formatLinkedInDate(date?: {
+    year: number;
+    month?: number;
+  }): string | null {
     if (!date?.year) {
       return null;
     }
@@ -325,7 +336,9 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
     return date.getUTCFullYear() * 12 + date.getUTCMonth();
   }
 
-  private extractRecruiterJobTitleFromHeadline(headline?: string): string | null {
+  private extractRecruiterJobTitleFromHeadline(
+    headline?: string,
+  ): string | null {
     if (!headline) return null;
 
     const patterns = [/^([^|]+)/, /^([^-]+)/, /^([^@]+)/];
@@ -342,10 +355,14 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
       }
     }
 
-    return headline.length > 100 ? `${headline.substring(0, 100)}...` : headline;
+    return headline.length > 100
+      ? `${headline.substring(0, 100)}...`
+      : headline;
   }
 
-  private extractRecruiterCompanyFromHeadline(headline?: string): string | null {
+  private extractRecruiterCompanyFromHeadline(
+    headline?: string,
+  ): string | null {
     if (!headline) return null;
 
     const patterns = [

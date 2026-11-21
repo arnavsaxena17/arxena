@@ -117,9 +117,9 @@ describe('selectSkillSections', () => {
     expect(content).toContain('# Sourcing Skill');
     expect(content).toContain('## People');
     expect(content).not.toContain('## Companies');
-    expect(content).not.toContain('## People by company');
+    expect(content).not.toContain('## Places on a map');
     expect(content).toContain(
-      'Not loaded: companies, places, people-by-company',
+      'Not loaded: companies, industry-search, industry-labels, requirements, scoring, rubrics, query-planning',
     );
     expect(content.length).toBeLessThan(searchContent.length);
   });
@@ -156,64 +156,16 @@ describe('sourcing skill section sizes', () => {
   // for the coverage contract: exhaustive vs best effort, the run cap and the
   // query frontier.
   it.each([
-    // people holds the job title search; company-first brings industry-search
+    // people holds the job title search and the people-by-company steps
     [['people'], 6_750],
     [['companies'], 6_650],
-    // people-by-company holds the pilot, background run and final states
-    [['people-by-company'], 5_000],
-    [['scoring', 'playbook-shortfall'], 6_250],
-    [['playbook-company-first'], 10_950],
     [['query-planning'], 5_400],
-    [['for-recruiting'], 4_800],
-    [['for-sales'], 4_600],
-    [['inbound-applicants'], 5_450],
-    [['people', 'for-recruiting'], 7_700],
-    [['companies', 'for-sales'], 7_600],
-    [['people-by-company', 'for-recruiting'], 5_950],
   ])('should keep the bundle for %j under %i tokens', (sections, budget) => {
     expect(tokens(sections)).toBeLessThanOrEqual(budget);
   });
 
   it('should load the default sections when none are requested', () => {
-    expect(resolveSkillSections('sourcing')).toEqual([
-      'people',
-      'src-bright-data-people',
-      'companies',
-      'src-bright-data-companies',
-    ]);
-  });
-
-  it('should add the sections a section requires, once', () => {
-    expect(
-      resolveSkillSections('sourcing', ['people', 'src-bright-data-people']),
-    ).toEqual(['people', 'src-bright-data-people']);
-  });
-
-  it('should bring the sections the new routes require', () => {
-    expect(resolveSkillSections('sourcing', ['query-planning'])).toEqual(
-      expect.arrayContaining(['playbook-shortfall']),
-    );
-    expect(resolveSkillSections('sourcing', ['for-recruiting'])).toEqual(
-      expect.arrayContaining(['rubrics']),
-    );
-    expect(resolveSkillSections('sourcing', ['for-sales'])).toEqual(
-      expect.arrayContaining(['rubrics']),
-    );
-    expect(resolveSkillSections('sourcing', ['inbound-applicants'])).toContain(
-      'scoring',
-    );
-  });
-
-  it('should keep Naukri out of a bundle that does not name it', () => {
-    expect(resolveSkillSections('sourcing', ['for-recruiting'])).not.toContain(
-      'src-naukri',
-    );
-  });
-
-  it('should keep a single source out of an unrelated bundle', () => {
-    expect(resolveSkillSections('sourcing', ['people'])).not.toContain(
-      'src-linkedin',
-    );
+    expect(resolveSkillSections('sourcing')).toEqual(['people', 'companies']);
   });
 
   it('should load the old name of the skill', () => {
@@ -302,8 +254,7 @@ describe('skill front matter and playbooks', () => {
   });
 
   it('should resolve a shared fragment into every skill that includes it', () => {
-    const sentence =
-      'Pick the mode by what the request gives you: a description of a set, or an identifier or short literal.';
+    const sentence = 'Evidence comes in levels, cheapest first:';
 
     expect(getSkillContent('sourcing')).toContain(sentence);
     expect(getSkillContent('sourcing').split(sentence).length - 1).toBe(2);

@@ -17,7 +17,7 @@ import { type OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/or
 import type { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import { parseFunctionRootOrNull } from '../schemas/org-chart.schema';
+import { parseFunctionRootOrNull } from 'src/engine/core-modules/candidate-search/schemas/org-chart.schema';
 import {
   ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
@@ -25,26 +25,26 @@ import {
   RecruiterPeopleSearchStrategyResult,
   ResultValidationResult,
   SalesNavigatorPeopleSearchStrategyResult,
-} from '../types/candidate-search-request.type';
-import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
-import { mapLinkedinSearchQueriesToGeneratedParameters } from '../utils/linkedin-query-generation-mapper.util';
-import { mergeFilters } from '../utils/org-chart-filters-merge.util';
-import { constructSearchParamKey } from '../utils/search-parameter.utils';
-import { buildTitleTaxonomyResolvedIntent } from '../utils/title-taxonomy-resolved-intent.util';
-import { TokenUsage } from '../utils/token-tracking.util';
-import { CandidateSearchBaseService } from './candidate-search-base.service';
-import { JobDescriptionService } from './job-description.service';
-import { OrgchartLinkedInQueryRouterService } from './orgchart-linkedin-query-router.service';
+} from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
+import { LinkedinParameterResolver } from 'src/engine/core-modules/candidate-search/utils/linkedin-parameter-resolver.util';
+import { mapLinkedinSearchQueriesToGeneratedParameters } from 'src/engine/core-modules/candidate-search/utils/linkedin-query-generation-mapper.util';
+import { mergeFilters } from 'src/engine/core-modules/candidate-search/utils/org-chart-filters-merge.util';
+import { constructSearchParamKey } from 'src/engine/core-modules/candidate-search/utils/search-parameter.utils';
+import { buildTitleTaxonomyResolvedIntent } from 'src/engine/core-modules/candidate-search/utils/title-taxonomy-resolved-intent.util';
+import { TokenUsage } from 'src/engine/core-modules/candidate-search/utils/token-tracking.util';
+import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
+import { JobDescriptionService } from 'src/engine/core-modules/candidate-search/services/job-description.service';
+import { OrgchartLinkedInQueryRouterService } from 'src/engine/core-modules/candidate-search/services/orgchart-linkedin-query-router.service';
 import {
   PythonQueryGenerationService,
   type PythonQueryInput,
-} from './python-query-generation.service';
-import { RequirementAnalyzerService } from './requirement-analyzer.service';
-import { SearchExecutionService } from './search-execution.service';
-import { SearchIntentRouterService } from './search-intent-router.service';
-import { SearchParameterGenerationService } from './search-parameter-generation.service';
-import { SearchResponseBuilderService } from './search-response-builder.service';
-import { StrategyExecutionService } from './strategy-execution.service';
+} from 'src/engine/core-modules/candidate-search/services/python-query-generation.service';
+import { RequirementAnalyzerService } from 'src/engine/core-modules/candidate-search/services/requirement-analyzer.service';
+import { SearchExecutionService } from 'src/engine/core-modules/candidate-search/services/search-execution.service';
+import { SearchIntentRouterService } from 'src/engine/core-modules/candidate-search/services/search-intent-router.service';
+import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
+import { SearchResponseBuilderService } from 'src/engine/core-modules/candidate-search/services/search-response-builder.service';
+import { StrategyExecutionService } from 'src/engine/core-modules/candidate-search/services/strategy-execution.service';
 
 import { OrgChartIntentService } from 'src/engine/core-modules/candidate-search/services/org-chart-intent.service';
 

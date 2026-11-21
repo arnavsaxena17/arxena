@@ -28,7 +28,12 @@ const SKILL_TOKEN_BUDGETS: Record<string, number> = {
   // company-first routing, the on/off source rule, the Indian title ladder and
   // the per-source filter table (which replaces invented filters); raised for
   // the coverage contract (exhaustive vs best effort, run cap, query frontier)
-  sourcing: 28_800,
+  // Lowered from 28_800 when get_scoring_plan and get_source_capabilities were
+  // removed: their step-0 and match-the-words paragraphs went with them. Lowered
+  // again when the for-recruiting, for-sales, playbook-shortfall, run-edge and
+  // source-profiles sections were dropped, and to 17_000 when the per-source
+  // `src-*` sections were folded away.
+  sourcing: 17_000,
   outreach: 4_700,
   'workflow-building': 4_500,
   'ai-filter-enrich': 3_200,
@@ -59,9 +64,10 @@ const PLAYBOOK_TOKEN_BUDGET = 1_500;
 // have tuned declares a floor; cutting below it means lowering the budget here.
 // Start a new entry only when you have just measured the skill.
 const SKILL_TOKEN_FLOORS: Record<string, number> = {
-  // measured 28_748 after the sourcing rewrite; raise the budget only by also
-  // deleting an equal amount elsewhere
-  sourcing: 27_300,
+  // measured 16_774 after folding the per-source `src-*` sections into the
+  // entity sections; raise the budget only by also deleting an equal amount
+  // elsewhere
+  sourcing: 16_500,
 };
 
 const budgetFor = (skillName: string): number | undefined =>

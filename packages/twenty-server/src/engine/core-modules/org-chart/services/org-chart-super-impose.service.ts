@@ -17,8 +17,8 @@ import {
   extractLinkedinCompanyIdFromUnipileProfile,
   UnipileCompanyService,
 } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
-import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
-import { DataSourceTransformerFactoryService } from 'src/engine/core-modules/candidate-sourcing/services/data-source-transformer-factory.service';
+import { OrgChartSearchService } from 'src/engine/core-modules/org-chart/services/orgchart-search.service';
+import { DataSourceTransformerFactoryService } from 'src/engine/core-modules/candidate-data-sources/services/data-source-transformer-factory.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { HarvestLinkedinTransformerService } from 'src/engine/core-modules/org-chart/services/harvest-linkedin-transformer.service';
 import { HarvestLinkedinService } from 'src/engine/core-modules/org-chart/services/harvest-linkedin.service';

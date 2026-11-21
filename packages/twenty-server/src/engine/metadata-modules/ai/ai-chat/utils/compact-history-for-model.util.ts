@@ -10,13 +10,7 @@ import { splitSkillSections } from 'src/engine/workspace-manager/twenty-standard
 
 // Sections that decide which path a request takes. Once a tool has run on that
 // path they have done their job, so earlier requests' copies are dropped.
-export const ROUTING_ONLY_SKILL_SECTIONS = new Set([
-  'requirements',
-  'for-sales',
-  'for-recruiting',
-  'playbook-company-first',
-  'intent-glossary',
-]);
+export const ROUTING_ONLY_SKILL_SECTIONS = new Set(['requirements']);
 
 // Calls that only plan: loading guidance, learning tools, asking the user. A
 // call of anything else means the plan was set and a tool ran on it.

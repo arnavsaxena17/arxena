@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ApifyModule } from 'src/engine/core-modules/apify/apify.module';
@@ -6,6 +6,7 @@ import { ApplicationModule } from 'src/engine/core-modules/application/applicati
 import { AccountRateLimitModule } from 'src/engine/core-modules/account-rate-limit/account-rate-limit.module';
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool.module';
+import { LinkedinProfileRuntimeModule } from 'src/engine/core-modules/linkedin-profile-runtime/linkedin-profile-runtime.module';
 import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
 import { JudgeModule } from 'src/engine/core-modules/judge/judge.module';
 import { BrightDataModule } from 'src/engine/core-modules/bright-data/bright-data.module';
@@ -19,14 +20,12 @@ import { OutreachDecisionModule } from 'src/engine/core-modules/outreach-command
 import { OutreachMockController } from 'src/engine/core-modules/outreach-command/controllers/outreach-mock.controller';
 import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { OutreachInboundEmailListener } from 'src/engine/core-modules/outreach-command/listeners/outreach-inbound-email.listener';
-import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
 import { OutreachWorkspaceProfileBootstrapJob } from 'src/engine/core-modules/outreach-command/jobs/outreach-workspace-profile-bootstrap.job';
 import { EnsureOutreachProjectService } from 'src/engine/core-modules/outreach-command/services/ensure-outreach-project.service';
 import { FetchAndUpsertLocalBusinessesService } from 'src/engine/core-modules/outreach-command/services/fetch-and-upsert-local-businesses.service';
 import { ClassifyAndUpsertLocalPlacesService } from 'src/engine/core-modules/outreach-command/services/classify-and-upsert-local-places.service';
 import { FetchCompanyDetailsService } from 'src/engine/core-modules/outreach-command/services/fetch-company-details.service';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-messages.service';
-import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
 import { VisitLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/visit-linkedin-profile.service';
 import { FetchUserCommentsService } from 'src/engine/core-modules/outreach-command/services/fetch-user-comments.service';
 import { OutreachLogicFunctionNativeExecutor } from 'src/engine/core-modules/outreach-command/services/outreach-logic-function-native.executor';
@@ -39,7 +38,6 @@ import { SearchCrunchbaseCompaniesService } from 'src/engine/core-modules/outrea
 import { SearchJobsService } from 'src/engine/core-modules/outreach-command/services/search-jobs.service';
 import { SearchPostsService } from 'src/engine/core-modules/outreach-command/services/search-posts.service';
 import { UploadProfilesService } from 'src/engine/core-modules/outreach-command/services/upload-profiles.service';
-import { UploadProfilesWorkflowResumeService } from 'src/engine/core-modules/outreach-command/services/upload-profiles-workflow-resume.service';
 import { SaveOutreachTargetsToCrmService } from 'src/engine/core-modules/outreach-command/services/save-outreach-targets-to-crm.service';
 import { OutreachTabDedupeService } from 'src/engine/core-modules/outreach-command/services/outreach-tab-dedupe.service';
 import { OutreachTabExportService } from 'src/engine/core-modules/outreach-command/services/outreach-tab-export.service';
@@ -129,8 +127,8 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     AccountRateLimitModule,
     LogicFunctionExecutorModule,
     WorkspaceModificationsModule,
-    forwardRef(() => CandidateSearchModule),
-    forwardRef(() => LinkedInSearchModule),
+    CandidateSearchModule,
+    LinkedInSearchModule,
     UnipilePoolModule,
     EnvironmentModule,
     FeatureFlagModule,
@@ -139,12 +137,12 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     ApifyModule,
     WikidataModule,
     ApiKeyModule,
-    forwardRef(() => PeopleApiModule),
+    PeopleApiModule,
     CompanyApiModule,
     JobsApiModule,
     PostsApiModule,
     JwtModule,
-    forwardRef(() => CandidateSourcingModule),
+    CandidateSourcingModule,
     ContactEnrichmentModule,
     GoogleCalendarModule,
     WorkflowCommonModule,
@@ -153,6 +151,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachCacheRealtimeModule,
     BrightDataModule,
     JudgeModule,
+    LinkedinProfileRuntimeModule,
   ],
   controllers: [OutreachCommandController, OutreachMockController],
   providers: [
@@ -215,14 +214,11 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     SearchCrunchbaseCompaniesService,
     SearchJobsService,
     SearchPostsService,
-    LinkedinProviderIdStoreService,
-    FetchLinkedinProfileService,
     VisitLinkedinProfileService,
     FetchLinkedinMessagesService,
     FetchUserCommentsService,
     FetchCompanyDetailsService,
     UploadProfilesService,
-    UploadProfilesWorkflowResumeService,
     SaveOutreachTargetsToCrmService,
     OutreachTabDedupeService,
     OutreachTabExportService,
@@ -259,6 +255,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     LinkedinSelectionFetchService,
   ],
   exports: [
+    LinkedinProfileRuntimeModule,
     OutreachMemberAssignmentService,
     OutreachCommandMaterializeService,
     OutreachInboundReplyClassifierService,
@@ -277,14 +274,11 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachWorkspaceProfileProvisioningService,
     EnsureOutreachProjectService,
     SearchPeopleForCompanyService,
-    LinkedinProviderIdStoreService,
-    FetchLinkedinProfileService,
     VisitLinkedinProfileService,
     FetchLinkedinMessagesService,
     FetchUserCommentsService,
     FetchCompanyDetailsService,
     UploadProfilesService,
-    UploadProfilesWorkflowResumeService,
     SaveOutreachTargetsToCrmService,
     UpsertCompaniesService,
     EnrichContactService,

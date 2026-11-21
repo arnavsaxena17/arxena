@@ -1,4 +1,14 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
+
+import { CandidateSearchHandlerService } from './services/candidate-search-handler.service';
+import { OrgChartSearchService } from './services/orgchart-search.service';
+import { OrgchartApifyBuildProcessor } from './services/orgchart-apify-build.processor';
+import { OrgchartApolloBuildProcessor } from './services/orgchart-apollo-build.processor';
+import { OrgchartUnipileBuildProcessor } from './services/orgchart-unipile-build.processor';
+import { OrgchartLinkedinXrayBuildProcessor } from './services/orgchart-linkedin-xray-build.processor';
+import { OrgchartHarvestBuildProcessor } from './services/orgchart-harvest-build.processor';
+import { OrgchartMultiSourceBuildProcessor } from './services/orgchart-multisource-build.processor';
+import { OrgchartSuperImposeBuildProcessor } from './services/orgchart-super-impose-build.processor';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AccountRateLimitModule } from 'src/engine/core-modules/account-rate-limit/account-rate-limit.module';
@@ -9,7 +19,6 @@ import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { BrightDataModule } from 'src/engine/core-modules/bright-data/bright-data.module';
 import { OrgChartBrightDataController } from 'src/engine/core-modules/org-chart/controllers/org-chart-bright-data.controller';
 import { OrgChartBrightDataPeopleService } from 'src/engine/core-modules/org-chart/services/org-chart-bright-data-people.service';
-import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
 import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 import { ContactEnrichmentModule } from 'src/engine/core-modules/contact-enrichment/contact-enrichment.module';
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
@@ -30,6 +39,8 @@ import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/
 import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool.module';
 
 import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/candidate-avatar.module';
+import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
+import { CandidateDataSourcesModule } from 'src/engine/core-modules/candidate-data-sources/candidate-data-sources.module';
 import { OrgChartClientIpModule } from 'src/engine/core-modules/org-chart/org-chart-client-ip.module';
 
 import { ElasticsearchSearchController } from './controllers/elasticsearch-search.controller';
@@ -62,6 +73,7 @@ import { OrgChartCompanyTechnologyService } from './services/org-chart-company-t
 import { OrgChartGrantAdminService } from './services/org-chart-grant-admin.service';
 import { OrgChartCatalogS3Service } from './services/org-chart-catalog-s3.service';
 import { OrgChartS3Service } from './services/orgchart-s3.service';
+import { OrgChartProfileDataSourceMapperService } from './services/org-chart-profile-data-source-mapper.service';
 import { PdlAutocompleteService } from './services/pdl-autocomplete.service';
 import { PdlPersonOrgMovementService } from './services/pdl-person-org-movement.service';
 import { PeopleEsService } from './services/people-es.service';
@@ -73,13 +85,15 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
   imports: [
     TypeOrmModule.forFeature([WorkspaceEntity]),
     CandidateAvatarModule,
+    CandidateSearchModule,
+    CandidateDataSourcesModule,
     OrgChartClientIpModule,
     ApifyModule,
     ApiKeyModule,
     AuthModule,
     BillingModule,
     BrightDataModule,
-    forwardRef(() => CandidateSourcingModule),
+    CandidateSourcingModule,
     ContactEnrichmentModule,
     EnvironmentModule,
     RedisClientModule,
@@ -92,7 +106,6 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     BuiltWithModule,
     WorkspaceModificationsModule,
     WorkspaceCacheStorageModule,
-    forwardRef(() => CandidateSearchModule),
     UnipilePoolModule,
   ],
   controllers: [
@@ -102,6 +115,16 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     HarvestSearchController,
   ],
   providers: [
+    CandidateSearchHandlerService,
+    OrgChartSearchService,
+    OrgChartProfileDataSourceMapperService,
+    OrgchartApifyBuildProcessor,
+    OrgchartApolloBuildProcessor,
+    OrgchartUnipileBuildProcessor,
+    OrgchartLinkedinXrayBuildProcessor,
+    OrgchartHarvestBuildProcessor,
+    OrgchartMultiSourceBuildProcessor,
+    OrgchartSuperImposeBuildProcessor,
     OrgChartBrightDataPeopleService,
     UnipileCompanyService,
     WorkspaceMemberUnipileService,
@@ -141,6 +164,15 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     OrgChartPublishedSlugService,
   ],
   exports: [
+    CandidateSearchHandlerService,
+    OrgChartSearchService,
+    OrgchartApifyBuildProcessor,
+    OrgchartApolloBuildProcessor,
+    OrgchartUnipileBuildProcessor,
+    OrgchartLinkedinXrayBuildProcessor,
+    OrgchartHarvestBuildProcessor,
+    OrgchartMultiSourceBuildProcessor,
+    OrgchartSuperImposeBuildProcessor,
     OrgChartService,
     OrgChartS3Service,
     OrgChartCompanyNewsService,

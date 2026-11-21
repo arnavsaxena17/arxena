@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
 import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool.module';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
@@ -25,11 +25,11 @@ import { PeopleSearchDataSourceResolver } from './services/people-search-data-so
 
 @Module({
   imports: [
-    forwardRef(() => OrgChartModule),
+    OrgChartModule,
     BrightDataModule,
     SerpCompanySearchModule,
-    forwardRef(() => CandidateSearchModule),
-    forwardRef(() => LinkedInSearchModule),
+    CandidateSearchModule,
+    LinkedInSearchModule,
     UnipilePoolModule,
     AuthModule,
     BillingModule,

@@ -18,7 +18,7 @@ import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/cand
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { buildIncomingAttachmentChatReply } from 'src/engine/core-modules/arx-chat/utils/unipile-attachment-message.util';
 import { OutreachCommandMaterializeService } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
-import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
+import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/linkedin-profile-runtime/services/linkedin-provider-id.store';
 import { shouldMatchLinkedinWebhookBySalesNavigatorProviderId } from 'src/engine/core-modules/arx-chat/utils/should-match-linkedin-webhook-by-sales-navigator-provider-id.util';
 import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';

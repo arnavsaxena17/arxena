@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import {
   LinkedInSearchTransformerService,
   CandidateTableRow,
-} from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+} from 'src/engine/core-modules/candidate-data-sources/services/data-sources/linkedin-search-transformer.service';
 import type {
   LinkedInCurrentPosition,
   LinkedInPeopleSearchResult,

@@ -5,8 +5,8 @@ import {
   Optional,
   forwardRef,
 } from '@nestjs/common';
-import { ApifyLinkedInCompanyProfileTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/apify-linkedin-company-profile-transformer.service';
-import type { CandidateTableRow } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import { ApifyLinkedInCompanyProfileTransformerService } from 'src/engine/core-modules/candidate-data-sources/services/data-sources/apify-linkedin-company-profile-transformer.service';
+import type { CandidateTableRow } from 'src/engine/core-modules/candidate-data-sources/services/data-sources/linkedin-search-transformer.service';
 import {
   ApifyService,
   type ApifyRunLogProgressArgs,

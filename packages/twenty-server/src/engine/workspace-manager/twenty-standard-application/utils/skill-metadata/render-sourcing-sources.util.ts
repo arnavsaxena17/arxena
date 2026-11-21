@@ -109,8 +109,8 @@ const renderLearnTools = (entity: SourcingEntity): string => {
 
 // What a source hands back is what makes chaining possible: a row without a
 // LinkedIn URL cannot be deduped, CRM-saved or profile-fetched. Only the keys a
-// next step can consume are rendered; the full field list is a runtime question
-// for get_source_capabilities, and listing it here costs more than it decides.
+// next step can consume are rendered; the full field list costs more than it
+// decides, so it stays in the capability registry.
 const CHAIN_KEYS = ['linkedinUrl', 'profile', 'domain', 'employees'];
 
 const renderReturns = (entity: 'company' | 'person'): string => {
@@ -168,9 +168,7 @@ const renderCapabilities = (entity: 'company' | 'person'): string => {
 };
 
 const orderCell = (use: SourcingSourceUse | undefined): string =>
-  use?.orderLabel === undefined
-    ? '—'
-    : `${use.orderLabel} (\`${use.section}\`)`;
+  use?.orderLabel ?? '—';
 
 const renderSourceOrder = (): string =>
   [
@@ -182,19 +180,6 @@ const renderSourceOrder = (): string =>
         (source) =>
           `| ${source.rank} | ${orderCell(source.people)} | ${orderCell(source.companies)} |`,
       ),
-  ].join('\n');
-
-const renderSourceProfiles = (): string =>
-  [
-    '| Source | Strong for | Blind spots | Limit and cost |',
-    '| --- | --- | --- | --- |',
-    ...SOURCING_SOURCES.flatMap(({ profile }) =>
-      profile === undefined
-        ? []
-        : [
-            `| ${profile.name} | ${profile.strongFor} | ${profile.blindSpots} | ${profile.limit.standing}: ${profile.limit.text} |`,
-          ],
-    ),
   ].join('\n');
 
 const renderLimits = (key: string): string => {
@@ -221,10 +206,6 @@ const renderBlock = (
 
   if (block === 'source-order' && argument === undefined) {
     return renderSourceOrder();
-  }
-
-  if (block === 'source-profiles' && argument === undefined) {
-    return renderSourceProfiles();
   }
 
   if (block === 'capabilities') {
@@ -297,9 +278,7 @@ export const renderSourcingSourceNames = (content: string): string =>
       throw new Error(`Sourcing source "${source.key}" has no ${entity} use`);
     }
 
-    return use.section === undefined
-      ? source.label
-      : `${source.label} (\`${use.section}\`)`;
+    return source.label;
   });
 
 // Blocks first, so the facts they quote are filled in with the rest

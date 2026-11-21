@@ -13,7 +13,7 @@ import { EnvironmentService } from 'src/engine/core-modules/environment/environm
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
 import { OrgChartIntentService } from 'src/engine/core-modules/candidate-search/services/org-chart-intent.service';
 import { OrgchartLinkedInQueryRouterService } from 'src/engine/core-modules/candidate-search/services/orgchart-linkedin-query-router.service';
-import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
+import { OrgChartSearchService } from 'src/engine/core-modules/org-chart/services/orgchart-search.service';
 import { PythonQueryGenerationService } from 'src/engine/core-modules/candidate-search/services/python-query-generation.service';
 import { RequirementAnalyzerService } from 'src/engine/core-modules/candidate-search/services/requirement-analyzer.service';
 import { SearchExecutionService } from 'src/engine/core-modules/candidate-search/services/search-execution.service';
@@ -22,13 +22,20 @@ import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
 import { OrgChartProfileDataSourceMapperService } from 'src/engine/core-modules/org-chart/services/org-chart-profile-data-source-mapper.service';
 import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services/orgchart-cache.service';
+import { OrgChartS3Service } from 'src/engine/core-modules/org-chart/services/orgchart-s3.service';
+import { OrgChartIncrementalBuildCacheService } from 'src/engine/core-modules/org-chart/services/orgchart-incremental-build-cache.service';
+import { OrgchartUnipileShardPlannerService } from 'src/engine/core-modules/candidate-search/services/orgchart-unipile-shard-planner.service';
+import { LinkedInSearchTransformerService } from 'src/engine/core-modules/candidate-data-sources/services/data-sources/linkedin-search-transformer.service';
+import { LinkedInRecruiterPeopleTransformerService } from 'src/engine/core-modules/candidate-data-sources/services/data-sources/linkedin-recruiter-people-transformer.service';
 import { OrgchartCancelRegistryService } from 'src/engine/core-modules/org-chart/services/orgchart-cancel-registry.service';
 import { PythonOrgChartService } from 'src/engine/core-modules/org-chart/services/python-org-chart.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 describe('OrgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates', () => {
   let service: OrgChartSearchService;
-  let pythonOrgChartService: { createOrgChartFromStandardizedPeople: jest.Mock };
+  let pythonOrgChartService: {
+    createOrgChartFromStandardizedPeople: jest.Mock;
+  };
 
   beforeEach(async () => {
     pythonOrgChartService = {
@@ -52,15 +59,22 @@ describe('OrgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates', () 
         { provide: OrgchartCancelRegistryService, useValue: {} },
         { provide: WorkspaceQueryService, useValue: {} },
         { provide: OrgChartCacheService, useValue: {} },
+        { provide: OrgChartS3Service, useValue: {} },
         { provide: OrgChartIntentService, useValue: {} },
         OrgChartProfileDataSourceMapperService,
         {
           provide: CandidateAvatarStorageService,
-          useValue: { ingestBatch: jest.fn((people) => Promise.resolve(people)) },
+          useValue: {
+            ingestBatch: jest.fn((people) => Promise.resolve(people)),
+          },
         },
         { provide: LinkedinUnipileSessionService, useValue: {} },
         { provide: LinkedinUnipileEstimateAccountService, useValue: {} },
         { provide: EnvironmentService, useValue: {} },
+        { provide: LinkedInSearchTransformerService, useValue: {} },
+        { provide: LinkedInRecruiterPeopleTransformerService, useValue: {} },
+        { provide: OrgchartUnipileShardPlannerService, useValue: {} },
+        { provide: OrgChartIncrementalBuildCacheService, useValue: {} },
       ],
     }).compile();
 
@@ -91,7 +105,9 @@ describe('OrgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates', () 
     expect(result.job_company_website).toBe('https://briskpe.com');
     expect(result.job_company_linkedin_url).toBe(canonical);
 
-    expect(pythonOrgChartService.createOrgChartFromStandardizedPeople).toHaveBeenCalled();
+    expect(
+      pythonOrgChartService.createOrgChartFromStandardizedPeople,
+    ).toHaveBeenCalled();
     const callArg =
       pythonOrgChartService.createOrgChartFromStandardizedPeople.mock
         .calls[0][0];
@@ -179,7 +195,8 @@ describe('OrgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates', () 
     );
 
     const callArg =
-      pythonOrgChartService.createOrgChartFromStandardizedPeople.mock.calls[0][0];
+      pythonOrgChartService.createOrgChartFromStandardizedPeople.mock
+        .calls[0][0];
     expect(callArg.people[0].job_title).toBe('Director');
   });
 
@@ -210,7 +227,8 @@ describe('OrgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates', () 
     );
 
     const callArg =
-      pythonOrgChartService.createOrgChartFromStandardizedPeople.mock.calls[0][0];
+      pythonOrgChartService.createOrgChartFromStandardizedPeople.mock
+        .calls[0][0];
     expect(callArg.people).toHaveLength(0);
   });
 });

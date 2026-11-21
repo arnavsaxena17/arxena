@@ -7,7 +7,7 @@ import { type ObjectLiteral } from 'typeorm';
 
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { linkedinPremiumProfileNeedsFetch } from 'src/engine/core-modules/candidate-sourcing/utils/hydrate-linkedin-premium-from-fetch.util';
-import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
+import { FetchLinkedinProfileService } from 'src/engine/core-modules/linkedin-profile-runtime/services/fetch-linkedin-profile.service';
 import { OutreachWorkspaceAuthTokenService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-auth-token.service';
 import { UpsertCompaniesService } from 'src/engine/core-modules/outreach-command/services/upsert-companies.service';
 import { mapUploadProfileToLinkedinSearchRow } from 'src/engine/core-modules/outreach-command/utils/map-upload-profile-to-linkedin-search-row.util';

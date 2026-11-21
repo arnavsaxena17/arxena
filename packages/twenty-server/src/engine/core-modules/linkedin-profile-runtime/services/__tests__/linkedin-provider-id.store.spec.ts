@@ -1,4 +1,4 @@
-import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
+import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/linkedin-profile-runtime/services/linkedin-provider-id.store';
 
 const VALID_PROVIDER_ID = 'ACoAAabcdefghij1234567890';
 const VALID_SN_ID = 'ACwAAabcdefghij1234567890';

@@ -1,4 +1,4 @@
-import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
+import { DataProcessingUtils } from 'src/engine/core-modules/candidate-data-sources/utils/data-processing.utils';
 import {
   collectLinkedinIdentityKeysFromProfile,
   collectLinkedinIdentityLookupKeys,

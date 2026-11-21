@@ -18,7 +18,7 @@ For a stale-prone fact you cannot confirm, say what you know and its age. Do not
 1. Arxena's own data first (the CRM, the project tabs).
 2. One focused web query, entity-aware (`app_exa_web_search`, else `google_serp_search`). Quote the person or company name and one disambiguating word.
 3. A second engine, only if the first returned nothing usable or two sources disagree.
-4. Stop and say what is unknown. A source's coverage and limits are in `sourcing` `source-profiles`.
+4. Stop and say what is unknown. A source's coverage and limits are in `sourcing`.
 
 ## Report
 

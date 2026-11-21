@@ -49,4 +49,23 @@ describe('HarvestSearchController', () => {
       }),
     );
   });
+
+  // Account search keeps its own location/geo keys: sending `locations` to
+  // /linkedin/account-search drops the filter with no error
+  it('resolves the company headquarter location to its geo id', async () => {
+    const { controller, searchSalesNavigatorCollection } = createController([
+      '90009639',
+    ]);
+
+    await controller.searchAccounts({
+      searchParameters: { headquarterLocations: 'Mumbai, Maharashtra, India' },
+    });
+
+    expect(searchSalesNavigatorCollection).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'accounts',
+        query: { headquarterGeoIds: '90009639' },
+      }),
+    );
+  });
 });

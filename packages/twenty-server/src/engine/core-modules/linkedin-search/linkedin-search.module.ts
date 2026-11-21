@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -48,7 +48,7 @@ import { MeteredLlmModule } from 'src/engine/core-modules/metered-llm/metered-ll
     GraphQLExecutionModule,
     AuthModule,
     JwtModule,
-    forwardRef(() => CandidateSourcingModule),
+    CandidateSourcingModule,
     CoreGraphQLApiModule,
     TypeORMModule,
     TypeOrmModule.forFeature([

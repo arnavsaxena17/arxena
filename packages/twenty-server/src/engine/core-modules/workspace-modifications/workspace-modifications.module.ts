@@ -36,7 +36,7 @@ import { WorkspaceQueryService } from './workspace-modifications.service';
     DataSourceModule,
     FeatureFlagModule,
     WorkspaceSchemaBuilderModule,
-    forwardRef(() => WebSocketModule),
+    WebSocketModule,
     WorkspaceResolverBuilderModule,
     GraphQLExecutionModule,
     GlobalWorkspaceDataSourceModule,

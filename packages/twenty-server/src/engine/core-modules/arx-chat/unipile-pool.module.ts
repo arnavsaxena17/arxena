@@ -1,4 +1,4 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { AccountRateLimitModule } from 'src/engine/core-modules/account-rate-limit/account-rate-limit.module';
@@ -25,7 +25,7 @@ import { WorkspaceMemberUnipileService } from './services/workspace-member-unipi
   imports: [
     TypeORMModule,
     AccountRateLimitModule,
-    forwardRef(() => WorkspaceModificationsModule),
+    WorkspaceModificationsModule,
     EnvironmentModule,
     GraphQLExecutionModule,
     MessageQueueModule,

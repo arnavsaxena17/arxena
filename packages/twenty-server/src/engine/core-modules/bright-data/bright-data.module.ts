@@ -1,10 +1,8 @@
 import { BrightDataPersonFitFilterService } from 'src/engine/core-modules/bright-data/services/bright-data-person-fit-filter.service';
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
-import { OutreachTabController } from 'src/engine/core-modules/bright-data/controllers/outreach-tab.controller';
-import { BrightDataBusinessSearchController } from 'src/engine/core-modules/bright-data/controllers/bright-data-business-search.controller';
 import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
 import { BrightDataBillingService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-billing.service';
 import { BrightDataLudicrousDatasetStoreService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-dataset-store.service';
@@ -39,14 +37,7 @@ import { BrightDataUnlockerService } from './services/bright-data-unlocker.servi
     WorkspaceCacheModule,
     SerpModule,
     JudgeModule,
-    // ToolModule → OrgChart → TheOfficialBoard reads BrightDataModule while
-    // this file is still initializing, so the import stays lazy.
-    forwardRef(() => {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      return require('../tool/tool.module').ToolModule;
-    }),
   ],
-  controllers: [BrightDataBusinessSearchController, OutreachTabController],
   providers: [
     JwtAuthGuard,
     BrightDataResidentialProxyService,

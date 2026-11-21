@@ -43,7 +43,7 @@ Record the answer as `brief.sources` with the keys. It binds the run: a search t
 
 ### Match the words to a filter
 
-Before writing the plan questions, call `get_source_capabilities({ sources, entity, want, term, rawQuery })`: `want` is the parameters the user named, `term` the segment in their words, `rawQuery` their sentence. It returns which picked source has each field, the allowed values, the fields none has with the nearest stand-in (Bright Data has employee count, not revenue; Sales Navigator has revenue), and `questions[]` with the exact options and a free-text hint. Build the batch from those questions; add `allowFreeText: true` and a `freeTextHint` so the user can give the number, range or label in their own words.
+Write the plan questions only from the "What each source can filter on" table in the source section you will use (`people` or `companies`): it lists the filters each source really has. Never offer a filter a source does not have. Add `allowFreeText: true` so the user can give the number, range or label in their own words.
 
 ### By kind of request
 
@@ -60,7 +60,7 @@ Before writing the plan questions, call `get_source_capabilities({ sources, enti
 
 ### Ambiguous terms
 
-Settle them with the intake gate above and `intent-glossary`.
+Settle them with the intake gate above.
 
 ### Age, later checks, conflicts
 

@@ -3,7 +3,7 @@
  */
 import type { SearchQuerySet } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
 import { mapLinkedinSearchQueriesToGeneratedParameters } from '../../utils/linkedin-query-generation-mapper.util';
-import { CandidateSearchHandlerService } from '../candidate-search-handler.service';
+import { CandidateSearchHandlerService } from 'src/engine/core-modules/org-chart/services/candidate-search-handler.service';
 
 const API_TOKEN = 'test-token';
 const MUMBAI_CTO_QUERY =

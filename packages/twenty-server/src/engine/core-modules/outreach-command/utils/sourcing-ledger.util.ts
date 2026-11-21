@@ -152,8 +152,6 @@ const PERSONA_ALIASES: Record<string, SourcingPersona> = {
   'sales-prospect': 'sales',
   prospect: 'sales',
   prospects: 'sales',
-  'for-sales': 'sales',
-  for_sales: 'sales',
   exec_search: 'exec_search',
   'exec-search': 'exec_search',
   exec: 'exec_search',
@@ -162,8 +160,6 @@ const PERSONA_ALIASES: Record<string, SourcingPersona> = {
   hiring: 'exec_search',
   candidate: 'exec_search',
   candidates: 'exec_search',
-  'for-recruiting': 'exec_search',
-  for_recruiting: 'exec_search',
 };
 
 const COVERAGE_ALIASES: Record<string, SourcingCoverage> = {

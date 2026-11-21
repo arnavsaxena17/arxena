@@ -5,7 +5,7 @@ import { EnvironmentModule } from 'src/engine/core-modules/environment/environme
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 // import { CandidateSourcingController } from './controllers/candidate-sourcing.controller';
 // import { JobService } from './services/job.service';
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.module';
@@ -17,6 +17,7 @@ import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
 import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/candidate-avatar.module';
+import { CandidateDataSourcesModule } from 'src/engine/core-modules/candidate-data-sources/candidate-data-sources.module';
 import { DeleteLegacyOtherFieldsCommand } from 'src/engine/core-modules/candidate-sourcing/commands/delete-legacy-other-fields.command';
 import { MigrateOtherFieldsCommand } from 'src/engine/core-modules/candidate-sourcing/commands/migrate-other-fields.command';
 import { AiFilteringProgressController } from 'src/engine/core-modules/candidate-sourcing/controllers/ai-filtering-progress.controller';
@@ -55,27 +56,9 @@ import { CandidateEngagementProcessor } from '../cron-processes/services/candida
 import { ResumeUploadController } from './controllers/resume-upload.controller';
 import { ResumeUploadQueueProcessor } from './jobs/process-resume-uploads.job';
 import { ProcessResumeUploadsService } from './jobs/process-resume-uploads.service';
-import { DataSourceTransformerFactoryService } from './services/data-source-transformer-factory.service';
-import { ApifyLinkedInCompanyProfileTransformerService } from './services/data-sources/apify-linkedin-company-profile-transformer.service';
-import { ApnaDatabaseTransformerService } from './services/data-sources/apna-database-transformer.service';
-import { HiringNaukriTransformerService } from './services/data-sources/hiring-naukri-transformer.service';
-import { LinkedinPremiumJobsTransformerService } from './services/data-sources/linkedin-premium-jobs-transformer.service';
-import { LinkedinPremiumTransformerService } from './services/data-sources/linkedin-premium-transformer.service';
-import { LinkedinRecruiterJobsTransformerService } from './services/data-sources/linkedin-recruiter-jobs-transformer.service';
-import { LinkedInRecruiterPeopleTransformerService } from './services/data-sources/linkedin-recruiter-people-transformer.service';
-import { LinkedinSalesNavigatorTransformerService } from './services/data-sources/linkedin-sales-navigator-transformer.service';
-import { LinkedInSearchTransformerService } from './services/data-sources/linkedin-search-transformer.service';
-import { LinkedinXrayTransformerService } from './services/data-sources/linkedin-xray-transformer.service';
-import { NaukriProfileDataTransformerService } from './services/data-sources/naukri-profile-data-transformer.service';
-import { ParsedCVTransformerService } from './services/data-sources/parsed-cv-transformer.service';
-import { ResdexNaukriTransformerService } from './services/data-sources/resdex-naukri-transformer.service';
-import { RmsNaukriTransformerService } from './services/data-sources/rms-naukri-transformer.service';
-import { SpreadsheetImportTwentyTransformerService } from './services/data-sources/spreadsheet-import-twenty-transformer.service';
-import { UploadedProfilesTransformerService } from './services/data-sources/uploaded-profiles-transformer.service';
 import { JDParserService } from './services/jd-parser.service';
 import { ResumeReadParseUploadService } from './services/resume-read-parse-upload.service';
-import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
-import { DataProcessingUtils } from './utils/data-processing.utils';
+import { LinkedinProfileRuntimeModule } from 'src/engine/core-modules/linkedin-profile-runtime/linkedin-profile-runtime.module';
 import { MeteredLlmModule } from 'src/engine/core-modules/metered-llm/metered-llm.module';
 
 @Module({
@@ -88,6 +71,7 @@ import { MeteredLlmModule } from 'src/engine/core-modules/metered-llm/metered-ll
     ApiKeyModule,
     AuthModule,
     CandidateAvatarModule,
+    CandidateDataSourcesModule,
     RedisClientModule,
     WebSocketModule,
     WorkspaceModificationsModule,
@@ -104,7 +88,7 @@ import { MeteredLlmModule } from 'src/engine/core-modules/metered-llm/metered-ll
     TypeOrmModule.forFeature([UserWorkspaceEntity]),
     DataSourceModule,
     JwtModule,
-    forwardRef(() => OutreachCommandModule),
+    LinkedinProfileRuntimeModule,
   ],
   controllers: [
     CandidateSourcingController,
@@ -141,30 +125,15 @@ import { MeteredLlmModule } from 'src/engine/core-modules/metered-llm/metered-ll
     CandidateEngagementProcessor,
     ResumeUploadQueueProcessor,
     // Data transformation services
-    DataProcessingUtils,
-    DataSourceTransformerFactoryService,
-    ResdexNaukriTransformerService,
-    HiringNaukriTransformerService,
-    LinkedinPremiumTransformerService,
-    SpreadsheetImportTwentyTransformerService,
-    RmsNaukriTransformerService,
-    ApnaDatabaseTransformerService,
-    NaukriProfileDataTransformerService,
-    UploadedProfilesTransformerService,
-    LinkedinRecruiterJobsTransformerService,
-    LinkedinPremiumJobsTransformerService,
-    LinkedinSalesNavigatorTransformerService,
-    LinkedInSearchTransformerService,
-    LinkedinXrayTransformerService,
-    ApifyLinkedInCompanyProfileTransformerService,
-    LinkedInRecruiterPeopleTransformerService,
-    ParsedCVTransformerService,
     ResumeReadParseUploadService,
     ProcessResumeUploadsService,
     JDParserService,
     AttachmentProcessingService,
   ],
   exports: [
+    CandidateDataSourcesModule,
+    ExtSockWhatsappMessageProcessor,
+    RedisService,
     PersonService,
     CandidateService,
     OtherFieldsService,
@@ -175,15 +144,9 @@ import { MeteredLlmModule } from 'src/engine/core-modules/metered-llm/metered-ll
     ProcessCandidatesService,
     ProcessAiFiltersService,
     AiFilteringProcessorService,
-    DataSourceTransformerFactoryService,
-    DataProcessingUtils,
     JDParserService,
     ResumeReadParseUploadService,
     FilterDescriptionProcessorService,
-    LinkedInSearchTransformerService,
-    LinkedinXrayTransformerService,
-    ApifyLinkedInCompanyProfileTransformerService,
-    LinkedInRecruiterPeopleTransformerService,
     CandidateWorkspaceGraphQLService,
     OrgChartProgressRedisService,
   ],

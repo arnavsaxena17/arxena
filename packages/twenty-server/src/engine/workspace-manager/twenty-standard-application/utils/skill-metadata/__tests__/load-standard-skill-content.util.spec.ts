@@ -10,6 +10,7 @@ describe('loadStandardSkillContent', () => {
     expect(content).toContain('## Companies');
     expect(content).toContain('## People');
     expect(content).toContain('## People by company');
+    expect(content).toContain('## Places on a map');
     expect(content).toContain('plan-local-business-city-coverage');
     expect(content).toContain('resolve_company_from_raw_name');
     expect(content).toBe(getSkillContent('sourcing'));
@@ -37,7 +38,7 @@ describe('loadStandardSkillContent', () => {
       '<!-- search-apollo-companies-provider-row:start -->',
     );
     expect(content).toContain(
-      '<!-- search-apollo-people-source-section:start -->',
+      '<!-- search-apollo-people-provider-row:start -->',
     );
   });
 });

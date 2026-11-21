@@ -1,9 +1,11 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
 import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
 import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
 import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
 import { ArxenaSearchToolsConfigController } from 'src/engine/core-modules/arxena-tools/controllers/arxena-search-tools-config.controller';
+import { BrightDataBusinessSearchController } from 'src/engine/core-modules/arxena-tools/controllers/bright-data-business-search.controller';
+import { OutreachTabController } from 'src/engine/core-modules/arxena-tools/controllers/outreach-tab.controller';
 import { ArxenaToolProvider } from 'src/engine/core-modules/arxena-tools/providers/arxena-tool.provider';
 import { ArxenaInProcessRestTransportService } from 'src/engine/core-modules/arxena-tools/services/arxena-in-process-rest-transport.service';
 import { ArxenaMcpBridgeService } from 'src/engine/core-modules/arxena-tools/services/arxena-mcp-bridge.service';
@@ -18,11 +20,15 @@ import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/
     TwentyConfigModule,
     WorkspaceCacheStorageModule,
     // WriteSearchRowsToProjectTabService (search + projectId → tab)
-    forwardRef(() => ToolModule),
+    ToolModule,
     // The run budget the paid search tools read and charge
-    forwardRef(() => OutreachCommandModule),
+    OutreachCommandModule,
   ],
-  controllers: [ArxenaSearchToolsConfigController],
+  controllers: [
+    ArxenaSearchToolsConfigController,
+    BrightDataBusinessSearchController,
+    OutreachTabController,
+  ],
   providers: [
     ArxenaMcpBridgeService,
     ArxenaToolProvider,

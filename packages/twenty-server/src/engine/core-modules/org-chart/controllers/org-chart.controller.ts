@@ -33,7 +33,7 @@ import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decora
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
-import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
+import { CandidateSearchHandlerService } from 'src/engine/core-modules/org-chart/services/candidate-search-handler.service';
 import { OrgchartCancelRegistryService } from 'src/engine/core-modules/org-chart/services/orgchart-cancel-registry.service';
 import { OrgChartIncrementalBuildCacheService } from 'src/engine/core-modules/org-chart/services/orgchart-incremental-build-cache.service';
 import {

@@ -2,7 +2,7 @@
  * Ensures message/stream unresolved generation dispatches Python vs multi-agent
  * without running the full Nest graph.
  */
-import { CandidateSearchHandlerService } from '../candidate-search-handler.service';
+import { CandidateSearchHandlerService } from 'src/engine/core-modules/org-chart/services/candidate-search-handler.service';
 
 const minimalParsedJd = {
   jobTitle: '',

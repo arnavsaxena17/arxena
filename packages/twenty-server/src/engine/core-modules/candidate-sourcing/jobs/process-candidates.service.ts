@@ -8,8 +8,8 @@ import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourc
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
-import { DataSourceTransformerFactoryService } from '../services/data-source-transformer-factory.service';
-import { DataProcessingUtils } from '../utils/data-processing.utils';
+import { DataSourceTransformerFactoryService } from 'src/engine/core-modules/candidate-data-sources/services/data-source-transformer-factory.service';
+import { DataProcessingUtils } from 'src/engine/core-modules/candidate-data-sources/utils/data-processing.utils';
 import {
   deduplicateLooseUploadRows,
   deduplicateProfilesForUpload,

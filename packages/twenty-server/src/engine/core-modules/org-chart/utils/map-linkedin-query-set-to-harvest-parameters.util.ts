@@ -69,7 +69,6 @@ const andClauses = (clauses: Array<string | undefined>): string | undefined => {
  * employer's industry label differs, or who never filled in a seniority. Each
  * AND is a chance to zero out, so the carriers are varied rather than trusted in
  * combination — the same idea as relaxing one constraint at a time in
- * `playbook-shortfall`, done up front instead of after a shortfall.
  *
  * Location and the excludes are fences the user stated, so every variant keeps
  * them; only the carriers (titles, keywords) and the facet ids are varied.
@@ -239,11 +238,12 @@ export const mapLinkedinQuerySetToHarvestParameters = ({
       // A company search has no employer list to resolve; the names it was
       // given are the companies themselves, not employers to turn into URLs
       const companyNames: string[] = [];
-      // Harvest's company search takes `location`; `headquarterLocations` is a
-      // people-search name and would be dropped without an error
+      // /linkedin/account-search takes the headquarter… spellings; `location` and
+      // `geoId` belong to /linkedin/company-search and are dropped here without
+      // an error, so the company filter would silently vanish
       const companySearch: HarvestParameters = {
         ...(keywords ? { search: keywords } : {}),
-        ...(locations.length > 0 ? { location: locations } : {}),
+        ...(locations.length > 0 ? { headquarterLocations: locations } : {}),
       };
       const signature = JSON.stringify([companySearch, companyNames]);
 

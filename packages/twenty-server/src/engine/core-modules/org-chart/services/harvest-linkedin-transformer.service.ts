@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { CandidateTableRow } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import type { CandidateTableRow } from 'src/engine/core-modules/candidate-data-sources/services/data-sources/linkedin-search-transformer.service';
 import { readHarvestLeadFields } from 'src/engine/core-modules/org-chart/utils/harvest-lead-fields.util';
 
 /**

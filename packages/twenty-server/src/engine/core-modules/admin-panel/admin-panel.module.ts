@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -99,9 +99,9 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     WorkspaceModule,
     OrgChartClientIpModule,
     LinkedInSearchModule,
-    forwardRef(() => OrgChartModule),
-    forwardRef(() => UnipilePoolModule),
-    forwardRef(() => ArxChatAgentModule),
+    OrgChartModule,
+    UnipilePoolModule,
+    ArxChatAgentModule,
     ExtensionBridgeModule,
   ],
   providers: [

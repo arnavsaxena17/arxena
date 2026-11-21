@@ -11,7 +11,7 @@ import {
   OUTREACH_QUALIFY_PROSPECT_SYSTEM_PROMPT,
 } from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import { outreachQualifyProspectLlmSchema } from 'src/engine/core-modules/outreach-command/schemas/outreach-qualify-prospect-llm.schema';
-import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
+import { FetchLinkedinProfileService } from 'src/engine/core-modules/linkedin-profile-runtime/services/fetch-linkedin-profile.service';
 import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
 import { buildOutreachProspectEnrichment } from 'src/engine/core-modules/outreach-command/utils/build-outreach-prospect-enrichment.util';
 import { withLlmFormattedProfileText } from 'src/engine/core-modules/outreach-command/utils/with-llm-formatted-text.util';

@@ -2,6 +2,5 @@
 - **Current role.** No end date or "Present" is current. Latest role ended over a year ago with nothing newer is probably stale. "Ex-" / "Former" / ended roles are not current.
 - **Employer names.** Brand, legal entity and parent can all appear. "Self-employed", "Freelance", "Stealth", "Confidential" are not employers.
 - **Places.** Profile location is where the person lives, not company HQ. Normalize spellings ("Bengaluru" / "Bangalore").
-- **Weak-profile signals.** No photo, few connections, thin experience, brand-new senior title: lower the score, do not fail on one alone. Worthiness must-haves are separate (`worthiness-gates`).
 - **Qualified specialists.** Count experience from the qualification date (MD, DM, CA) when shown; otherwise unknown. Never guess age from a photo.
 - **What a snapshot hides.** Skills, full history, education, about: unknown at snapshot stage.

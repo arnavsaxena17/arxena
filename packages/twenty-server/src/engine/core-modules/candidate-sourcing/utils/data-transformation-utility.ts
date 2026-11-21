@@ -12,7 +12,7 @@ import {
   resolveAvatarUrlFromDisplayPictureUrl,
   toCrmPrimaryLink,
 } from './avatar-url.util';
-import { DataProcessingUtils } from './data-processing.utils';
+import { DataProcessingUtils } from 'src/engine/core-modules/candidate-data-sources/utils/data-processing.utils';
 import { normalizeLinkedInUrl } from './linkedin-url.utils';
 
 // Define enhanced types that support additional phone and email fields

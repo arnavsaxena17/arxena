@@ -1,4 +1,4 @@
-import type { ParsedCVData } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/parsed-cv-transformer.service';
+import type { ParsedCVData } from 'src/engine/core-modules/candidate-data-sources/services/data-sources/parsed-cv-transformer.service';
 
 import { resolveLinkedinProfileUrl } from './linkedin-identifier.util';
 

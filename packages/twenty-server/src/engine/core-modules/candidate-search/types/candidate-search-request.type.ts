@@ -1,4 +1,4 @@
-import { CandidateTableRow } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import { CandidateTableRow } from '../../candidate-data-sources/services/data-sources/linkedin-search-transformer.service';
 import {
   LinkedInClassicCompaniesSearchRequest,
   LinkedInClassicJobsSearchRequest,
