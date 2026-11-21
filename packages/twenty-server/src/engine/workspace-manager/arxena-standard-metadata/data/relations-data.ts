@@ -1,6 +1,5 @@
 import { type ArxenaRelationWithObjects } from 'src/engine/workspace-manager/arxena-standard-metadata/data/arxena-metadata-types';
 import { getObjectsToExclude } from 'src/engine/workspace-manager/arxena-standard-metadata/data/objects-data';
-import { isAssistantRelation } from 'src/engine/workspace-manager/assistant-application/constants/assistant-application.constant';
 import { isShortlistPresentationRelation } from 'src/engine/workspace-manager/shortlist-presentation-application/constants/shortlist-presentation-application.constant';
 import { isVideoInterviewRelation } from 'src/engine/workspace-manager/video-interview-application/constants/video-interview-application.constant';
 
@@ -15,10 +14,6 @@ export const getRelationsData = (
         toObjectName: relationWithObjects.toObjectName,
       }) &&
       !isShortlistPresentationRelation({
-        fromObjectName: relationWithObjects.fromObjectName,
-        toObjectName: relationWithObjects.toObjectName,
-      }) &&
-      !isAssistantRelation({
         fromObjectName: relationWithObjects.fromObjectName,
         toObjectName: relationWithObjects.toObjectName,
       }),
@@ -551,72 +546,6 @@ const getAllRelationsData = (
       },
     },
     {
-      fromObjectName: 'workspaceMember',
-      toObjectName: 'assistantThread',
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconMessage',
-        fromLabel: 'Assistant Threads',
-        fromName: 'assistantThreads',
-        fromObjectMetadataId: objectsNameIdMap.workspaceMember,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.assistantThread,
-        toDescription: '',
-        toIcon: 'IconUser',
-        toLabel: 'Recruiter',
-        toName: 'recruiter',
-      },
-    },
-    {
-      fromObjectName: 'project',
-      toObjectName: 'assistantThread',
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconMessage',
-        fromLabel: 'Assistant Threads',
-        fromName: 'assistantThreads',
-        fromObjectMetadataId: objectsNameIdMap.project,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.assistantThread,
-        toDescription: '',
-        toIcon: 'IconTie',
-        toLabel: 'Project',
-        toName: 'project',
-      },
-    },
-    // Assistant Thread relations
-    // {
-    //   relationMetadata: {
-    //     fromDescription: null,
-    //     fromIcon: 'IconMessage',
-    //     fromLabel: 'Messages',
-    //     fromName: 'messages',
-    //     fromObjectMetadataId: objectsNameIdMap.assistantThread,
-    //     relationType: 'ONE_TO_MANY',
-    //     toObjectMetadataId: objectsNameIdMap.assistantMessage,
-    //     toDescription: '',
-    //     toIcon: 'IconMessage',
-    //     toLabel: 'Thread',
-    //     toName: 'assistantThread',
-    //   },
-    // },
-    // {
-    //   relationMetadata: {
-    //     fromDescription: null,
-    //     fromIcon: 'IconUsers',
-    //     fromLabel: 'Candidates',
-    //     fromName: 'candidates',
-    //     fromObjectMetadataId: objectsNameIdMap.assistantThread,
-    //     relationType: 'ONE_TO_MANY',
-    //     toObjectMetadataId: objectsNameIdMap.assistantThreadCandidate,
-    //     toDescription: '',
-    //     toIcon: 'IconMessage',
-    //     toLabel: 'Thread',
-    //     toName: 'assistantThread',
-    //   },
-    // },
-    // Assistant Thread Candidate relations (ONE_TO_MANY only; MANY_TO_ONE not used in sync)
-    {
       fromObjectName: 'company',
       toObjectName: 'websiteVisitor',
       relationMetadata: {
@@ -770,18 +699,6 @@ export const getShortlistPresentationRelationsData = (
   getAllRelationsData(objectsNameIdMap, isOrgChartEnabled).filter(
     (relationWithObjects) =>
       isShortlistPresentationRelation({
-        fromObjectName: relationWithObjects.fromObjectName,
-        toObjectName: relationWithObjects.toObjectName,
-      }),
-  );
-
-export const getAssistantRelationsData = (
-  objectsNameIdMap: Record<string, string>,
-  isOrgChartEnabled?: boolean,
-): ArxenaRelationWithObjects[] =>
-  getAllRelationsData(objectsNameIdMap, isOrgChartEnabled).filter(
-    (relationWithObjects) =>
-      isAssistantRelation({
         fromObjectName: relationWithObjects.fromObjectName,
         toObjectName: relationWithObjects.toObjectName,
       }),

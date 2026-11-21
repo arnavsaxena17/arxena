@@ -700,23 +700,6 @@ export type CandidateSearchState = {
   searchCategory?: LinkedInSearchCategory;
   error?: string;
 };
-export type SearchParametersManagerProps = {
-  searchType: LinkedInSearchType;
-  searchCategory: LinkedInSearchCategory;
-  onParametersChange: (parameters: any) => void;
-  generatedParameters?: any;
-  resolvedParameters?: any;
-  initialParameters?: any;
-  onAssistantThreadUpdate?: (
-    searchType: LinkedInSearchType,
-    searchCategory: LinkedInSearchCategory,
-    generatedParameters: any,
-    resolvedParameters: any,
-  ) => Promise<void>;
-  onSearch?: () => void;
-  onClear?: () => void;
-};
-
 export type ParameterRendererProps = {
   parameters: any;
   updateParameters: (newParams: any) => void;

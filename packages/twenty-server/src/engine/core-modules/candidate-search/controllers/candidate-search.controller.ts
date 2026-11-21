@@ -16,7 +16,6 @@ import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-se
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import type { ParsedRequirement } from '../schemas/parsed-requirement.schema';
-import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
 import { CompanyExpanderService } from '../services/company-expander.service';
 import { JobTitleExpanderService } from '../services/job-title-expander.service';
 import { SearchExecutionService } from '../services/search-execution.service';
@@ -32,7 +31,6 @@ export class CandidateSearchController {
 
   constructor(
     private readonly candidateSearchBaseService: CandidateSearchBaseService,
-    private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly linkedInRequestTracker: LinkedInSessionTrackerService,
@@ -244,76 +242,6 @@ export class CandidateSearchController {
 
 
 
-
-  @Get(':assistantThreadId/history')
-  async getChatHistory(
-    @Param('assistantThreadId') assistantThreadId: string,
-    @Headers() headers: any
-  ) {
-    try {
-      const apiToken = headers.authorization.split(' ')[1];
-
-      const thread = await this.candidateSearchHandlerService.getAssistantThreadContext(
-        assistantThreadId,
-        apiToken,
-      );
-
-      return {
-        success: true,
-        chatHistory: thread.messages || [],
-      };
-    } catch (error) {
-      console.error('Error in getChatHistory:', error);
-      throw new HttpException(
-        error.message || 'Failed to get chat history',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Post('compute-tokens')
-  async computeTokens(
-    @Body() { assistantThreadId, enrichmentId }: { assistantThreadId: string; enrichmentId: string },
-    @Headers() headers: any
-  ) {
-    try {
-      const apiToken = headers.authorization.split(' ')[1];
-
-      if (!assistantThreadId || !enrichmentId) {
-        throw new HttpException(
-          'assistantThreadId and enrichmentId are required',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      const thread = await this.candidateSearchHandlerService.getAssistantThreadContext(
-        assistantThreadId,
-        apiToken,
-      );
-      const enrichment = thread.enrichmentConfigs?.find((e: { id: string }) => e.id === enrichmentId);
-
-      if (!enrichment) {
-        throw new HttpException('AI filter not found', HttpStatus.NOT_FOUND);
-      }
-
-      // Use existing compute-tokens logic from candidate-sourcing.controller.ts
-      // This would need to be implemented to call the actual token computation service
-      const tokenAnalysis = {
-        enrichmentId: enrichmentId,
-        estimatedTokens: 1000, // Mock value
-        cost: 0.01, // Mock value
-        model: enrichment.selectedModel || 'gpt-6-luna',
-      };
-
-      return tokenAnalysis;
-    } catch (error) {
-      console.error('Error in computeTokens:', error);
-      throw new HttpException(
-        error.message || 'Failed to compute tokens',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
 
   @Get('linkedin-request-status')
   async getLinkedInRequestStatus(@Headers() headers: any) {

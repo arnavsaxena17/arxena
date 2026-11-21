@@ -3,11 +3,9 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Loader } from 'twenty-ui';
 
-import { type AssistantThread } from '@/assistant/types/assistant.types';
 import type { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared/types';
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { type FormComponentProps } from '../types/FormComponentProps';
-import type { AssistantThreadSummary } from '../types/ParsedJD';
 import { ArxJDFormStepper } from './ArxJDFormStepper';
 import { ArxJDModalLayout } from './ArxJDModalLayout';
 import { ArxJDStepBar } from './ArxJDStepBar';
@@ -74,14 +72,6 @@ export type ArxJDStepperContainerProps = FormComponentProps & {
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
   isEditMode?: boolean;
   onCreateJobFromName?: (jobName: string) => Promise<void>;
-  onAssistantThreadUpdate?: (
-    assistantThread: AssistantThread,
-    assistantThreads: AssistantThreadSummary[],
-    searchType: LinkedInSearchType,
-    searchCategory: LinkedInSearchCategory,
-    generatedParameters: unknown,
-    resolvedParameters: unknown,
-  ) => Promise<void>;
 };
 
 export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
@@ -102,7 +92,6 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
   onRecruiterInfoChange,
   isEditMode = false,
   onCreateJobFromName,
-  onAssistantThreadUpdate,
 }) => {
   const { activeStep, nextStep, prevStep, setStep, validationMessage, currentStepType, availableSteps: hookAvailableSteps } = useArxJDFormStepper(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -220,7 +209,6 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
                 onRecruiterInfoChange={handleRecruiterInfoChange}
                 isEditMode={isEditMode}
                 onCreateJobFromName={onCreateJobFromName}
-                onAssistantThreadUpdate={onAssistantThreadUpdate}
               />
             </StyledContent>
           </>

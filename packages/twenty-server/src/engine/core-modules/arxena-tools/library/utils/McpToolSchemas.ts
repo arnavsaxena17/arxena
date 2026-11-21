@@ -583,20 +583,6 @@ export const SEND_BULK_CHATS_BY_CANDIDATE_IDS_INPUT_DESCRIPTOR: readonly McpInpu
     },
   ] as const;
 
-// ==================== Assistant thread context (tool-level envelope) ====================
-
-/** Optional assistantThreadId for thread-aware tools. Injected by the assistant when threadId is known. */
-export const ASSISTANT_THREAD_ID_OPTIONAL_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
-  [
-    {
-      key: 'assistantThreadId',
-      type: 'string',
-      description:
-        'ID of the assistant thread invoking this tool (provided by the system). Always pass this when available so object modifications are tied to the correct thread.',
-      required: false,
-    },
-  ] as const;
-
 // ==================== Candidate Search Tools ====================
 
 /** Descriptor for generate_search_parameters tool input (free-text requirement only; org-chart uses POST /org-chart/generate-unresolved-search-parameters). */
@@ -627,7 +613,6 @@ export const GENERATE_SEARCH_PARAMETERS_INPUT_DESCRIPTOR: readonly McpInputField
       description: 'One of: people, companies, posts, jobs. Default is people.',
       required: true,
     },
-    ...ASSISTANT_THREAD_ID_OPTIONAL_DESCRIPTOR,
   ] as const;
 
 // ==================== Org Chart Tools ====================
@@ -1418,13 +1403,6 @@ export const SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR: readonly McpInputFieldDesc
       required: false,
     },
     {
-      key: 'assistantThreadId',
-      type: 'string',
-      description:
-        'Assistant thread ID for conversation context (required if using query)',
-      required: false,
-    },
-    {
       key: 'parsedJD',
       type: 'object',
       description: 'Parsed job description (optional, used with query)',
@@ -1508,46 +1486,6 @@ export const SEARCH_HARVEST_ACCOUNTS_INPUT_DESCRIPTOR: readonly McpInputFieldDes
     ...HARVEST_SEARCH_PAGING_FIELDS,
   ] as const;
 
-/** Descriptor for search_linkedin_with_query tool input. */
-export const SEARCH_LINKEDIN_WITH_QUERY_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
-  [
-    {
-      key: 'query',
-      type: 'string',
-      description: 'Natural language search query',
-      required: true,
-    },
-    {
-      key: 'searchType',
-      type: 'string',
-      description: 'One of: classic, sales_navigator, recruiter',
-      required: true,
-    },
-    {
-      key: 'searchCategory',
-      type: 'string',
-      description: 'One of: people, companies, posts, jobs',
-      required: true,
-    },
-    {
-      key: 'assistantThreadId',
-      type: 'string',
-      description: 'Assistant thread ID for conversation context',
-      required: true,
-    },
-    {
-      key: 'parsedJD',
-      type: 'object',
-      description: 'Parsed job description (optional)',
-      required: false,
-    },
-    {
-      key: 'includeJd',
-      type: 'boolean',
-      description: 'Whether to include JD in search context',
-      required: false,
-    },
-  ] as const;
 
 /** Descriptor for search_linkedin_companies tool input. */
 export const SEARCH_LINKEDIN_COMPANIES_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =

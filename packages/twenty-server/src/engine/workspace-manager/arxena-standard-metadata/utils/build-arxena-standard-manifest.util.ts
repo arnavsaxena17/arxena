@@ -32,19 +32,16 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { type ArxenaFieldDefinition } from 'src/engine/workspace-manager/arxena-standard-metadata/data/arxena-metadata-types';
 import {
-  getAssistantFieldsData,
   getFieldsData,
   getShortlistPresentationFieldsData,
   getVideoInterviewFieldsData,
 } from 'src/engine/workspace-manager/arxena-standard-metadata/data/fields-data';
 import {
-  getAssistantObjectCreationArr,
   getObjectCreationArr,
   getShortlistPresentationObjectCreationArr,
   getVideoInterviewObjectCreationArr,
 } from 'src/engine/workspace-manager/arxena-standard-metadata/data/objects-data';
 import {
-  getAssistantRelationsData,
   getRelationsData,
   getShortlistPresentationRelationsData,
   getVideoInterviewRelationsData,
@@ -55,7 +52,6 @@ import {
 } from 'src/engine/workspace-manager/arxena-standard-metadata/constants/arxena-standard-application.constant';
 import { buildOutreachDashboardPageLayout } from 'src/engine/workspace-manager/arxena-standard-metadata/utils/build-outreach-dashboard-page-layout.util';
 import { buildOutreachDashboardViews } from 'src/engine/workspace-manager/arxena-standard-metadata/utils/build-outreach-dashboard-views.util';
-import { ASSISTANT_APPLICATION } from 'src/engine/workspace-manager/assistant-application/constants/assistant-application.constant';
 import { SHORTLIST_PRESENTATION_APPLICATION } from 'src/engine/workspace-manager/shortlist-presentation-application/constants/shortlist-presentation-application.constant';
 import { VIDEO_INTERVIEW_APPLICATION } from 'src/engine/workspace-manager/video-interview-application/constants/video-interview-application.constant';
 import {
@@ -82,14 +78,10 @@ const isShortlistPresentationHostObjectName = (nameSingular: string): boolean =>
   nameSingular === 'person' ||
   nameSingular === 'workspaceMember';
 
-const isAssistantHostObjectName = (nameSingular: string): boolean =>
-  nameSingular === 'project' || nameSingular === 'workspaceMember';
-
 type ArxenaFamilyManifestOwner =
   | 'arxena-standard'
   | 'video-interview'
-  | 'shortlist-presentation'
-  | 'assistant';
+  | 'shortlist-presentation';
 
 // Renames that must keep the pre-rename deterministic UID so sync updates
 // existing workspace objects/tables in place instead of creating duplicates.
@@ -517,12 +509,6 @@ export const buildShortlistPresentationManifest = (
     isOrgChartEnabled,
   });
 
-export const buildAssistantManifest = (isOrgChartEnabled?: boolean): Manifest =>
-  buildArxenaFamilyManifest({
-    owner: 'assistant',
-    isOrgChartEnabled,
-  });
-
 const buildArxenaFamilyManifest = ({
   owner,
   isOrgChartEnabled,
@@ -535,9 +521,7 @@ const buildArxenaFamilyManifest = ({
       ? getVideoInterviewObjectCreationArr()
       : owner === 'shortlist-presentation'
         ? getShortlistPresentationObjectCreationArr()
-        : owner === 'assistant'
-          ? getAssistantObjectCreationArr()
-          : getObjectCreationArr(isOrgChartEnabled);
+        : getObjectCreationArr(isOrgChartEnabled);
   const fieldsData =
     owner === 'video-interview'
       ? getVideoInterviewFieldsData(
@@ -549,9 +533,7 @@ const buildArxenaFamilyManifest = ({
             EMPTY_OBJECTS_NAME_ID_MAP,
             isOrgChartEnabled,
           )
-        : owner === 'assistant'
-          ? getAssistantFieldsData(EMPTY_OBJECTS_NAME_ID_MAP, isOrgChartEnabled)
-          : getFieldsData(EMPTY_OBJECTS_NAME_ID_MAP, isOrgChartEnabled);
+        : getFieldsData(EMPTY_OBJECTS_NAME_ID_MAP, isOrgChartEnabled);
   const relationsData =
     owner === 'video-interview'
       ? getVideoInterviewRelationsData(
@@ -563,12 +545,7 @@ const buildArxenaFamilyManifest = ({
             EMPTY_OBJECTS_NAME_ID_MAP,
             isOrgChartEnabled,
           )
-        : owner === 'assistant'
-          ? getAssistantRelationsData(
-              EMPTY_OBJECTS_NAME_ID_MAP,
-              isOrgChartEnabled,
-            )
-          : getRelationsData(EMPTY_OBJECTS_NAME_ID_MAP, isOrgChartEnabled);
+        : getRelationsData(EMPTY_OBJECTS_NAME_ID_MAP, isOrgChartEnabled);
 
   const arxenaObjectNames = new Set(
     objectDefinitions.map(
@@ -679,9 +656,7 @@ const buildArxenaFamilyManifest = ({
       (owner === 'video-interview' &&
         isVideoInterviewHostObjectName(fieldWithObject.objectName)) ||
       (owner === 'shortlist-presentation' &&
-        isShortlistPresentationHostObjectName(fieldWithObject.objectName)) ||
-      (owner === 'assistant' &&
-        isAssistantHostObjectName(fieldWithObject.objectName));
+        isShortlistPresentationHostObjectName(fieldWithObject.objectName));
 
     // Only attach custom fields to known hosts; skip names that already exist
     // on the standard object (e.g. workflowRun.state).
@@ -785,9 +760,7 @@ const buildArxenaFamilyManifest = ({
       ? VIDEO_INTERVIEW_APPLICATION
       : owner === 'shortlist-presentation'
         ? SHORTLIST_PRESENTATION_APPLICATION
-        : owner === 'assistant'
-          ? ASSISTANT_APPLICATION
-          : ARXENA_STANDARD_APPLICATION;
+        : ARXENA_STANDARD_APPLICATION;
 
   return {
     application: {

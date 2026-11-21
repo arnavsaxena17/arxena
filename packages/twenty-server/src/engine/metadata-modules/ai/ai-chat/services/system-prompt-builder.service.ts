@@ -297,7 +297,9 @@ export class SystemPromptBuilderService {
     );
 
     const skillCatalog = await this.skillService.findAllFlatSkills(workspaceId);
-
+    this.logger.log(
+      `[SYSTEM_PROMPT_BUILDER] skillCatalog\n${JSON.stringify(skillCatalog)}`,
+    );
     const parts: string[] = [
       CHAT_SYSTEM_PROMPTS.CORE,
       CHAT_SYSTEM_PROMPTS.MCP_TRANSPORT,
@@ -415,11 +417,11 @@ export class SystemPromptBuilderService {
       blocks.push(userLines.join('\n'));
     }
 
-    if (includeBrowsingContext) {
-      blocks.push(
-        "A <browsing_context> tag may appear in the user's last message. Only use it when directly relevant to the question.",
-      );
-    }
+    // if (includeBrowsingContext) {
+    //   blocks.push(
+    //     "A <browsing_context> tag may appear in the user's last message. Only use it when directly relevant to the question.",
+    //   );
+    // }
 
     if (blocks.length === 0) {
       return '';
@@ -579,21 +581,21 @@ export class SystemPromptBuilderService {
 
     const toolUsageFooter = this.buildToolUsageFooter();
 
-    this.logger.log(
-      `[SYSTEM_PROMPT_BUILDER] availableToolsSection\n${availableToolsSection}`,
-    );
-    this.logger.log(
-      `[SYSTEM_PROMPT_BUILDER] databaseCrudCatalogSection\n${databaseCrudCatalogSection}`,
-    );
-    this.logger.log(
-      `[SYSTEM_PROMPT_BUILDER] arxenaCatalogSection\n${arxenaCatalogSection}`,
-    );
-    this.logger.log(
-      `[SYSTEM_PROMPT_BUILDER] genericCategoryCatalogSections\n${genericCategoryCatalogSections.join('\n')}`,
-    );
-    this.logger.log(
-      `[SYSTEM_PROMPT_BUILDER] toolUsageFooter\n${toolUsageFooter}`,
-    );
+    // this.logger.log(
+    //   `[SYSTEM_PROMPT_BUILDER] availableToolsSection\n${availableToolsSection}`,
+    // );
+    // this.logger.log(
+    //   `[SYSTEM_PROMPT_BUILDER] databaseCrudCatalogSection\n${databaseCrudCatalogSection}`,
+    // );
+    // this.logger.log(
+    //   `[SYSTEM_PROMPT_BUILDER] arxenaCatalogSection\n${arxenaCatalogSection}`,
+    // );
+    // this.logger.log(
+    //   `[SYSTEM_PROMPT_BUILDER] genericCategoryCatalogSections\n${genericCategoryCatalogSections.join('\n')}`,
+    // );
+    // this.logger.log(
+    //   `[SYSTEM_PROMPT_BUILDER] toolUsageFooter\n${toolUsageFooter}`,
+    // );
 
     const sections = [
       availableToolsSection,

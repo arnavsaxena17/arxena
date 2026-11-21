@@ -1,7 +1,6 @@
 import { OBJECT_DATABASE_CRUD_TOOL_ACCESS } from 'twenty-shared/ai';
 
 import { type ArxenaObjectDefinition } from 'src/engine/workspace-manager/arxena-standard-metadata/data/arxena-metadata-types';
-import { isAssistantObjectName } from 'src/engine/workspace-manager/assistant-application/constants/assistant-application.constant';
 import { isShortlistPresentationObjectName } from 'src/engine/workspace-manager/shortlist-presentation-application/constants/shortlist-presentation-application.constant';
 import { isVideoInterviewObjectName } from 'src/engine/workspace-manager/video-interview-application/constants/video-interview-application.constant';
 
@@ -186,36 +185,6 @@ const allObjects: ArxenaObjectDefinition[] = [
   {
     object: {
       description: '',
-      icon: 'IconMessage',
-      labelPlural: 'Assistant Threads',
-      labelSingular: 'Assistant Thread',
-      nameSingular: 'assistantThread',
-      namePlural: 'assistantThreads',
-    },
-  },
-  // {
-  //     "object": {
-  //         "description": "",
-  //         "icon": "IconMessage",
-  //         "labelPlural": "Assistant Messages",
-  //         "labelSingular": "Assistant Message",
-  //         "nameSingular": "assistantMessage",
-  //         "namePlural": "assistantMessages"
-  //     }
-  // },
-  // {
-  //     "object": {
-  //         "description": "",
-  //         "icon": "IconUsers",
-  //         "labelPlural": "Assistant Thread Candidates",
-  //         "labelSingular": "Assistant Thread Candidate",
-  //         "nameSingular": "assistantThreadCandidate",
-  //         "namePlural": "assistantThreadCandidates"
-  //     }
-  // },
-  {
-    object: {
-      description: '',
       icon: 'IconSend',
       labelPlural: 'CV Sents',
       labelSingular: 'CV Sent',
@@ -300,8 +269,7 @@ export const getObjectCreationArr = (
     return (
       !objectsToExclude.includes(nameSingular) &&
       !isVideoInterviewObjectName(nameSingular) &&
-      !isShortlistPresentationObjectName(nameSingular) &&
-      !isAssistantObjectName(nameSingular)
+      !isShortlistPresentationObjectName(nameSingular)
     );
   });
 };
@@ -316,10 +284,5 @@ export const getShortlistPresentationObjectCreationArr =
     allObjects.filter((objectDefinition) =>
       isShortlistPresentationObjectName(objectDefinition.object.nameSingular),
     );
-
-export const getAssistantObjectCreationArr = (): ArxenaObjectDefinition[] =>
-  allObjects.filter((objectDefinition) =>
-    isAssistantObjectName(objectDefinition.object.nameSingular),
-  );
 
 export const objectCreationArr = getObjectCreationArr();

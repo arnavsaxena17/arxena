@@ -16,9 +16,3 @@ export const searchConfigState = createAtomState<SearchConfig>({
     searchCategory: 'people',
   },
 });
-
-// Global state for the current assistant thread id (candidate-search chat session)
-export const activeAssistantThreadIdState = createAtomState<string>({
-  key: 'candidate-search/activeAssistantThreadIdState',
-  defaultValue: '',
-});

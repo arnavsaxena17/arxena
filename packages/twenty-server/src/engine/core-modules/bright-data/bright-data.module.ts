@@ -1,4 +1,3 @@
-import { JevDecisionsService } from 'src/engine/core-modules/bright-data/services/jev-decisions.service';
 import { BrightDataPersonFitFilterService } from 'src/engine/core-modules/bright-data/services/bright-data-person-fit-filter.service';
 import { Module, forwardRef } from '@nestjs/common';
 
@@ -17,6 +16,8 @@ import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { AiBillingModule } from 'src/engine/metadata-modules/ai/ai-billing/ai-billing.module';
 import { AiModelsModule } from 'src/engine/metadata-modules/ai/ai-models/ai-models.module';
+import { JudgeModule } from 'src/engine/core-modules/judge/judge.module';
+import { SerpModule } from 'src/engine/core-modules/bright-data/serp.module';
 import { TitleTaxonomyModule } from 'src/engine/core-modules/title-taxonomy/title-taxonomy.module';
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
@@ -25,7 +26,6 @@ import { BrightDataGoogleMapsPlacesService } from './services/bright-data-google
 import { BrightDataLinkedinProfileScrapeService } from './services/bright-data-linkedin-profile-scrape.service';
 import { BrightDataLinkedinPeopleSearchService } from './services/bright-data-linkedin-people-search.service';
 import { BrightDataResidentialProxyService } from './services/bright-data-residential-proxy.service';
-import { BrightDataSerpService } from './services/bright-data-serp.service';
 import { BrightDataUnlockerService } from './services/bright-data-unlocker.service';
 
 @Module({
@@ -37,15 +37,10 @@ import { BrightDataUnlockerService } from './services/bright-data-unlocker.servi
     AiBillingModule,
     AiModelsModule,
     WorkspaceCacheModule,
-    // AiFilterEngineService (relevance judge) lives on CandidateSourcing.
-    // CandidateSourcing → OutreachCommand → OrgChart → TheOfficialBoard, and
-    // ToolModule → OrgChart, both read BrightDataModule while this file is
-    // still initializing. Lazy require waits until the class exists.
-    forwardRef(() => {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      return require('../candidate-sourcing/candidate-sourcing.module')
-        .CandidateSourcingModule;
-    }),
+    SerpModule,
+    JudgeModule,
+    // ToolModule → OrgChart → TheOfficialBoard reads BrightDataModule while
+    // this file is still initializing, so the import stays lazy.
     forwardRef(() => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       return require('../tool/tool.module').ToolModule;
@@ -55,7 +50,6 @@ import { BrightDataUnlockerService } from './services/bright-data-unlocker.servi
   providers: [
     JwtAuthGuard,
     BrightDataResidentialProxyService,
-    BrightDataSerpService,
     BrightDataUnlockerService,
     BrightDataLinkedinPeopleSearchService,
     BrightDataLinkedinProfileScrapeService,
@@ -65,15 +59,14 @@ import { BrightDataUnlockerService } from './services/bright-data-unlocker.servi
     BrightDataLudicrousPlanStoreService,
     BrightDataLudicrousDatasetStoreService,
     BrightDataLudicrousRelevanceJudgeService,
-    JevDecisionsService,
     BrightDataPersonFitFilterService,
     BrightDataLudicrousPlannerService,
     BrightDataLudicrousExecutorService,
     BrightDataLudicrousSearchService,
   ],
   exports: [
+    SerpModule,
     BrightDataResidentialProxyService,
-    BrightDataSerpService,
     BrightDataUnlockerService,
     BrightDataLinkedinPeopleSearchService,
     BrightDataLinkedinProfileScrapeService,
@@ -81,7 +74,6 @@ import { BrightDataUnlockerService } from './services/bright-data-unlocker.servi
     BrightDataBusinessSearchService,
     BrightDataBillingService,
     BrightDataLudicrousRelevanceJudgeService,
-    JevDecisionsService,
     BrightDataPersonFitFilterService,
     BrightDataLudicrousSearchService,
   ],

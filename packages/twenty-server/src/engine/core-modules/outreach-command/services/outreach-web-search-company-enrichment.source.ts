@@ -1,10 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  Logger,
-  Optional,
-  forwardRef,
-} from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { Output, stepCountIs } from 'ai';
 import { isDefined } from 'twenty-shared/utils';
@@ -86,7 +80,6 @@ export class OutreachWebSearchCompanyEnrichmentSource implements OutreachCompany
     private readonly aiSdkExecutionService?: AiSdkExecutionService,
     // Perplexity-backed search; the model-native web_search tool is the fallback
     @Optional()
-    @Inject(forwardRef(() => ArxWebSearchService))
     private readonly arxWebSearchService?: ArxWebSearchService,
   ) {}
 

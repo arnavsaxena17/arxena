@@ -6,17 +6,6 @@ export type ProjectForParsedJDMerge = {
   pathPosition?: string;
   isActive: boolean;
   jobLocation?: string;
-  assistantThread?: {
-    edges?: Array<{
-      node: {
-        id: string;
-        name: string;
-        assistantParameters?: unknown;
-        enrichmentConfigs?: unknown;
-        columnFilters?: unknown;
-      };
-    }>;
-  };
 };
 
 export const mergeParsedJDFromSources = ({
@@ -52,14 +41,6 @@ export const mergeParsedJDFromSources = ({
         companyDetails: '',
         filePath: '',
         parsedJobDescription: undefined,
-        assistantThreads:
-          job.assistantThread?.edges?.map((edge) => ({
-            id: edge.node.id,
-            name: edge.node.name,
-            assistantParameters: edge.node.assistantParameters,
-            enrichmentConfigs: edge.node.enrichmentConfigs,
-            columnFilters: edge.node.columnFilters,
-          })) || [],
       } as Partial<ParsedJD>)
     : null;
 

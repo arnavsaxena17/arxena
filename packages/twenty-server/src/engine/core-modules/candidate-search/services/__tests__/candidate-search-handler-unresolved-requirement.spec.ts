@@ -55,7 +55,6 @@ describe('CandidateSearchHandlerService.generateUnresolvedSearchParams (requirem
     service = new CandidateSearchHandlerService(
       {} as never,
       {} as never,
-      {} as never,
       workspaceQueryService as never,
       {} as never,
       { getJDContentFromJobAttachments: jest.fn() } as never,
@@ -64,9 +63,6 @@ describe('CandidateSearchHandlerService.generateUnresolvedSearchParams (requirem
       searchIntentRouterService as never,
       linkedinQueryGenerationService as never,
       pythonQueryGenerationService as never,
-      {} as never,
-      {} as never,
-      {} as never,
       {} as never,
       {} as never,
       {} as never,

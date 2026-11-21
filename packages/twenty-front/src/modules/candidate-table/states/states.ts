@@ -3,9 +3,7 @@ import {
   enrichmentsState,
   sampleEnrichmentsState,
 } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
-import { parsedJDInternalState } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
-import { activeAssistantThreadIdState } from '@/candidate-search/states/searchConfigState';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { ProcessedData } from '@/candidate-table/ProcessedData';
 import { TableColumns } from '@/candidate-table/TableColumns';
@@ -100,22 +98,6 @@ export type ProjectStateItem = {
   createdBy?: ProjectCreatedBy;
   jobLocation?: string;
   searchName?: string;
-  assistantThread?: {
-    edges?: Array<{
-      node: {
-        id: string;
-        name: string;
-        messages?: any[];
-        assistantParameters?: any;
-        enrichmentConfigs?: any[];
-        columnFilters?: any[];
-        assistantSearchStrategy?: any;
-        isActive?: boolean;
-        projectId?: string;
-        recruiterId?: string;
-      };
-    }>;
-  };
   candidates?: {
     edges?: Array<{
       node: {
@@ -442,11 +424,6 @@ export const searchPlansState = createAtomState<SearchPlan[]>({
   defaultValue: [],
 });
 
-export const resolvedParametersState = createAtomState<any>({
-  key: 'candidate-table/resolvedParametersState',
-  defaultValue: null,
-});
-
 export const chatMessagesSelector = createAtomWritableSelector({
   key: 'candidate-table/chatMessagesSelector',
   get: ({ get }) => {
@@ -536,158 +513,6 @@ export const clearAllSorting = (setTableState: any) => () => {
     },
   }));
 };
-
-export const resolvedParametersSelector = createAtomWritableSelector({
-  key: 'candidate-table/resolvedParametersSelector',
-  get: ({ get }) => {
-    const projectId = get(projectIdAtom);
-    const projects = get(projectsState);
-    const stored = get(resolvedParametersState);
-    const parsedJD = get(parsedJDInternalState);
-    const activeId = get(activeAssistantThreadIdState);
-
-    if (parsedJD?.assistantThreads && activeId) {
-      const activeThread = parsedJD.assistantThreads.find(
-        (thread) => thread.id === activeId,
-      );
-      if (activeThread?.assistantParameters?.resolvedSearchParameters) {
-        return activeThread.assistantParameters
-          .resolvedSearchParameters as Record<string, unknown>;
-      }
-    }
-    const job = projects.find((jobItem) => jobItem.id === projectId);
-
-    if (!job) {
-      return stored;
-    }
-
-    const assistantThreadEdges = (job as any)?.assistantThread?.edges || [];
-    if (assistantThreadEdges.length > 0) {
-      const threadNode = assistantThreadEdges[0]?.node;
-      const assistantParameters = threadNode?.assistantParameters;
-      if (assistantParameters?.resolvedSearchParameters) {
-        return assistantParameters.resolvedSearchParameters;
-      }
-    }
-
-    return stored;
-  },
-  set: ({ set }, newValue) => {
-    set(resolvedParametersState, newValue);
-  },
-});
-
-export const enrichmentsSelector = createAtomSelector({
-  key: 'candidate-table/enrichmentsSelector',
-  get: ({ get }) => {
-    const projectId = get(projectIdAtom);
-    const projects = get(projectsState);
-    const parsedJD = get(parsedJDInternalState);
-    const activeId = get(activeAssistantThreadIdState);
-
-    if (parsedJD?.assistantThreads && activeId) {
-      const activeThread = parsedJD.assistantThreads.find(
-        (thread) => thread.id === activeId,
-      );
-      if (
-        activeThread?.enrichmentConfigs &&
-        activeThread.enrichmentConfigs.length > 0
-      ) {
-        return activeThread.enrichmentConfigs;
-      }
-    }
-    const job = projects.find((jobItem) => jobItem.id === projectId);
-    if (!job) return [];
-
-    const assistantThreadEdges = (job as any)?.assistantThread?.edges || [];
-    if (assistantThreadEdges.length > 0) {
-      const threadNode = assistantThreadEdges[0]?.node;
-      if (
-        threadNode?.enrichmentConfigs &&
-        threadNode.enrichmentConfigs.length > 0
-      ) {
-        return threadNode.enrichmentConfigs;
-      }
-    }
-
-    return [];
-  },
-});
-
-export const filtersSelector = createAtomSelector({
-  key: 'candidate-table/filtersSelector',
-  get: ({ get }) => {
-    const projectId = get(projectIdAtom);
-    const projects = get(projectsState);
-    const parsedJD = get(parsedJDInternalState);
-    const activeId = get(activeAssistantThreadIdState);
-
-    if (parsedJD?.assistantThreads && activeId) {
-      const activeThread = parsedJD.assistantThreads.find(
-        (thread) => thread.id === activeId,
-      );
-      if (
-        activeThread?.columnFilters &&
-        Array.isArray(activeThread.columnFilters) &&
-        activeThread.columnFilters.length > 0
-      ) {
-        return activeThread.columnFilters;
-      }
-    }
-    const job = projects.find((jobItem) => jobItem.id === projectId);
-    if (!job) return [];
-
-    const assistantThreadEdges = (job as any)?.assistantThread?.edges || [];
-    if (assistantThreadEdges.length > 0) {
-      const threadNode = assistantThreadEdges[0]?.node;
-      if (threadNode?.columnFilters && threadNode.columnFilters.length > 0) {
-        return threadNode.columnFilters;
-      }
-    }
-    return [];
-  },
-});
-
-export const sortsSelector = createAtomSelector({
-  key: 'candidate-table/sortsSelector',
-  get: ({ get }) => {
-    const projectId = get(projectIdAtom);
-    const projects = get(projectsState);
-    const parsedJD = get(parsedJDInternalState);
-    const activeId = get(activeAssistantThreadIdState);
-
-    if (parsedJD?.assistantThreads && activeId) {
-      const activeThread = parsedJD.assistantThreads.find(
-        (thread) => thread.id === activeId,
-      );
-      if (
-        activeThread?.sortColumns &&
-        Array.isArray(activeThread.sortColumns) &&
-        activeThread.sortColumns.length > 0
-      ) {
-        return activeThread.sortColumns;
-      }
-    }
-    const job = projects.find((jobItem) => jobItem.id === projectId);
-
-    if (!job) {
-      return null;
-    }
-
-    const assistantThreadEdges = (job as any)?.assistantThread?.edges || [];
-    if (assistantThreadEdges.length > 0) {
-      const threadNode = assistantThreadEdges[0]?.node;
-      if (threadNode?.columnSortConfigs) {
-        return threadNode.columnSortConfigs;
-      }
-      if (threadNode?.assistantSearchStrategy) {
-        return threadNode.assistantSearchStrategy;
-      }
-    }
-
-    return null;
-  },
-});
 
 export type CandidatePersistenceState = 'fetched' | 'saved';
 

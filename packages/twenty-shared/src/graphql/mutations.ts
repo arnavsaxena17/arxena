@@ -653,30 +653,6 @@ mutation CreateOneViewField($input: ViewFieldCreateInput!) {
 }
 `;
 
-export const createOneAssistantThread = `mutation CreateOneAssistantThread($input: AssistantThreadCreateInput!) {
-  createAssistantThread(data: $input) {
-    id
-    name
-  }
-}`;
-
-export const updateOneAssistantThread = `mutation UpdateOneAssistantThread($id: UUID!, $input: AssistantThreadUpdateInput!) {
-  updateAssistantThread(id: $id, data: $input) {
-    id
-    name
-    messages
-    lastTableData
-    projectId
-    agentNotes
-    assistantParameters
-    enrichmentConfigs
-    columnFilters
-    assistantSearchStrategy
-    isActive
-    updatedAt
-  }
-}`;
-
 export const graphqlMutationToDeleteManyPrompts = `
 mutation DeleteManyPrompts($filter: PromptFilterInput!) {
   deletePrompts(filter: $filter) {
@@ -698,15 +674,6 @@ mutation DeleteManyAttachments($filter: AttachmentFilterInput!) {
 export const graphqlMutationToDeleteManyVideoInterviewTemplates = `
 mutation DeleteManyVideoInterviewTemplates($filter: VideoInterviewTemplateFilterInput!) {
   deleteVideoInterviewTemplates(filter: $filter) {
-    id
-    __typename
-  }
-}
-`;
-
-export const graphqlMutationToDeleteManyAssistantThreads = `
-mutation DeleteManyAssistantThreads($filter: AssistantThreadFilterInput!) {
-  deleteAssistantThreads(filter: $filter) {
     id
     __typename
   }

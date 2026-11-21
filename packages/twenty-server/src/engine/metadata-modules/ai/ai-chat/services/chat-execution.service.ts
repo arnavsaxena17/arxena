@@ -376,10 +376,6 @@ export class ChatExecutionService {
       inputSchema: zodSchema(getToolCatalogInputSchema),
     };
 
-    this.logger.log(
-      `[AI_CHAT] getToolCatalogTool\n${formatToolSetForLog(getToolCatalogTool)}`,
-    );
-
     // Direct tools is the search help center tool.
 
     const activeTools: ToolSet = {
@@ -767,7 +763,7 @@ export class ChatExecutionService {
           `[AI_CHAT] prepareStep #${nextStepIndex} ` +
             `messageCount=${stepMessages.length} ` +
             `roles=[${stepMessages.map((message) => message.role).join(', ')}]\n` +
-            `# stepMessages\n\n${formatMessagesForLog(stepMessages)}`,
+            `$$# stepMessages\n\n${formatMessagesForLog(stepMessages)}`,
         );
 
         return {
@@ -1026,7 +1022,8 @@ export class ChatExecutionService {
 
     const browsingContextPart = {
       type: 'text' as const,
-      text: `<browsing_context note="${note}">\n${contextString}\n</browsing_context>`,
+      // text: `<browsing_context note="${note}">\n${contextString}\n</browsing_context>`,
+      text: `${contextString}`,
     };
 
     return [
@@ -1159,7 +1156,8 @@ export class ChatExecutionService {
       ...(includeOutreachActions
         ? OUTREACH_ACTION_RULES
         : [
-            'Saving to the CRM, starting outreach and enrollment have their own rules: they are sent when the user asks for one of those.',
+            // 'Saving to the CRM, starting outreach and enrollment have their own rules: they are sent when the user asks for one of those.',
+            '',
           ]),
     ].join('\n');
   }

@@ -39,7 +39,6 @@ import {
 } from '../utils/McpToolSchemas';
 
 import { callRestAPI, callRestAPIGet } from '../api/rest-client';
-import { handleStreamingResponse } from '../api/streaming-client';
 import { McpTool } from '../types/tool-types';
 import { descriptorToInputSchema } from '../utils/input-schema';
 import {
@@ -112,56 +111,6 @@ const buildLinkedInSearchQueryParams = (args: {
 export const linkedinSearchTools: McpTool[] = [
   // ==================== LinkedIn Search Tools ====================
 
-  // {
-  //   definition: {
-  //     name: 'search_linkedin_with_query',
-  //     description:
-  //       'Full LinkedIn search flow using candidate search handlers. Handles query understanding, parameter generation, resolution, search execution, validation, and scoring with streaming support.',
-  //     inputSchema: (() => {
-  //       const baseSchema = descriptorToInputSchema(SEARCH_LINKEDIN_WITH_QUERY_INPUT_DESCRIPTOR);
-  //       return {
-  //         ...baseSchema,
-  //         properties: {
-  //           ...baseSchema.properties,
-  //           searchType: {
-  //             ...baseSchema.properties.searchType,
-  //             enum: ['classic', 'sales_navigator', 'recruiter'],
-  //           },
-  //           searchCategory: {
-  //             ...baseSchema.properties.searchCategory,
-  //             enum: ['people', 'companies', 'posts', 'jobs'],
-  //           },
-  //         },
-  //       };
-  //     })(),
-  //   },
-  //   handler: async (args, config) => {
-  //     const { query, searchType, searchCategory, searchFilterId, parsedJD, includeJd } = args as {
-  //       query: string;
-  //       searchType: string;
-  //       searchCategory: string;
-  //       searchFilterId: string;
-  //       parsedJD?: Record<string, unknown>;
-  //       includeJd?: boolean;
-  //     };
-
-  //     return handleStreamingResponse(
-  //       config.baseUrl,
-  //       config.apiToken,
-  //       'candidate-search',
-  //       'message/stream',
-  //       {
-  //         message: query,
-  //         searchFilterId,
-  //         parsedJD,
-  //         searchType,
-  //         searchCategory,
-  //         includeJd: includeJd !== false,
-  //       },
-  //     );
-  //   },
-  // },
-
   {
     definition: {
       name: SEARCH_LINKEDIN_PEOPLE_TOOL_NAME,
@@ -189,8 +138,6 @@ export const linkedinSearchTools: McpTool[] = [
         searchParameters,
         url,
         query,
-        assistantThreadId,
-        parsedJD,
         account_id,
         cursor,
         limit,
@@ -199,8 +146,6 @@ export const linkedinSearchTools: McpTool[] = [
         searchParameters?: Record<string, unknown>;
         url?: string;
         query?: string;
-        assistantThreadId?: string;
-        parsedJD?: Record<string, unknown>;
         account_id?: string;
         cursor?: string;
         limit?: number;
@@ -217,28 +162,8 @@ export const linkedinSearchTools: McpTool[] = [
         );
       }
 
-      // If query provided, use candidate search streaming flow
-      if (query && assistantThreadId) {
-        return handleStreamingResponse(
-          config.baseUrl,
-          config.apiToken,
-          'candidate-search-chat',
-          'message/stream',
-          {
-            message: query,
-            assistantThreadId,
-            parsedJD,
-            searchType,
-            searchCategory: 'people',
-            includeJd: !!parsedJD,
-          },
-        );
-      }
-
-      // Lightweight fallback: when the assistant passes `query` but no `assistantThreadId`
-      // (and also no `searchParameters`), treat the query as a keywords string for the
-      // direct LinkedIn search endpoints.
-      // This avoids hard failures when query-only is used for keyword boolean expressions.
+      // When the assistant passes `query` without `searchParameters`, treat the
+      // query as a keywords string for the direct LinkedIn search endpoints.
       const effectiveSearchParameters: Record<string, unknown> | undefined =
         searchParameters ??
         (query
@@ -250,7 +175,7 @@ export const linkedinSearchTools: McpTool[] = [
       // Otherwise use direct LinkedIn search
       if (!effectiveSearchParameters) {
         throw new Error(
-          'Either searchParameters or query with assistantThreadId (or query-only keyword fallback) must be provided',
+          'Either searchParameters or query must be provided',
         );
       }
 

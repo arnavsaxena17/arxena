@@ -23,7 +23,6 @@ type ArxJDModalContentProps = {
   onCreateJobFromName?: (jobName: string) => Promise<void>;
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
   isEditMode?: boolean;
-  onAssistantThreadUpdate?: ArxJDStepperContainerProps['onAssistantThreadUpdate'];
 };
 
 export const ArxJDModalContent = ({
@@ -41,7 +40,6 @@ export const ArxJDModalContent = ({
   onCreateJobFromName,
   onRecruiterInfoChange,
   isEditMode = false,
-  onAssistantThreadUpdate,
 }: ArxJDModalContentProps) => {
   console.log('ArxJDModalContent rendering with:', {
     parsedJDExists: parsedJD !== null,
@@ -97,7 +95,6 @@ export const ArxJDModalContent = ({
       onRecruiterInfoChange={onRecruiterInfoChange}
       isEditMode={isEditMode}
       onCreateJobFromName={onCreateJobFromName}
-      onAssistantThreadUpdate={onAssistantThreadUpdate}
     />
   );
 };

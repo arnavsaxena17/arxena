@@ -1,49 +1,43 @@
 import {
-    forwardRef,
-    HttpException,
-    HttpStatus,
-    Inject,
-    Injectable,
-    Logger,
+  forwardRef,
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  Logger,
 } from '@nestjs/common';
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
 import {
-    LinkedInClassicCompaniesSearchRequest,
-    LinkedInClassicJobsSearchRequest,
-    LinkedInSalesNavigatorCompaniesSearchRequest,
+  LinkedInClassicCompaniesSearchRequest,
+  LinkedInClassicJobsSearchRequest,
+  LinkedInSalesNavigatorCompaniesSearchRequest,
 } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 import { OrgChartLinkedInBuildService } from 'src/engine/core-modules/org-chart/services/org-chart-linkedin-build.service';
 import { type OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
+import type { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import { parseFunctionRootOrNull } from '../schemas/org-chart.schema';
 import {
-    ClassicPeopleSearchStrategyResult,
-    GeneratedSearchParameters,
-    ParsedJobDescription,
-    RecruiterPeopleSearchStrategyResult,
-    ResultValidationResult,
-    SalesNavigatorPeopleSearchStrategyResult,
+  ClassicPeopleSearchStrategyResult,
+  GeneratedSearchParameters,
+  ParsedJobDescription,
+  RecruiterPeopleSearchStrategyResult,
+  ResultValidationResult,
+  SalesNavigatorPeopleSearchStrategyResult,
 } from '../types/candidate-search-request.type';
-import { ChatMessageRequest } from '../types/search-plan.types';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
 import { mapLinkedinSearchQueriesToGeneratedParameters } from '../utils/linkedin-query-generation-mapper.util';
 import { mergeFilters } from '../utils/org-chart-filters-merge.util';
-import { createMinimalParsedJobDescription } from '../utils/parsed-job-description.util';
 import { constructSearchParamKey } from '../utils/search-parameter.utils';
 import { buildTitleTaxonomyResolvedIntent } from '../utils/title-taxonomy-resolved-intent.util';
 import { TokenUsage } from '../utils/token-tracking.util';
-import type { AssistantThreadContext } from './candidate-search-assistant-thread.adapter';
-import { CandidateSearchAssistantThreadAdapter } from './candidate-search-assistant-thread.adapter';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
-import { ClassifyMessageService } from './classify-message.service';
-import { CleanupService } from './cleanup.service';
 import { JobDescriptionService } from './job-description.service';
 import { OrgchartLinkedInQueryRouterService } from './orgchart-linkedin-query-router.service';
 import {
-    PythonQueryGenerationService,
-    type PythonQueryInput,
+  PythonQueryGenerationService,
+  type PythonQueryInput,
 } from './python-query-generation.service';
 import { RequirementAnalyzerService } from './requirement-analyzer.service';
 import { SearchExecutionService } from './search-execution.service';
@@ -85,9 +79,16 @@ export type HandleMessageStreamResult = {
   assistantMessage: string | null;
 };
 
-const DEFAULT_PARSED_JD_MESSAGE_STREAM: ParsedJobDescription =
-  createMinimalParsedJobDescription();
-
+// Source and generator switches for a LinkedIn people search.
+type SearchStreamOptions = {
+  linkedinQueryGenerator?: 'python' | 'multi_agent';
+  candidateSource?: OrgChartLinkedinCandidateSource;
+  linkedinCompanyUrl?: string;
+  orgchartCompanyName?: string;
+  orgchartCompanyId?: string;
+  xraySearchEngine?: LinkedinXraySearchEngine;
+  apifyMaxItems?: number;
+};
 type PeopleSearchStrategyResult =
   | ClassicPeopleSearchStrategyResult
   | SalesNavigatorPeopleSearchStrategyResult
@@ -115,7 +116,6 @@ export class CandidateSearchHandlerService {
   private readonly logger = new Logger(CandidateSearchHandlerService.name);
 
   constructor(
-    private readonly assistantThreadService: CandidateSearchAssistantThreadAdapter,
     private readonly candidateSearchBaseService: CandidateSearchBaseService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly workspaceQueryService: WorkspaceQueryService,
@@ -126,9 +126,6 @@ export class CandidateSearchHandlerService {
     private readonly searchIntentRouterService: SearchIntentRouterService,
     private readonly linkedinQueryGenerationService: LinkedinQueryGenerationService,
     private readonly pythonQueryGenerationService: PythonQueryGenerationService,
-    private readonly classifyMessageService: ClassifyMessageService,
-    private readonly cleanupService: CleanupService,
-    private readonly searchParametersPrompts: SearchParametersPrompts,
     private readonly searchResponseBuilderService: SearchResponseBuilderService,
     private readonly strategyExecutionService: StrategyExecutionService,
     private readonly orgchartLinkedInQueryRouterService: OrgchartLinkedInQueryRouterService,
@@ -145,88 +142,10 @@ export class CandidateSearchHandlerService {
     }
   }
 
-  /**
-   * Validation/scoring need the recruiter's natural-language requirement, including
-   * iterative steering (POST .../iterative-query). Assistant search passes LinkedIn
-   * keywords as body.message; prefer effectiveRequirement (base + steering), then thread
-   * strategy, then chat.
-   */
-  private resolveRecruiterRequirementForValidationScoring(
-    thread: AssistantThreadContext,
-    fallbackSearchText: string,
-  ): string {
-    const ap = thread.assistantParameters;
-    const iterativeState =
-      ap?.iterativeQueryState && typeof ap.iterativeQueryState === 'object'
-        ? (ap.iterativeQueryState as Record<string, unknown>)
-        : undefined;
-
-    const effectiveFromIterative =
-      typeof iterativeState?.effectiveRequirement === 'string'
-        ? iterativeState.effectiveRequirement.trim()
-        : '';
-    if (effectiveFromIterative) {
-      return effectiveFromIterative;
-    }
-
-    const baseFromIterative =
-      typeof iterativeState?.baseRequirement === 'string'
-        ? iterativeState.baseRequirement.trim()
-        : '';
-    const steeringFromIterative = Array.isArray(iterativeState?.steeringHistory)
-      ? (iterativeState.steeringHistory as Array<Record<string, unknown>>)
-      : [];
-    if (baseFromIterative && steeringFromIterative.length > 0) {
-      return buildIterativeRequirement(baseFromIterative, steeringFromIterative);
-    }
-    if (baseFromIterative) {
-      return baseFromIterative;
-    }
-
-    const strategy = thread.assistantSearchStrategy;
-    if (strategy && typeof strategy === 'object') {
-      const s = strategy as Record<string, unknown>;
-      const effectiveFromStrategy =
-        typeof s.effectiveRequirement === 'string'
-          ? s.effectiveRequirement.trim()
-          : '';
-      if (effectiveFromStrategy) {
-        return effectiveFromStrategy;
-      }
-      const baseFromStrategy =
-        typeof s.baseRequirement === 'string' ? s.baseRequirement.trim() : '';
-      const steeringFromStrategy = Array.isArray(s.steeringHistory)
-        ? (s.steeringHistory as Array<Record<string, unknown>>)
-        : [];
-      if (baseFromStrategy && steeringFromStrategy.length > 0) {
-        return buildIterativeRequirement(baseFromStrategy, steeringFromStrategy);
-      }
-      if (baseFromStrategy) {
-        return baseFromStrategy;
-      }
-    }
-
-    const userMsgs =
-      thread.messages?.filter(
-        (m) =>
-          m.role === 'user' &&
-          typeof m.content === 'string' &&
-          m.content.trim().length > 0 &&
-          !m.content.startsWith('Steer query set:'),
-      ) ?? [];
-    const lastUser = userMsgs[userMsgs.length - 1];
-    const fromChat = lastUser?.content?.trim() ?? '';
-    if (fromChat) {
-      return fromChat;
-    }
-
-    return fallbackSearchText;
-  }
-
   async handleSearchParametersAndResultsGenerationStream(
     rawQuery: string,
     cleanedQuery: string,
-    assistantThreadId: string,
+    projectId: string,
     parsedJD: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter' = 'classic',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs' = 'people',
@@ -236,16 +155,7 @@ export class CandidateSearchHandlerService {
     includeJd: boolean = true,
     isClarificationResponse: boolean = false,
     abortSignal?: AbortSignal,
-    messageStreamOptions?: Pick<
-      ChatMessageRequest,
-      | 'linkedinQueryGenerator'
-      | 'candidateSource'
-      | 'linkedinCompanyUrl'
-      | 'orgchartCompanyName'
-      | 'orgchartCompanyId'
-      | 'xraySearchEngine'
-      | 'apifyMaxItems'
-    >,
+    messageStreamOptions?: SearchStreamOptions,
   ) {
     const { tokenAccumulator, accumulateTokens } =
       this.createTokenAccumulator();
@@ -257,7 +167,7 @@ export class CandidateSearchHandlerService {
 
       this.validateSearchParametersInput(parsedJD, searchType, searchCategory);
       const context = await this.prepareSearchContext(
-        assistantThreadId,
+        projectId,
         searchType,
         searchCategory,
         apiToken,
@@ -341,17 +251,18 @@ export class CandidateSearchHandlerService {
       };
 
       if (source === 'apify' || source === 'linkedin_xray') {
-        searchResult = await this.runAlternateCandidateSourceMessageStreamSearch({
-          preUnresolved,
-          rawQuery,
-          cleanedQuery,
-          searchType,
-          candidateSource: source,
-          apiToken,
-          messageStreamOptions,
-          sendEvent,
-          context,
-        });
+        searchResult =
+          await this.runAlternateCandidateSourceMessageStreamSearch({
+            preUnresolved,
+            rawQuery,
+            cleanedQuery,
+            searchType,
+            candidateSource: source,
+            apiToken,
+            messageStreamOptions,
+            sendEvent,
+            context,
+          });
       } else {
         searchResult = await this.generateAndExecuteSearchParameters(
           rawQuery,
@@ -397,20 +308,11 @@ export class CandidateSearchHandlerService {
       'apify' | 'linkedin_xray'
     >;
     apiToken: string;
-    messageStreamOptions?: Pick<
-      ChatMessageRequest,
-      | 'linkedinQueryGenerator'
-      | 'linkedinCompanyUrl'
-      | 'orgchartCompanyName'
-      | 'orgchartCompanyId'
-      | 'xraySearchEngine'
-      | 'apifyMaxItems'
-    >;
+    messageStreamOptions?: SearchStreamOptions;
     sendEvent?: (event: string, data: any) => void;
     context: {
       accountId: string;
       searchParamKey: string;
-      searchFilter: AssistantThreadContext;
       projectId?: string;
     };
   }): Promise<{
@@ -462,13 +364,14 @@ export class CandidateSearchHandlerService {
       message: `Fetching candidates via ${args.candidateSource} (org-chart pipeline)...`,
     });
 
-    const json = (await this.orgChartLinkedInBuildService.searchOrgchartFromLinkedIn(
-      orgChartBody,
-      {
-        Authorization: `Bearer ${args.apiToken}`,
-        'Content-Type': 'application/json',
-      },
-    )) as Record<string, unknown>;
+    const json =
+      (await this.orgChartLinkedInBuildService.searchOrgchartFromLinkedIn(
+        orgChartBody,
+        {
+          Authorization: `Bearer ${args.apiToken}`,
+          'Content-Type': 'application/json',
+        },
+      )) as Record<string, unknown>;
 
     const queued = json.queued === true;
     if (queued) {
@@ -484,11 +387,12 @@ export class CandidateSearchHandlerService {
       ? (json.items as Record<string, unknown>[])
       : [];
 
-    const extracted = this.strategyExecutionService.extractStrategiesFromGeneratedParams(
-      args.preUnresolved,
-      args.searchType,
-      'people',
-    );
+    const extracted =
+      this.strategyExecutionService.extractStrategiesFromGeneratedParams(
+        args.preUnresolved,
+        args.searchType,
+        'people',
+      );
     const primaryStrategy: PeopleSearchStrategyResult =
       extracted[0] ??
       ({
@@ -513,15 +417,6 @@ export class CandidateSearchHandlerService {
             paging: undefined,
           },
         };
-
-    await this.updateAssistantThreadWithParameters(
-      args.context.searchFilter,
-      args.context.searchParamKey,
-      args.preUnresolved,
-      {},
-      args.apiToken,
-      args.sendEvent,
-    );
 
     return {
       unresolvedSearchParams: args.preUnresolved,
@@ -637,7 +532,6 @@ export class CandidateSearchHandlerService {
     context: {
       accountId: string;
       searchParamKey: string;
-      searchFilter: AssistantThreadContext;
       projectId?: string;
     },
     apiToken: string,
@@ -704,15 +598,6 @@ export class CandidateSearchHandlerService {
         sendEvent,
       );
 
-    await this.updateAssistantThreadWithParameters(
-      context.searchFilter,
-      context.searchParamKey,
-      unresolvedSearchParams,
-      resolvedParams,
-      apiToken,
-      sendEvent,
-    );
-
     return {
       unresolvedSearchParams,
       resolvedParams,
@@ -766,7 +651,7 @@ export class CandidateSearchHandlerService {
   }
 
   private async prepareSearchContext(
-    assistantThreadId: string,
+    projectId: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     apiToken: string,
@@ -774,22 +659,12 @@ export class CandidateSearchHandlerService {
   ): Promise<{
     accountId: string;
     searchParamKey: string;
-    searchFilter: AssistantThreadContext;
-    projectId?: string;
+    projectId: string;
   }> {
     const accountId =
       await this.candidateSearchBaseService.getLinkedInAccountId(apiToken);
     const searchParamKey = constructSearchParamKey(searchType, searchCategory);
-    const searchFilter =
-      await this.assistantThreadService.getAssistantThreadContext(
-        assistantThreadId,
-        apiToken,
-      );
-    const projectId = searchFilter?.projectId;
 
-    this.logger.log(
-      `assistantThread context:: ${JSON.stringify(searchFilter, null, 2)}`,
-    );
     this.logger.log(
       `Generating search parameters for ${searchType} ${searchCategory}`,
     );
@@ -799,7 +674,7 @@ export class CandidateSearchHandlerService {
       this.logger.log(`User message: ${userMessage}`);
     }
 
-    return { accountId, searchParamKey, searchFilter, projectId };
+    return { accountId, searchParamKey, projectId };
   }
 
   private async generateResolvedSearchParameters(
@@ -895,254 +770,6 @@ export class CandidateSearchHandlerService {
     return { unresolvedSearchParams, resolvedParams };
   }
 
-  private async updateAssistantThreadWithParameters(
-    threadContext: AssistantThreadContext,
-    searchParamKey: string,
-    searchParams: GeneratedSearchParameters,
-    resolvedParams: GeneratedSearchParameters,
-    apiToken: string,
-    sendEvent?: (event: string, data: any) => void,
-  ): Promise<void> {
-    const updatedAssistantParameters = {
-      ...threadContext.assistantParameters,
-      generatedSearchParameters: {
-        ...threadContext.assistantParameters?.generatedSearchParameters,
-        [searchParamKey]: searchParams[searchParamKey],
-      },
-      resolvedSearchParameters: {
-        ...threadContext.assistantParameters?.resolvedSearchParameters,
-        [searchParamKey]: resolvedParams,
-      },
-    };
-
-    sendEvent?.('status', { message: 'Saving parameters...' });
-    await this.assistantThreadService.updateAssistantThreadParameters(
-      threadContext.id,
-      updatedAssistantParameters,
-      threadContext.messages,
-      apiToken,
-    );
-  }
-
-  async getAssistantThreadContext(
-    assistantThreadId: string,
-    apiToken: string,
-  ): Promise<AssistantThreadContext> {
-    return this.assistantThreadService.getAssistantThreadContext(
-      assistantThreadId,
-      apiToken,
-    );
-  }
-
-  async addChatMessage(
-    assistantThreadId: string,
-    role: 'user' | 'assistant',
-    content: string,
-    apiToken: string,
-  ): Promise<void> {
-    return this.assistantThreadService.addChatMessage(
-      assistantThreadId,
-      role,
-      content,
-      apiToken,
-    );
-  }
-
-  /**
-   * Handle the full message/stream flow: get search filter, classify, branch, run search.
-   * Used by both POST message/stream (controller) and assistant in-process streaming.
-   * parsedJD is optional; when omitted or partial, DEFAULT_PARSED_JD_MESSAGE_STREAM is used.
-   */
-  async handleMessageStream(
-    body: Omit<ChatMessageRequest, 'parsedJD'> & {
-      parsedJD?: ParsedJobDescription | Record<string, unknown> | null;
-    },
-    apiToken: string,
-    sendEvent: HandlerMessageStreamSendEvent,
-    abortSignal?: AbortSignal,
-  ): Promise<HandleMessageStreamResult> {
-    this.throwIfAborted(abortSignal);
-    const parsedJD: ParsedJobDescription =
-      body.parsedJD &&
-      typeof body.parsedJD === 'object' &&
-      !Array.isArray(body.parsedJD)
-        ? ({
-            ...DEFAULT_PARSED_JD_MESSAGE_STREAM,
-            ...body.parsedJD,
-          } as ParsedJobDescription)
-        : DEFAULT_PARSED_JD_MESSAGE_STREAM;
-
-    const thread = await this.assistantThreadService.getAssistantThreadContext(
-      body.assistantThreadId,
-      apiToken,
-    );
-    this.throwIfAborted(abortSignal);
-    const chatHistory = thread.messages ?? [];
-
-    let rawJDText = '';
-    if (body.includeJd !== false && thread.projectId) {
-      try {
-        rawJDText =
-          (await this.jobDescriptionService.getJDContentFromJobAttachments(
-            thread.projectId,
-            apiToken,
-          )) ?? '';
-      } catch (err) {
-        this.logger.warn(
-          `Failed to fetch JD content: ${err instanceof Error ? err.message : String(err)}`,
-        );
-      }
-    }
-
-    const messageClassification =
-      await this.classifyMessageService.classifyMessage(
-        body.message,
-        apiToken,
-        chatHistory as Array<{
-          role: 'user' | 'assistant';
-          content: string;
-          timestamp?: string;
-        }>,
-        rawJDText,
-      );
-    this.throwIfAborted(abortSignal);
-
-    this.logger.log(
-      `Message classified as: ${messageClassification.type} (confidence: ${messageClassification.confidence})`,
-    );
-
-    if (
-      !sendEvent('classification', {
-        type: messageClassification.type,
-        confidence: messageClassification.confidence,
-        reasoning: messageClassification.reasoning,
-      } as Record<string, unknown>)
-    ) {
-      return { response: {}, assistantMessage: null };
-    }
-
-    let response: HandleMessageStreamResult['response'] = {};
-    let assistantMessage: string | null = null;
-
-    switch (messageClassification.type) {
-      case 'clarification_response': {
-        const pendingClarification =
-          thread.assistantParameters?.pendingClarification;
-        const clarificationQuestions = pendingClarification?.questions ?? [];
-        const previousUserMessages = chatHistory.filter(
-          (msg: { role: string }) => msg.role === 'user',
-        );
-        const originalQuery =
-          previousUserMessages.length > 1
-            ? previousUserMessages[previousUserMessages.length - 2]?.content
-            : (previousUserMessages[previousUserMessages.length - 1]?.content ??
-              body.message);
-        const combinedQuery =
-          this.searchParametersPrompts.buildClarificationResponseCombinedUserQuery(
-            originalQuery,
-            clarificationQuestions,
-            body.message,
-          );
-        const cleanedCombinedQuery = await this.cleanupService.cleanupQuery(
-          combinedQuery,
-          apiToken,
-        );
-        response = await this.handleSearchParametersAndResultsGenerationStream(
-          body.message,
-          cleanedCombinedQuery,
-          body.assistantThreadId,
-          parsedJD,
-          body.searchType ?? 'classic',
-          body.searchCategory ?? 'people',
-          apiToken,
-          combinedQuery,
-          sendEvent as (event: string, data: unknown) => void,
-          body.includeJd !== false,
-          true,
-          abortSignal,
-          {
-            linkedinQueryGenerator: body.linkedinQueryGenerator,
-            candidateSource: body.candidateSource,
-            linkedinCompanyUrl: body.linkedinCompanyUrl,
-            orgchartCompanyName: body.orgchartCompanyName,
-            orgchartCompanyId: body.orgchartCompanyId,
-            xraySearchEngine: body.xraySearchEngine,
-            apifyMaxItems: body.apifyMaxItems,
-          },
-        );
-        if (response?.chatMessage) assistantMessage = response.chatMessage;
-        break;
-      }
-      case 'search_parameters': {
-        const cleanedQuery = await this.cleanupService.cleanupQuery(
-          body.message,
-          apiToken,
-        );
-        const threadForRequirement =
-          await this.assistantThreadService.getAssistantThreadContext(
-            body.assistantThreadId,
-            apiToken,
-          );
-        const requirementForScoring =
-          this.resolveRecruiterRequirementForValidationScoring(
-            threadForRequirement,
-            body.message,
-          );
-        response = await this.handleSearchParametersAndResultsGenerationStream(
-          body.message,
-          cleanedQuery,
-          body.assistantThreadId,
-          parsedJD,
-          body.searchType ?? 'classic',
-          body.searchCategory ?? 'people',
-          apiToken,
-          requirementForScoring,
-          sendEvent as (event: string, data: unknown) => void,
-          body.includeJd !== false,
-          false,
-          abortSignal,
-          {
-            linkedinQueryGenerator: body.linkedinQueryGenerator,
-            candidateSource: body.candidateSource,
-            linkedinCompanyUrl: body.linkedinCompanyUrl,
-            orgchartCompanyName: body.orgchartCompanyName,
-            orgchartCompanyId: body.orgchartCompanyId,
-            xraySearchEngine: body.xraySearchEngine,
-            apifyMaxItems: body.apifyMaxItems,
-          },
-        );
-        if (response?.chatMessage) assistantMessage = response.chatMessage;
-        break;
-      }
-      case 'general_help':
-        assistantMessage =
-          "I can help you with candidate search and recruitment workflows! Here's what I can do:\n\n" +
-          '🔍 **Search Parameters** - Generate LinkedIn search criteria to find candidates\n' +
-          '📊 **AI Filters** - Add AI-powered insights to candidate profiles\n' +
-          '🔧 **Filters** - Create filtering strategies to narrow down candidate lists\n' +
-          '📈 **Sorts** - Design sorting strategies to prioritize the best candidates\n' +
-          '🎯 **Complete Plan** - Generate all components at once for a comprehensive search strategy\n\n' +
-          'Try saying "generate search parameters" or "create enrichments" to get started!';
-        sendEvent('message', {
-          success: true,
-          type: 'general_help',
-          chatMessage: assistantMessage,
-        });
-        break;
-      default:
-        assistantMessage =
-          "I didn't understand your request. Please try asking for search parameters, enrichments, filters, sorts, or a complete plan.";
-        sendEvent('message', {
-          success: false,
-          error: assistantMessage,
-          chatMessage: assistantMessage,
-        });
-    }
-
-    return { response, assistantMessage };
-  }
-
-  /** Extract candidates from handler response for MCP tool result shape. */
   extractCandidatesFromResponse(
     response: HandleMessageStreamResult['response'],
   ): Record<string, unknown>[] {
@@ -1170,32 +797,6 @@ export class CandidateSearchHandlerService {
       }
     }
     return rows;
-  }
-
-  private async updateAssistantThreadParameters(
-    assistantThreadId: string,
-    updatedAssistantParameters: AssistantThreadContext['assistantParameters'],
-    messages: AssistantThreadContext['messages'],
-    apiToken: string,
-  ): Promise<void> {
-    await this.assistantThreadService.updateAssistantThreadParameters(
-      assistantThreadId,
-      updatedAssistantParameters,
-      messages,
-      apiToken,
-    );
-  }
-
-  private async storeClarificationContext(
-    assistantThreadId: string,
-    questions: string[],
-    apiToken: string,
-  ): Promise<void> {
-    return this.assistantThreadService.storeClarificationContext(
-      assistantThreadId,
-      questions,
-      apiToken,
-    );
   }
 
   async generateUnresolvedSearchParams(
@@ -1261,14 +862,18 @@ export class CandidateSearchHandlerService {
       }
 
       // Handle people search: org-chart context (Python / multi-agent router) or multi-agent requirement flow
-      if (searchCategory === 'people' && orgChartGenerateOptions?.orgChartContext) {
+      if (
+        searchCategory === 'people' &&
+        orgChartGenerateOptions?.orgChartContext
+      ) {
         sendEvent?.('status', {
           message: 'Generating people search parameters (org-chart router)...',
         });
         const ctx = orgChartGenerateOptions.orgChartContext;
         const rawCandidateSource = orgChartGenerateOptions.candidateSource;
         const candidateSource: OrgChartLinkedinCandidateSource =
-          rawCandidateSource === 'apify' || rawCandidateSource === 'linkedin_xray'
+          rawCandidateSource === 'apify' ||
+          rawCandidateSource === 'linkedin_xray'
             ? rawCandidateSource
             : 'unipile';
         const effectiveSearchType: 'classic' | 'sales_navigator' | 'recruiter' =
@@ -1297,7 +902,9 @@ export class CandidateSearchHandlerService {
                 apiToken,
               );
             const { openAIclient: openaiClient } =
-              await this.workspaceQueryService.initializeLLMClients(workspaceId);
+              await this.workspaceQueryService.initializeLLMClients(
+                workspaceId,
+              );
             const parsed =
               await this.orgChartIntentService.resolveBusinessDivision(
                 openaiClient,
@@ -1327,10 +934,10 @@ export class CandidateSearchHandlerService {
                 : merged.effectiveCountryRaw;
             functionRoot = merged.effectiveFunctionRoot;
             titleTaxonomyResolvedIntent = buildTitleTaxonomyResolvedIntent({
-                companyName: primaryCompanyName,
-                parsed,
-                effectiveFunctionRoot: merged.effectiveFunctionRoot,
-              });
+              companyName: primaryCompanyName,
+              parsed,
+              effectiveFunctionRoot: merged.effectiveFunctionRoot,
+            });
           } else {
             titleTaxonomyResolvedIntent = buildTitleTaxonomyResolvedIntent({
               companyName: primaryCompanyName,
@@ -1353,7 +960,8 @@ export class CandidateSearchHandlerService {
                   queryGenerator: orgChartGenerateOptions?.queryGenerator,
                   businessDivisionRaw,
                   primaryCompanyName,
-                  baseBusinessDivisionKeywords: businessDivisionLinkedinKeywords,
+                  baseBusinessDivisionKeywords:
+                    businessDivisionLinkedinKeywords,
                   requirementForMultiAgent: cleanedQuery || rawQuery,
                   titleTaxonomyResolvedIntent,
                   sendEvent,
@@ -1436,7 +1044,8 @@ export class CandidateSearchHandlerService {
                 functionRoot: '',
                 jobTitles: [],
               },
-              queryGenerator: orgChartGenerateOptions?.queryGenerator ?? 'python',
+              queryGenerator:
+                orgChartGenerateOptions?.queryGenerator ?? 'python',
               candidateSource: orgChartGenerateOptions?.candidateSource,
             },
           );

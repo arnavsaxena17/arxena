@@ -62,6 +62,9 @@ export class JevEvaluationService {
         state: request.state,
         questions: toOpenRouterQuestions(request.questions),
       }),
+      // A stalled connection must not hang the caller: judges and column runs
+      // all go through here
+      signal: AbortSignal.timeout(60_000),
     });
 
     if (!response.ok) {

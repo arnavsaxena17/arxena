@@ -6,11 +6,9 @@ import { type LinkedInSearchCategory, type LinkedInSearchType } from '../../cand
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { ArxJDFormStepType } from '../states/arxJDFormStepperState';
 import { type FormComponentProps } from '../types/FormComponentProps';
-import type { AssistantThreadSummary } from '../types/ParsedJD';
 import { ArxJDStepHeading } from './ArxJDStepHeading';
 import { ArxJDUploadStep } from './ArxJDUploadStep';
 // import { ChatFlowSection } from './ChatFlowSection';
-import { type AssistantThread } from '@/assistant/types/assistant.types';
 import { ChatQuestionsSection } from './ChatQuestionsSection';
 import { ProjectDetailsForm, type RecruiterDetails } from './ProjectDetailsForm';
 import { MeetingSchedulingSection } from './MeetingSchedulingSection';
@@ -46,14 +44,6 @@ export type ArxJDFormStepperProps = FormComponentProps & {
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
   isEditMode?: boolean;
   onCreateJobFromName?: (jobName: string) => Promise<void>;
-  onAssistantThreadUpdate?: (
-    assistantThread: AssistantThread,
-    assistantThreads: AssistantThreadSummary[],
-    searchType: LinkedInSearchType,
-    searchCategory: LinkedInSearchCategory,
-    generatedParameters: unknown,
-    resolvedParameters: unknown,
-  ) => Promise<void>;
 };
 
 export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
@@ -71,7 +61,6 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
   onRecruiterInfoChange,
   isEditMode = false,
   onCreateJobFromName,
-  onAssistantThreadUpdate,
 }) => {
   const { activeStep, nextStep, prevStep, setStep, availableSteps, currentStepType, isFirstStep, isLastStep } =
     useArxJDFormStepper(0);

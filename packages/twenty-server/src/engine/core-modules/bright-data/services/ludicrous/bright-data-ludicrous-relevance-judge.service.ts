@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { AiFilterEngineService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-engine.service';
-import { type FilterSpec } from 'src/engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-contract';
+import { JudgeService } from 'src/engine/core-modules/judge/judge.service';
 import {
   type BrightDataLudicrousEntity,
   type BrightDataLudicrousRubric,
@@ -13,8 +12,7 @@ import {
   readPersonProfileText,
   scoreRecordAgainstRubric,
 } from 'src/engine/core-modules/bright-data/ludicrous/utils/bright-data-ludicrous-relevance.util';
-import { getFitmentThreshold } from 'src/engine/core-modules/candidate-sourcing/services/fitment/fitment-threshold.util';
-import { JEV_MODEL_ID } from 'src/engine/metadata-modules/ai/ai-evaluation/constants/jev.const';
+import { getFitmentThreshold } from 'src/engine/core-modules/judge/fitment-threshold.util';
 
 const RELEVANT_FIELD = 'relevant';
 
@@ -76,16 +74,17 @@ const toFilterRecord = (
   };
 };
 
-// Relevance is judged by Jev (typesafe-ai/jev), the same model the workflow AI
-// Filtering action uses. The planner's regex rubric is only the free first pass
-// for hard constraints and the fallback if Jev gives no usable answer.
+// Relevance is judged by the shared judge (Jev by default), the same path the
+// workflow AI Filtering action and the sourcing tools use. The planner's regex
+// rubric is only the free first pass for hard constraints and the fallback if
+// the judge gives no usable answer.
 @Injectable()
 export class BrightDataLudicrousRelevanceJudgeService {
   private readonly logger = new Logger(
     BrightDataLudicrousRelevanceJudgeService.name,
   );
 
-  constructor(private readonly aiFilterEngineService: AiFilterEngineService) {}
+  constructor(private readonly judgeService: JudgeService) {}
 
   async judge({
     entity,
@@ -123,57 +122,57 @@ export class BrightDataLudicrousRelevanceJudgeService {
       };
     }
 
-    const spec: FilterSpec = {
-      name: 'BrightDataLudicrousRelevance',
-      subject: entity === 'people' ? 'person' : 'company',
-      criteria:
-        entity === 'people'
-          ? `${relevanceCriteria}\n${GENERIC_TITLE_RULE}`
-          : relevanceCriteria,
-      fields: [
-        {
-          name: RELEVANT_FIELD,
-          type: 'boolean',
-          description: 'True when the record matches the criteria',
-        },
-      ],
-      keepField: RELEVANT_FIELD,
-      model: JEV_MODEL_ID,
-      metadataFields: [
-        'name',
-        'title',
-        'company',
-        'location',
-        'headline',
-        'industry',
-        'profile',
-      ],
-      concurrency: 5,
-      // Relevance is a fitment judgement: it passes at the server's bar
-      probabilityThreshold: getFitmentThreshold(),
-    };
-
     try {
-      const { verdicts } = await this.aiFilterEngineService.run(
+      const { results } = await this.judgeService.judgeStage(
         plausible.map((document) => toFilterRecord(entity, document)),
-        spec,
+        {
+          name: 'BrightDataLudicrousRelevance',
+          subject: entity === 'people' ? 'person' : 'company',
+          // A search sample is a preview: an unanswered row is neither
+          // relevant nor irrelevant, so it is left out rather than failed
+          stage: 'snapshot',
+          criteria: [
+            {
+              key: RELEVANT_FIELD,
+              description:
+                entity === 'people'
+                  ? `${relevanceCriteria}\n${GENERIC_TITLE_RULE}`
+                  : relevanceCriteria,
+              mustHave: true,
+              weight: 1,
+              values: ['true', 'false'],
+              passValues: ['true'],
+              failValues: ['false'],
+            },
+          ],
+          metadataFields: [
+            'name',
+            'title',
+            'company',
+            'location',
+            'headline',
+            'industry',
+            'profile',
+          ],
+          threshold: getFitmentThreshold(),
+          concurrency: 5,
+        },
       );
 
-      if (verdicts.every((verdict) => verdict.status === 'failed')) {
-        throw new Error(verdicts[0]?.error ?? 'Jev returned no valid answer');
+      if (results.size === 0) {
+        throw new Error('Jev returned no valid answer');
       }
 
-      const byId = new Map(verdicts.map((verdict) => [verdict.id, verdict]));
       const judged = plausible
         .map((document) => ({
           brightId: document.brightId,
-          verdict: byId.get(document.brightId),
+          result: results.get(document.brightId),
         }))
         // A failed answer is neither relevant nor irrelevant; leave it out
-        .filter((entry) => entry.verdict?.status === 'answered');
+        .filter((entry) => entry.result !== undefined);
       const relevantIds = new Set(
         judged
-          .filter((entry) => entry.verdict?.keep === true)
+          .filter((entry) => entry.result?.verdicts[RELEVANT_FIELD] === 'pass')
           .map((entry) => entry.brightId),
       );
       const all = [

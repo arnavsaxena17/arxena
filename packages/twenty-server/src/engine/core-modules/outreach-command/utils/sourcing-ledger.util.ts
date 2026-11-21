@@ -1,5 +1,6 @@
 import { type OutreachTabRow } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 import { readRowProfile } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
+import { type FitmentStage } from 'src/engine/core-modules/judge/fitment-score.util';
 import {
   pairKeyOf,
   type FindPeoplePairState,
@@ -476,7 +477,7 @@ export type SourcingLedgerEvent =
   | {
       kind: 'score';
       at: string;
-      stage: 'snapshot' | 'profile';
+      stage: FitmentStage;
       column: string;
       rows: number;
       pass: number;

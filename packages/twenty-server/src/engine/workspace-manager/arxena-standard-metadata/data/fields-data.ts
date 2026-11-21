@@ -7,10 +7,6 @@ import { getWebsiteDomainFieldsData } from 'src/engine/workspace-manager/arxena-
 import { getWebsiteVisitorFieldsData } from 'src/engine/workspace-manager/arxena-standard-metadata/data/website-visitor-fields.data';
 import { getObjectsToExclude } from 'src/engine/workspace-manager/arxena-standard-metadata/data/objects-data';
 import {
-  isAssistantHostExtensionField,
-  isAssistantObjectName,
-} from 'src/engine/workspace-manager/assistant-application/constants/assistant-application.constant';
-import {
   isShortlistPresentationHostExtensionField,
   isShortlistPresentationObjectName,
 } from 'src/engine/workspace-manager/shortlist-presentation-application/constants/shortlist-presentation-application.constant';
@@ -26,8 +22,7 @@ export const getFieldsData = (
   getAllFieldsData(objectsNameIdMap, isOrgChartEnabled).filter(
     (fieldWithObject) =>
       !isVideoInterviewField(fieldWithObject) &&
-      !isShortlistPresentationField(fieldWithObject) &&
-      !isAssistantField(fieldWithObject),
+      !isShortlistPresentationField(fieldWithObject),
   );
 
 const getAllFieldsData = (
@@ -1737,129 +1732,6 @@ const getAllFieldsData = (
         defaultValue: false,
       },
     },
-    // Assistant Thread fields
-    // Note: 'name' field is automatically added by buildDefaultFieldsForCustomObject when the object is created
-    {
-      objectName: 'assistantThread',
-      field: {
-        description: '',
-        label: 'Messages',
-        name: 'messages',
-        objectMetadataId: objectsNameIdMap.assistantThread,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'assistantThread',
-      field: {
-        description: '',
-        label: 'Last Table Data',
-        name: 'lastTableData',
-        objectMetadataId: objectsNameIdMap.assistantThread,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'assistantThread',
-      field: {
-        description:
-          'Agent scratch pad / pending notes for this thread (JSON array of { summary, createdAt? })',
-        label: 'Agent Notes',
-        name: 'agentNotes',
-        objectMetadataId: objectsNameIdMap.assistantThread,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'assistantThread',
-      field: {
-        description:
-          'Assistant agent events for this thread (JSON array of { status, summary?, error?, toolName?, runId?, timestamp })',
-        label: 'Agent Events',
-        name: 'agentEvents',
-        objectMetadataId: objectsNameIdMap.assistantThread,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'assistantThread',
-      field: {
-        description:
-          'Controls whether this assistant thread runs in fully autonomous or permissioned (human approval) mode',
-        label: 'Assistant Mode',
-        name: 'assistantMode',
-        objectMetadataId: objectsNameIdMap.assistantThread,
-        type: 'SELECT',
-        // SELECT defaults must satisfy IsQuotedString: literal single quotes around the option value
-        defaultValue: "'PERMISSIONED'",
-        options: [
-          {
-            color: 'green',
-            label: 'Fully autonomous',
-            position: 0,
-            value: 'FULLY_AUTONOMOUS',
-          },
-          {
-            color: 'blue',
-            label: 'Permissioned',
-            position: 1,
-            value: 'PERMISSIONED',
-          },
-        ],
-      },
-    },
-    {
-      objectName: 'assistantThread',
-      field: {
-        description:
-          'Search/assistant parameters for this thread (generated and resolved search parameters)',
-        label: 'Assistant Parameters',
-        name: 'assistantParameters',
-        objectMetadataId: objectsNameIdMap.assistantThread,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'assistantThread',
-      field: {
-        description: 'Enrichment configurations for this thread',
-        label: 'Enrichment Configs',
-        name: 'enrichmentConfigs',
-        objectMetadataId: objectsNameIdMap.assistantThread,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'assistantThread',
-      field: {
-        description: 'Column filters for candidate filtering',
-        label: 'Column Filters',
-        name: 'columnFilters',
-        objectMetadataId: objectsNameIdMap.assistantThread,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'assistantThread',
-      field: {
-        description: 'Search strategy for this thread',
-        label: 'Assistant Search Strategy',
-        name: 'assistantSearchStrategy',
-        objectMetadataId: objectsNameIdMap.assistantThread,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'assistantThread',
-      field: {
-        description: 'Whether this thread is currently active',
-        label: 'Is Active',
-        name: 'isActive',
-        objectMetadataId: objectsNameIdMap.assistantThread,
-        type: 'BOOLEAN',
-        defaultValue: false,
-      },
-    },
     {
       objectName: 'orgChart',
       field: {
@@ -2028,103 +1900,6 @@ const getAllFieldsData = (
         type: 'TEXT',
       },
     },
-    // // Assistant Message fields
-    // {
-    //   field: {
-    //     description: '',
-    //     label: 'Thread',
-    //     name: 'assistantThread',
-    //     objectMetadataId: objectsNameIdMap.assistantMessage,
-    //     type: 'LINKS',
-    //   },
-    // },
-    // {
-    //   field: {
-    //     description: '',
-    //     label: 'Role',
-    //     name: 'role',
-    //     objectMetadataId: objectsNameIdMap.assistantMessage,
-    //     type: 'SELECT',
-    //     options: [
-    //       {
-    //         color: 'blue',
-    //         label: 'User',
-    //         position: 0,
-    //         value: 'user',
-    //       },
-    //       {
-    //         color: 'green',
-    //         label: 'Assistant',
-    //         position: 1,
-    //         value: 'assistant',
-    //       },
-    //     ],
-    //   },
-    // },
-    // {
-    //   field: {
-    //     description: '',
-    //     label: 'Content',
-    //     name: 'content',
-    //     objectMetadataId: objectsNameIdMap.assistantMessage,
-    //     type: 'TEXT',
-    //   },
-    // },
-    // {
-    //   field: {
-    //     description: '',
-    //     label: 'Tool Calls',
-    //     name: 'toolCalls',
-    //     objectMetadataId: objectsNameIdMap.assistantMessage,
-    //     type: 'RAW_JSON',
-    //   },
-    // },
-    // {
-    //   field: {
-    //     description: '',
-    //     label: 'Table Data Ref',
-    //     name: 'tableDataRef',
-    //     objectMetadataId: objectsNameIdMap.assistantMessage,
-    //     type: 'RAW_JSON',
-    //   },
-    // },
-    // // Assistant Thread Candidate fields
-    // {
-    //   field: {
-    //     description: '',
-    //     label: 'Thread',
-    //     name: 'assistantThread',
-    //     objectMetadataId: objectsNameIdMap.assistantThreadCandidate,
-    //     type: 'LINKS',
-    //   },
-    // },
-    // {
-    //   field: {
-    //     description: '',
-    //     label: 'Candidate',
-    //     name: 'candidate',
-    //     objectMetadataId: objectsNameIdMap.assistantThreadCandidate,
-    //     type: 'LINKS',
-    //   },
-    // },
-    // {
-    //   field: {
-    //     description: '',
-    //     label: 'Job',
-    //     name: 'job',
-    //     objectMetadataId: objectsNameIdMap.assistantThreadCandidate,
-    //     type: 'LINKS',
-    //   },
-    // },
-    // {
-    //   field: {
-    //     description: '',
-    //     label: 'Person',
-    //     name: 'person',
-    //     objectMetadataId: objectsNameIdMap.assistantThreadCandidate,
-    //     type: 'LINKS',
-    //   },
-    // },
     ...getOutreachCommandFieldsData(objectsNameIdMap),
     ...getWebsiteDomainFieldsData(objectsNameIdMap),
     ...getWebsiteVisitorFieldsData(objectsNameIdMap),
@@ -2159,13 +1934,6 @@ const isShortlistPresentationField = (
     fieldName: fieldWithObject.field.name,
   });
 
-const isAssistantField = (fieldWithObject: ArxenaFieldWithObject): boolean =>
-  isAssistantObjectName(fieldWithObject.objectName) ||
-  isAssistantHostExtensionField({
-    objectName: fieldWithObject.objectName,
-    fieldName: fieldWithObject.field.name,
-  });
-
 export const getVideoInterviewFieldsData = (
   objectsNameIdMap: Record<string, string>,
   isOrgChartEnabled?: boolean,
@@ -2180,12 +1948,4 @@ export const getShortlistPresentationFieldsData = (
 ): ArxenaFieldWithObject[] =>
   getAllFieldsData(objectsNameIdMap, isOrgChartEnabled).filter(
     (fieldWithObject) => isShortlistPresentationField(fieldWithObject),
-  );
-
-export const getAssistantFieldsData = (
-  objectsNameIdMap: Record<string, string>,
-  isOrgChartEnabled?: boolean,
-): ArxenaFieldWithObject[] =>
-  getAllFieldsData(objectsNameIdMap, isOrgChartEnabled).filter(
-    (fieldWithObject) => isAssistantField(fieldWithObject),
   );

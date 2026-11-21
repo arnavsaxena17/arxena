@@ -7,6 +7,7 @@ import { AccountRateLimitModule } from 'src/engine/core-modules/account-rate-lim
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool.module';
 import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
+import { JudgeModule } from 'src/engine/core-modules/judge/judge.module';
 import { BrightDataModule } from 'src/engine/core-modules/bright-data/bright-data.module';
 import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
 import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
@@ -122,7 +123,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
 @Module({
   imports: [
     TypeOrmModule.forFeature([WorkspaceEntity]),
-    forwardRef(() => ArxWebSearchModule),
+    ArxWebSearchModule,
     AiBillingModule,
     GraphQLExecutionModule,
     AccountRateLimitModule,
@@ -151,6 +152,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachDecisionModule,
     OutreachCacheRealtimeModule,
     BrightDataModule,
+    JudgeModule,
   ],
   controllers: [OutreachCommandController, OutreachMockController],
   providers: [

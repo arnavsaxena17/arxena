@@ -132,7 +132,7 @@ const conditionalImports = isWorker
 @Module({
   imports: [
     MeteredLlmModule,
-    forwardRef(() => ArxWebSearchModule),
+    ArxWebSearchModule,
     AccountRateLimitModule,
     WorkspaceCacheStorageModule,
     EmailModule,

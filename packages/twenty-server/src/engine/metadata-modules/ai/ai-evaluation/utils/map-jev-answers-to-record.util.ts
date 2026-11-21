@@ -6,6 +6,8 @@ import {
 
 export type MapJevAnswersOptions = {
   booleanProbabilityThreshold?: number;
+  // A field named here uses its own bar; the rest use the default above
+  booleanProbabilityThresholds?: Record<string, number>;
 };
 
 const mapSingleAnswer = (
@@ -37,7 +39,11 @@ export const mapJevAnswersToRecord = (
   return Object.fromEntries(
     Object.entries(answers).map(([fieldName, answer]) => [
       fieldName,
-      mapSingleAnswer(answer, booleanProbabilityThreshold),
+      mapSingleAnswer(
+        answer,
+        options?.booleanProbabilityThresholds?.[fieldName] ??
+          booleanProbabilityThreshold,
+      ),
     ]),
   );
 };

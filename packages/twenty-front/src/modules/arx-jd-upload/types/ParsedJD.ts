@@ -29,12 +29,9 @@ export type ParsedJD = {
   id?: string;
   parsedJobDescription?: any;
   filePath?: string;
-  /** Assistant threads used for candidate-search chat (replaces searchFilters for chat flow) */
-  assistantThreads?: AssistantThreadSummary[];
   searchParameters?: Array<{
     generatedSearchParameters?: GeneratedSearchParameters;
     resolvedSearchParameters?: GeneratedSearchParameters;
-    assistantThreadId?: string;
   }>;
   chatFlow: {
     order: {
@@ -62,20 +59,6 @@ export type ParsedJD = {
       };
     }>;
   };
-};
-
-/** Summary of an assistant thread for candidate-search (id, name, parameters, enrichments) */
-export type AssistantThreadSummary = {
-  id: string;
-  name: string;
-  assistantParameters?: {
-    generatedSearchParameters?: Record<string, unknown>;
-    resolvedSearchParameters?: Record<string, unknown>;
-    [key: string]: unknown;
-  };
-  enrichmentConfigs?: AiFilterConfig[];
-  columnFilters?: unknown[];
-  [key: string]: unknown;
 };
 
 // Generated Search Parameters (frontend-specific with typed parameters)

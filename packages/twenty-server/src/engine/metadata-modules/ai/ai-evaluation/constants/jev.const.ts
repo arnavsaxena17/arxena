@@ -8,7 +8,7 @@ export const JEV_MODEL_ALIASES = [
   'typesafe/jev-1.13',
 ] as const;
 
-// OpenRouter decisions endpoint (same path as JevDecisionsService)
+// OpenRouter decisions endpoint, used by JevEvaluationService
 export const JEV_EVALUATE_URL = 'https://openrouter.ai/api/alpha/decisions';
 
 // Wire model id for OpenRouter; UI / isJevModelId still use JEV_MODEL_ID aliases

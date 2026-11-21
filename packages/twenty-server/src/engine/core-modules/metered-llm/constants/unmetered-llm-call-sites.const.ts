@@ -14,7 +14,7 @@ export const UNMETERED_LLM_CALL_SITES: readonly string[] = [
   'engine/core-modules/candidate-search/services/cleanup.service.ts',
   'engine/core-modules/candidate-search/services/job-description.service.ts',
   'engine/core-modules/candidate-search/services/stream-processing.service.ts',
-  'engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-engine.service.ts',
+  'engine/core-modules/judge/ai-filter-engine/ai-filter-engine.service.ts',
   'engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service.ts',
   'engine/core-modules/org-chart-outreach/icp-extraction.service.ts',
   'engine/core-modules/org-chart/services/org-chart-company-news.service.ts',

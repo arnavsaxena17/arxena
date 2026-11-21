@@ -12,7 +12,6 @@ import { gql } from '@apollo/client';
 import { useLazyQuery } from '@apollo/client/react';
 import { useEffect, useRef, useState } from 'react';
 import {
-  findManyAssistantThreads,
   graphqlToFindManyProjects,
 } from 'twenty-shared/graphql';
 import { getAttachmentDownloadUrl } from 'twenty-shared/utils';
@@ -71,7 +70,6 @@ export const ArxJDUploadModal = ({
     handleCreateJobFromName,
     resetUploadState,
     updateRecruiterDetails,
-    updateAssistantThreadRecord,
     apiKeys,
   } = useArxJDUpload(objectNameSingular, arxUploadJDModalMode);
 
@@ -93,13 +91,6 @@ export const ArxJDUploadModal = ({
     `,
     { client: apolloCoreClient },
   );
-  const [executeAssistantThreadsQuery] = useLazyQuery(
-    gql`
-      ${findManyAssistantThreads}
-    `,
-    { client: apolloCoreClient },
-  );
-
   // Function to fetch attachments for a job
   const fetchJobAttachments = async (projectId: string) => {
     try {
@@ -192,53 +183,7 @@ export const ArxJDUploadModal = ({
           );
         }
 
-        // Fetch assistant threads for this project (app-owned relation, not on Project)
-        let assistantThreads: Array<{
-          id: string;
-          name: string;
-          assistantParameters?: unknown;
-          enrichmentConfigs?: unknown;
-          columnFilters?: unknown;
-        }> = [];
-        try {
-          const { data: assistantThreadQueryData } =
-            await executeAssistantThreadsQuery({
-              variables: {
-                filter: { projectId: { eq: jobData.id } },
-                limit: 50,
-              },
-            });
-          const threadEdges =
-            (
-              assistantThreadQueryData as
-                | {
-                    assistantThreads?: {
-                      edges?: Array<{ node?: Record<string, any> }>;
-                    };
-                  }
-                | undefined
-            )?.assistantThreads?.edges ?? [];
-          assistantThreads = threadEdges
-            .map((edge) => edge?.node)
-            .filter((node): node is Record<string, any> => Boolean(node?.id))
-            .map((node) => ({
-              id: node.id,
-              name: node.name,
-              assistantParameters: node.assistantParameters,
-              enrichmentConfigs: node.enrichmentConfigs,
-              columnFilters: node.columnFilters,
-            }));
-        } catch (e) {
-          console.warn('Failed to get assistant threads for project:', e);
-        }
-
-        const assistantThreadId = assistantThreads[0]?.id;
-
         // Create a parsed JD from the job data
-        console.log(
-          'Creating parsedData with assistantThreadId:',
-          assistantThreadId,
-        );
         const parsedData = createDefaultParsedJD({
           id: jobData.id,
           name: jobData.name || '',
@@ -251,7 +196,6 @@ export const ArxJDUploadModal = ({
           companyName: jobData.company?.name,
           filePath: attachmentDownloadUrl,
           parsedJobDescription: parsedJobDescription, // Use the fetched ParsedJobDescription
-          assistantThreads,
           chatFlow: {
             order: {
               initialChat: true,
@@ -267,11 +211,6 @@ export const ArxJDUploadModal = ({
             meetingType,
             availableDates,
           },
-        });
-
-        console.log('Final parsedData with assistantThreadId:', {
-          assistantThreadId: parsedData.assistantThreads?.[0]?.id,
-          id: parsedData.id,
         });
 
         setParsedJD(parsedData);
@@ -420,7 +359,6 @@ export const ArxJDUploadModal = ({
             onCreateJobFromName={handleCreateJobFromNameWithClose}
             onRecruiterInfoChange={updateRecruiterDetails}
             isEditMode={isEditMode}
-            onAssistantThreadUpdate={updateAssistantThreadRecord}
           />
         </ArxJDModalLayout>
       )}

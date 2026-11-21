@@ -46,7 +46,6 @@ export const LEGACY_CRM_LOAD_ORDER: string[] = [
   'timelineActivity',
   '_candidate',
   '_candidateEnrichment',
-  '_assistantThread',
   '_cvSent',
   '_screening',
   '_shortlist',

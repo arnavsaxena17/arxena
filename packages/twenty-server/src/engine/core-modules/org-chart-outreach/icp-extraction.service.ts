@@ -1,11 +1,9 @@
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import {
   BadRequestException,
-  Inject,
   Injectable,
   Logger,
   Optional,
-  forwardRef,
 } from '@nestjs/common';
 import OpenAI from 'openai';
 
@@ -229,7 +227,6 @@ export class IcpExtractionService {
     private readonly resumeReadParseUploadService: ResumeReadParseUploadService,
     // Perplexity-backed search; OpenAI's web_search tool is the fallback
     @Optional()
-    @Inject(forwardRef(() => ArxWebSearchService))
     private readonly arxWebSearchService?: ArxWebSearchService,
   ) {}
 

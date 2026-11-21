@@ -23,7 +23,6 @@ import {
   getGraphqlToFindManyProjects,
   graphQLToUpdateOneWorkspaceMemberArx,
   graphqlMutationToDeleteManyAttachments,
-  graphqlMutationToDeleteManyAssistantThreads,
   graphqlMutationToDeleteManyCandidates,
   graphqlMutationToDeleteManyPeople,
   graphqlMutationToDeleteManyVideoInterviewTemplates,
@@ -3930,11 +3929,6 @@ export class CandidateSourcingController {
       graphqlMutationToDeleteManyVideoInterviewTemplates,
       { projectId: { eq: actualProjectId } },
       'videoInterviewTemplates',
-    );
-    await softDeleteByFilter(
-      graphqlMutationToDeleteManyAssistantThreads,
-      { projectId: { eq: actualProjectId } },
-      'assistantThreads',
     );
 
     if (deleteCandidates) {

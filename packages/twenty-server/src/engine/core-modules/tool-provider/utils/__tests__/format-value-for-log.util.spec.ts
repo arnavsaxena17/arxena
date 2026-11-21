@@ -31,6 +31,15 @@ describe('formatValueForLog', () => {
     expect(text).toContain('skills[0].content:');
   });
 
+  it('keeps a long single-line value inline, since lifting recovers no lines', () => {
+    const description = 'Ask the user when in doubt. '.repeat(30);
+
+    const text = formatValueForLog({ ask_questions: { description } });
+
+    expect(text).not.toContain('printed below');
+    expect(text).toContain(description.trim());
+  });
+
   it('redacts secrets rather than printing them', () => {
     const text = formatValueForLog({
       apiKey: `sk-live-${'1'.repeat(300)}`,

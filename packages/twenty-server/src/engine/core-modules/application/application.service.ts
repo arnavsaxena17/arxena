@@ -32,7 +32,6 @@ import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scope
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { TWENTY_STANDARD_APPLICATION } from 'src/engine/workspace-manager/twenty-standard-application/constants/twenty-standard-applications';
 import { ARXENA_STANDARD_APPLICATION } from 'src/engine/workspace-manager/arxena-standard-metadata/constants/arxena-standard-application.constant';
-import { ASSISTANT_APPLICATION } from 'src/engine/workspace-manager/assistant-application/constants/assistant-application.constant';
 import { SHORTLIST_PRESENTATION_APPLICATION } from 'src/engine/workspace-manager/shortlist-presentation-application/constants/shortlist-presentation-application.constant';
 import { VIDEO_INTERVIEW_APPLICATION } from 'src/engine/workspace-manager/video-interview-application/constants/video-interview-application.constant';
 
@@ -584,56 +583,6 @@ export class ApplicationService {
     }
 
     return shortlistPresentationApplication;
-  }
-
-  async createAssistantApplication(
-    {
-      workspaceId,
-      skipCacheInvalidation = false,
-    }: {
-      workspaceId: string;
-      skipCacheInvalidation?: boolean;
-    },
-    queryRunner?: QueryRunner,
-  ) {
-    const existingApplication = await this.findByUniversalIdentifier({
-      universalIdentifier: ASSISTANT_APPLICATION.universalIdentifier,
-      workspaceId,
-    });
-
-    if (isDefined(existingApplication)) {
-      return existingApplication;
-    }
-
-    const defaultPackageFields = await getDefaultApplicationPackageFields();
-
-    const assistantApplication = await this.create(
-      {
-        ...ASSISTANT_APPLICATION,
-        logicFunctionLayerId: null,
-        workspaceId,
-        canBeUninstalled: true,
-        packageJsonChecksum: defaultPackageFields.packageJsonChecksum,
-        packageJsonFileId: null,
-        yarnLockChecksum: defaultPackageFields.yarnLockChecksum,
-        yarnLockFileId: null,
-        availablePackages: defaultPackageFields.availablePackages,
-      },
-      queryRunner,
-    );
-
-    await this.uploadDefaultPackageFilesAndSetFileIds(
-      assistantApplication,
-      queryRunner,
-    );
-
-    if (!skipCacheInvalidation) {
-      await this.workspaceCacheService.invalidateAndRecompute(workspaceId, [
-        'flatApplicationMaps',
-      ]);
-    }
-
-    return assistantApplication;
   }
 
   async createWorkspaceCustomApplication(

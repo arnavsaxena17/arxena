@@ -15,8 +15,8 @@ import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/typ
 import {
   type FilterFieldSpec,
   type FilterSpec,
-} from 'src/engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-contract';
-import { AiFilterEngineService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-engine.service';
+} from 'src/engine/core-modules/judge/ai-filter-engine/ai-filter-contract';
+import { AiFilterEngineService } from 'src/engine/core-modules/judge/ai-filter-engine/ai-filter-engine.service';
 import {
   FITMENT_EVIDENCE_KEY,
   FITMENT_OUTCOME_KEY,
@@ -25,9 +25,9 @@ import {
   buildFitmentPrompt,
   computeFitmentColumns,
   type FitmentSetup,
-} from 'src/engine/core-modules/candidate-sourcing/services/fitment/fitment-filter.util';
-import { resolveFitmentThreshold } from 'src/engine/core-modules/candidate-sourcing/services/fitment/fitment-threshold.util';
-import { type FitmentCriterion } from 'src/engine/core-modules/candidate-sourcing/services/fitment/fitment-score.util';
+} from 'src/engine/core-modules/judge/judge-prompt';
+import { resolveFitmentThreshold } from 'src/engine/core-modules/judge/fitment-threshold.util';
+import { type FitmentCriterion } from 'src/engine/core-modules/judge/fitment-score.util';
 import {
   getAiColumnAutoRunMaxUsd,
   needsCostApproval,

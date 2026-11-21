@@ -27,8 +27,6 @@ import { AiFiltersQueueProcessor } from 'src/engine/core-modules/candidate-sourc
 import { ProcessAiFiltersService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.service';
 import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
-import { ArxWebSearchModule } from 'src/engine/core-modules/arx-web-search/arx-web-search.module';
-import { AiFilterEngineService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-engine.service';
 import { AiFilteringProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering-processor.service';
 import { AiFilteringProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering-progress-pubsub.service';
 import { AiFilteringService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering.service';
@@ -83,7 +81,6 @@ import { MeteredLlmModule } from 'src/engine/core-modules/metered-llm/metered-ll
 @Module({
   imports: [
     MeteredLlmModule,
-    forwardRef(() => ArxWebSearchModule),
     WorkspaceCacheStorageModule,
     EmailModule,
     EnvironmentModule,
@@ -130,7 +127,6 @@ import { MeteredLlmModule } from 'src/engine/core-modules/metered-llm/metered-ll
     FilterDescriptionProcessorService,
     AiFilteringService,
     AiFilteringProcessorService,
-    AiFilterEngineService,
     AiFilteringProgressPubSubService,
     UploadProgressPubSubService,
     OrgChartProgressRedisService,
@@ -179,7 +175,6 @@ import { MeteredLlmModule } from 'src/engine/core-modules/metered-llm/metered-ll
     ProcessCandidatesService,
     ProcessAiFiltersService,
     AiFilteringProcessorService,
-    AiFilterEngineService,
     DataSourceTransformerFactoryService,
     DataProcessingUtils,
     JDParserService,

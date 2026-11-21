@@ -1,5 +1,5 @@
-import { buildRecordText } from 'src/engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-prompt';
-import { type FilterSpec } from 'src/engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-contract';
+import { buildRecordText } from 'src/engine/core-modules/judge/ai-filter-engine/ai-filter-prompt';
+import { type FilterSpec } from 'src/engine/core-modules/judge/ai-filter-engine/ai-filter-contract';
 import {
   OutreachAiColumnService,
   buildFitmentFilter,

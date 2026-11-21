@@ -48,7 +48,6 @@ import { TransferVideoInterviewApplicationCommand } from 'src/database/commands/
 import { UninstallVideoInterviewApplicationByDefaultCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000053-uninstall-video-interview-application-by-default.command';
 import { TransferShortlistPresentationApplicationCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000054-transfer-shortlist-presentation-application.command';
 import { FoldPromptsIntoProjectCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000055-fold-prompts-into-project.command';
-import { TransferAssistantApplicationCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000056-transfer-assistant-application.command';
 import { PrefillOutreachCommandDashboardCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000057-prefill-gtm-command-dashboard.command';
 import { BackfillOutreachCommandRollupsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000058-backfill-gtm-command-rollups.command';
 import { HealOutreachDashboardPageLayoutIdCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000078-heal-outreach-dashboard-page-layout-id.command';
@@ -186,7 +185,6 @@ import { GlobalWorkspaceDataSourceModule } from 'src/engine/twenty-orm/global-wo
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 import { ArxenaStandardMetadataModule } from 'src/engine/workspace-manager/arxena-standard-metadata/arxena-standard-metadata.module';
-import { AssistantApplicationModule } from 'src/engine/workspace-manager/assistant-application/assistant-application.module';
 import { ShortlistPresentationApplicationModule } from 'src/engine/workspace-manager/shortlist-presentation-application/shortlist-presentation-application.module';
 import { VideoInterviewApplicationModule } from 'src/engine/workspace-manager/video-interview-application/video-interview-application.module';
 import { StandardObjectsPrefillModule } from 'src/engine/workspace-manager/standard-objects-prefill-data/standard-objects-prefill.module';
@@ -205,7 +203,6 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     ArxenaStandardMetadataModule,
     VideoInterviewApplicationModule,
     ShortlistPresentationApplicationModule,
-    AssistantApplicationModule,
     StandardObjectsPrefillModule,
     FieldMetadataModule,
     WorkspaceModificationsModule,
@@ -257,7 +254,6 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     UninstallVideoInterviewApplicationByDefaultCommand,
     TransferShortlistPresentationApplicationCommand,
     FoldPromptsIntoProjectCommand,
-    TransferAssistantApplicationCommand,
     PrefillOutreachCommandDashboardCommand,
     HealOutreachDashboardPageLayoutIdCommand,
     BackfillOutreachCommandRollupsCommand,

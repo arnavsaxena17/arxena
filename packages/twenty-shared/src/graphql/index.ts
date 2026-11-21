@@ -50,12 +50,9 @@ export {
   createShortlistMutation,
   createManyShortlistsMutation,
   createViewFieldMutation,
-  createOneAssistantThread,
-  updateOneAssistantThread,
   graphqlMutationToDeleteManyPrompts,
   graphqlMutationToDeleteManyAttachments,
   graphqlMutationToDeleteManyVideoInterviewTemplates,
-  graphqlMutationToDeleteManyAssistantThreads,
   graphqlMutationToDeleteOneProject,
 } from './mutations';
 export { queries, mutations } from './queries-mutations-collector';
@@ -108,6 +105,4 @@ export {
   graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema,
   getExistingRelationsQuery,
   findManyViewsQuery,
-  findManyAssistantThreads,
-  findOneAssistantThread,
 } from './queries';

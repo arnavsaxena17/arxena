@@ -1,8 +1,10 @@
 import { redactForLog } from 'src/engine/core-modules/tool-provider/utils/format-tool-call-log.util';
 
-// Same 200-char leaf bound the tool output preview uses; longer strings are
-// lifted out of the JSON and printed in full below it, so the \n escapes a JSON
-// dump would show become real lines (skill markdown, tool result text).
+// Same 200-char leaf bound the tool output preview uses; longer multi-line
+// strings are lifted out of the JSON and printed in full below it, so the \n
+// escapes a JSON dump would show become real lines (skill markdown, tool result
+// text). A long single-line value (a tool description) has no escapes to
+// recover, so it stays in place and the JSON keeps its shape.
 const INLINE_STRING_LIMIT = 200;
 
 type LiftedString = { path: string; text: string };
@@ -13,7 +15,7 @@ const liftLongStrings = (
   lifted: LiftedString[],
 ): unknown => {
   if (typeof value === 'string') {
-    if (value.length <= INLINE_STRING_LIMIT) {
+    if (value.length <= INLINE_STRING_LIMIT || !value.includes('\n')) {
       return value;
     }
 

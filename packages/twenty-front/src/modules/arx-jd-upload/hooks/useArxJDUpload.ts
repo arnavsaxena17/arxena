@@ -16,10 +16,7 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 
-import { useCreateAssistantThreadRecord } from '@/arx-jd-upload/hooks/useCreateAssistantThreadRecord';
 import { useParsedJDState } from '@/arx-jd-upload/hooks/useParsedJDState';
-import { useIsAssistantAppInstalled } from '@/applications/hooks/useIsAssistantAppInstalled';
-import type { AssistantThread } from '@/assistant/types/assistant.types';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 import type { companyInfoType } from 'twenty-shared/arx';
@@ -30,12 +27,10 @@ import type {
 } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { type RecruiterDetails } from '../components/ProjectDetailsForm';
-import type { AssistantThreadSummary } from '../types/ParsedJD';
 import { createDefaultParsedJD } from '../utils/createDefaultParsedJD';
 import { syncChatQuestionsToDatabase } from '../utils/syncChatQuestions';
 import { useApiKeysState } from './useApiKeysState';
 import { useProjectDescriptionParser } from './useProjectDescriptionParser';
-import { useSearchParameters } from './useSearchParameters';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
@@ -92,7 +87,6 @@ export const useArxJDUpload = (
   const { triggerJobsRefetch } = useProjectRefetch();
   const { parseJobDescriptionFromDetails, parseJobDescriptionFromFile } =
     useProjectDescriptionParser();
-  const { generateResolvedSearchParameters } = useSearchParameters();
 
   const [error, setError] = useState<string | null>(null);
   const { createOneRecord } = useCreateOneRecord({ objectNameSingular });
@@ -118,11 +112,6 @@ export const useArxJDUpload = (
     objectNameSingular: 'company',
   });
   const { updateOneRecord: updateOneCompanyRecord } = useUpdateOneRecord();
-
-  const { createOneAssistantThreadRecord } = useCreateAssistantThreadRecord();
-  const { updateOneRecord: updateOneAssistantThreadRecord } =
-    useUpdateOneRecord();
-  const isAssistantAppInstalled = useIsAssistantAppInstalled();
 
   const apolloCoreClient = useApolloCoreClient();
   const [updateWorkspaceMemberArx] = useMutation(
@@ -573,7 +562,6 @@ export const useArxJDUpload = (
             meetingScheduling,
             filePath,
             parsedJobDescription: _parsedJobDescription,
-            assistantThreads,
             ...updateData
           } = parsedData;
 
@@ -650,7 +638,6 @@ export const useArxJDUpload = (
       enqueueErrorSnackBar,
       updateCompanyWithDetails,
       parsedJD,
-      generateResolvedSearchParameters,
       parseJobDescriptionFromDetails,
       recruiterDetails?.workspaceMemberId,
       currentWorkspaceMember?.id,
@@ -699,7 +686,6 @@ export const useArxJDUpload = (
           chatQuestionFieldIds,
           parsedJobDescription,
           filePath,
-          assistantThreads,
           searchParameters,
           ...jobData
         } = parsedJD;
@@ -774,8 +760,7 @@ export const useArxJDUpload = (
               chatQuestionFieldIds,
               parsedJobDescription,
               filePath,
-              assistantThreads,
-              searchParameters,
+                searchParameters,
               ...jobData
             } = parsedJD;
             const jobPayloadBase = omitEmptyStringCompanyId(
@@ -808,8 +793,7 @@ export const useArxJDUpload = (
               chatQuestionFieldIds,
               parsedJobDescription,
               filePath,
-              assistantThreads,
-              searchParameters,
+                searchParameters,
               ...jobData
             } = parsedJD;
             const jobPayloadBase = omitEmptyStringCompanyId(
@@ -831,7 +815,6 @@ export const useArxJDUpload = (
             chatQuestionFieldIds,
             parsedJobDescription,
             filePath,
-            assistantThreads,
             searchParameters,
             ...jobData
           } = parsedJD;
@@ -931,109 +914,6 @@ export const useArxJDUpload = (
     return value as Record<string, unknown>;
   };
 
-  // Persist search plan state to assistant thread
-  const updateAssistantThreadRecord = useCallback(
-    async (
-      assistantThread: AssistantThread,
-      assistantThreads: AssistantThreadSummary[],
-      searchType: LinkedInSearchType,
-      searchCategory: LinkedInSearchCategory,
-      generatedParameters: unknown,
-      resolvedParameters: unknown,
-    ) => {
-      if (!isAssistantAppInstalled) {
-        enqueueErrorSnackBar({
-          message:
-            'Assistant app is not installed. Install it from Settings → Applications to save search threads.',
-        });
-        return;
-      }
-
-      const assistantParameters = {
-        generatedSearchParameters: toRecord(generatedParameters),
-        resolvedSearchParameters: toRecord(resolvedParameters),
-      };
-
-      if (assistantThreads.length === 0) {
-        if (!parsedJD?.id || !currentWorkspaceMember?.id) {
-          enqueueErrorSnackBar({
-            message: 'Cannot create assistant thread - no job or recruiter',
-          });
-          return;
-        }
-        try {
-          const displayName = `Search - ${searchType}_${searchCategory} - ${new Date().toISOString().slice(0, 10)}`;
-          const newThread = await createOneAssistantThreadRecord({
-            name: displayName,
-            projectId: parsedJD.id,
-            recruiterId: currentWorkspaceMember.id,
-            assistantParameters,
-            messages: [],
-          });
-          if (newThread?.id) {
-            setParsedJD((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    assistantThreads: [
-                      {
-                        id: newThread.id,
-                        name: displayName,
-                        assistantParameters,
-                        enrichmentConfigs: [],
-                        columnFilters: [],
-                      },
-                      ...(prev.assistantThreads || []),
-                    ],
-                  }
-                : null,
-            );
-            return;
-          }
-        } catch (createError) {
-          console.error('Failed to create assistant thread:', createError);
-          enqueueErrorSnackBar({
-            message: `Failed to create thread: ${createError instanceof Error ? createError.message : 'Unknown error'}`,
-          });
-        }
-        return;
-      }
-
-      const assistantThreadId = assistantThread?.id ?? assistantThreads[0]?.id;
-      if (!assistantThreadId) {
-        enqueueErrorSnackBar({
-          message: 'Cannot update assistant thread - missing thread id',
-        });
-        return;
-      }
-      const displayName = `${searchType}_${searchCategory}`;
-      try {
-        await updateOneAssistantThreadRecord({
-          objectNameSingular: 'assistantThread',
-          idToUpdate: assistantThreadId,
-          updateOneRecordInput: {
-            name: displayName,
-            assistantParameters,
-          },
-        });
-      } catch (error) {
-        console.error('Failed to update assistant thread:', error);
-        enqueueErrorSnackBar({
-          message: `Failed to update thread: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        });
-      }
-    },
-    [
-      isAssistantAppInstalled,
-      createOneAssistantThreadRecord,
-      updateOneAssistantThreadRecord,
-      enqueueErrorSnackBar,
-      parsedJD?.id,
-      currentWorkspaceMember?.id,
-      setParsedJD,
-    ],
-  );
-
   // Function to create a job from just the name
   const handleCreateJobFromName = useCallback(
     async (jobName: string) => {
@@ -1112,7 +992,6 @@ export const useArxJDUpload = (
     resetUploadState,
     updateRecruiterDetails,
     updateCompanyWithDetails,
-    updateAssistantThreadRecord,
     apiKeys,
   };
 };

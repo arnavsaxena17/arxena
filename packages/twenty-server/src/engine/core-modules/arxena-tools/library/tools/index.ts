@@ -1,18 +1,15 @@
 import { McpTool } from '../types/tool-types';
-import { agentNotesTools } from './agent-notes-tools';
 import { arxChatTools } from './arx-chat-tools';
 import { candidateSearchTools } from './candidate-search-tools';
 import { candidateTools } from './candidate-tools';
 import { esIndexSearchTools } from './es-index-search-tools';
 import { harvestSearchTools } from './harvest-search-tools';
 import { internalTools } from './internal-tools';
-import { projectTools } from './project-tools';
 import { linkedinSearchTools } from './linkedin-search-tools';
 import { orgChartTools } from './org-chart-tools';
 import { peopleApiTools } from './people-api-tools';
 import { localBusinessDataTools } from './local-business-data-tools';
 import { brightDataBusinessSearchTools } from './bright-data-business-search-tools';
-import { pendingActionsTools } from './pending-actions-tools';
 import { personTools } from './person-tools';
 import { resolveSurfaceTools } from './meta-tools';
 import { searchFetchTools } from './search-fetch-tools';
@@ -22,7 +19,6 @@ import { wikidataTools } from './wikidata-tools';
 
 export const publicTools: McpTool[] = [
   ...searchFetchTools,
-  ...projectTools,
   ...candidateTools,
   ...personTools,
   ...orgChartTools,
@@ -36,8 +32,6 @@ export const publicTools: McpTool[] = [
   ...wikidataTools,
   ...arxChatTools,
   ...shortlistCvsentTools,
-  ...pendingActionsTools,
-  ...agentNotesTools,
   ...unipileControllersTools,
 ];
 

@@ -24,13 +24,6 @@ const minimalParsedJd = {
 
 const createService = () =>
   new CandidateSearchHandlerService(
-    {
-      getAssistantThreadContext: jest.fn().mockResolvedValue({
-        projectId: 'job-1',
-        assistantParameters: {},
-        messages: [],
-      }),
-    } as never,
     { getLinkedInAccountId: jest.fn().mockResolvedValue('acc-1') } as never,
     {} as never,
     {
@@ -46,9 +39,6 @@ const createService = () =>
         .fn()
         .mockResolvedValue({ intent: 'open_market', primary_employer_name: null }),
     } as never,
-    {} as never,
-    {} as never,
-    {} as never,
     {} as never,
     {} as never,
     {

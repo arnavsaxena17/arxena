@@ -1,6 +1,5 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
-import { CandidateSearchChatController } from 'src/engine/core-modules/candidate-search/controllers/candidate-search-chat.controller';
 import { CandidateScoringService } from 'src/engine/core-modules/candidate-search/services/candidate-scoring.service';
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
 import { ResultValidationService } from 'src/engine/core-modules/candidate-search/services/result-validation.service';
@@ -34,7 +33,6 @@ import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
 import { ApolloIoRestService } from './services/apollo-io-rest.service';
 import { ApolloPeopleSearchTransformerService } from './services/apollo-people-search-transformer.service';
 import { BooltreeHintService } from './services/booltree-hint.service';
-import { CandidateSearchAssistantThreadAdapter } from './services/candidate-search-assistant-thread.adapter';
 import { CandidateSearchHandlerService } from './services/candidate-search-handler.service';
 import { ClassifyMessageService } from './services/classify-message.service';
 import { CleanupService } from './services/cleanup.service';
@@ -77,7 +75,6 @@ import { OrgchartUnipileShardPlannerService } from './services/orgchart-unipile-
   ],
   controllers: [
     CandidateSearchController,
-    CandidateSearchChatController,
     // CandidateSearchPipelineController,
     ApolloSearchController,
   ],
@@ -102,7 +99,6 @@ import { OrgchartUnipileShardPlannerService } from './services/orgchart-unipile-
     RequirementAnalyzerService,
     SearchIntentRouterService,
     JobTitleExpanderService,
-    CandidateSearchAssistantThreadAdapter,
     PythonQueryGenerationService,
     CompanyExpanderService,
     BooltreeHintService,
